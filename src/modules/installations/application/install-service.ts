@@ -6,13 +6,7 @@ import type { TokenCipher } from '@/shared/crypto/token-cipher'
 import { callBitrixIdempotent } from '@/shared/bitrix/call-bitrix-idempotent'
 import { BitrixUnavailableError } from '@/shared/bitrix/bitrix-errors'
 import { normalizeBitrixDomain } from '@/shared/bitrix/normalize'
-import {
-  badRequest,
-  conflict,
-  forbidden,
-  HttpError,
-  notFound,
-} from '@/shared/http/errors'
+import { conflict, forbidden, HttpError, notFound } from '@/shared/http/errors'
 import { logger } from '@/shared/observability/logger'
 import { raiseAlert } from '@/shared/observability/alert'
 import { runWithLogContext } from '@/shared/observability/log-context'
@@ -43,12 +37,6 @@ export const installRequestSchema = z.object({
     expiresIn: z.coerce.number().optional(),
     memberId: z.string().min(1),
     domain: z.string().min(1),
-  }),
-  contact: z.object({
-    email: z.string().email(),
-    name: z.string().max(200).optional(),
-    phone: z.string().max(50).optional(),
-    company: z.string().max(200).optional(),
   }),
   acceptedTerms: z.literal(true, {
     error: 'É preciso aceitar os termos de uso',
@@ -101,25 +89,9 @@ export class InstallService {
     return app
   }
 
-  private assertContact(
-    app: RegisteredApp,
-    contact: InstallationContact,
-  ): void {
-    const required = app.installTheme?.requiredContactFields ?? []
-    const missing = required.filter(field => !contact[field]?.trim())
-    if (missing.length) {
-      throw badRequest(
-        'CONTACT_REQUIRED',
-        `Campos obrigatórios: ${missing.join(', ')}`,
-        { missing },
-      )
-    }
-  }
-
   async install(request: InstallRequest): Promise<InstallOutcome> {
     const { db, cipher } = this.deps
     const app = await this.activeApp(request.appCode)
-    this.assertContact(app, request.contact)
     const { bitrixClientSecret } = await this.deps.registry.secrets(app.appCode)
 
     return runWithLogContext({ appCode: app.appCode }, async () => {
@@ -145,7 +117,7 @@ export class InstallService {
         throw error
       }
 
-      const { memberId, domain, tokens } = verified
+      const { memberId, domain, tokens, contact } = verified
       this.checkScopes(app, tokens.scope)
 
       const existing = await db.installation.findUnique({
@@ -155,7 +127,7 @@ export class InstallService {
       const spaItemId = await this.resolveSpaItem(app, existing, {
         domain,
         memberId,
-        contact: request.contact,
+        contact,
       })
 
       const previousStatus = existing?.status ?? null
@@ -169,7 +141,7 @@ export class InstallService {
           domain,
           status: 'INSTALLING' as const,
           spaItemId,
-          contact: request.contact,
+          contact,
           uninstalledAt: null,
           pendingReinstall: existing?.everActivated ?? false,
         }

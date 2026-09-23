@@ -4,6 +4,10 @@ import type { InstallTheme, RegisteredApp } from '@/modules/registry/domain/app'
  * Página `/install/{appCode}` (D12): fluxo e validações únicos, só a apresentação
  * muda por app. Sem tema cadastrado, usa o tema padrão com nome e logotipo do app.
  *
+ * Só um botão "Instalar": o Bitrix não aceita formulário pedindo dados na instalação.
+ * O contato do admin é lido no servidor (`user.current`) e o clique vale como aceite
+ * dos termos exibidos logo abaixo.
+ *
  * `BX24.installFinish()` só é chamado quando a instalação fica `ACTIVE`; em
  * `INSTALL_PENDING` a página oferece "tentar novamente", que reexecuta só o
  * instalador do app.
@@ -16,12 +20,9 @@ export const DEFAULT_THEME: Required<Omit<InstallTheme, 'termsUrl'>> & {
   backgroundColor: '#f5f7fb',
   textColor: '#1f2937',
   title: 'Instalação',
-  welcomeText:
-    'Preencha seus dados para concluir a instalação no seu Bitrix24.',
+  welcomeText: 'Clique em Instalar para concluir a instalação no seu Bitrix24.',
   termsUrl: null,
-  termsText: 'Li e aceito os termos de uso',
-  contactFields: ['name', 'phone', 'company'],
-  requiredContactFields: [],
+  termsText: 'termos de uso',
 }
 
 const escapeHtml = (value: string) =>
@@ -57,26 +58,11 @@ export function resolveTheme(app: RegisteredApp) {
     welcomeText: theme.welcomeText ?? DEFAULT_THEME.welcomeText,
     termsUrl: theme.termsUrl ?? DEFAULT_THEME.termsUrl,
     termsText: theme.termsText ?? DEFAULT_THEME.termsText,
-    contactFields: theme.contactFields ?? DEFAULT_THEME.contactFields,
-    requiredContactFields:
-      theme.requiredContactFields ?? DEFAULT_THEME.requiredContactFields,
   }
-}
-
-const FIELD_LABELS: Record<string, string> = {
-  name: 'Nome',
-  phone: 'Telefone',
-  company: 'Empresa',
 }
 
 export function renderInstallPage(app: RegisteredApp): string {
   const theme = resolveTheme(app)
-  const fields = theme.contactFields
-    .map(field => {
-      const required = theme.requiredContactFields.includes(field)
-      return `<label>${FIELD_LABELS[field]}${required ? ' *' : ''}<input name="${field}" ${required ? 'required' : ''} maxlength="200"></label>`
-    })
-    .join('\n')
   const terms = theme.termsUrl
     ? `<a href="${escapeHtml(theme.termsUrl)}" target="_blank" rel="noopener">${escapeHtml(theme.termsText)}</a>`
     : escapeHtml(theme.termsText)
@@ -99,9 +85,7 @@ export function renderInstallPage(app: RegisteredApp): string {
   .logo { max-height: 56px; display: block; margin: 0 auto 16px; }
   h1 { font-size: 1.4rem; margin: 0 0 8px; text-align: center; }
   p { line-height: 1.5; }
-  label { display: block; margin: 12px 0; font-size: .9rem; }
-  input:not([type=checkbox]) { display: block; width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem; }
-  .terms { display: flex; gap: 8px; align-items: flex-start; }
+  .terms { font-size: .85rem; text-align: center; color: #6b7280; }
   button { width: 100%; padding: 12px; border: 0; border-radius: 8px; background: var(--primary); color: #fff; font-size: 1rem; cursor: pointer; margin-top: 8px; }
   button[disabled] { opacity: .6; cursor: wait; }
   .state { display: none; text-align: center; }
@@ -115,13 +99,9 @@ export function renderInstallPage(app: RegisteredApp): string {
   <h1>${escapeHtml(theme.title)}</h1>
   <section id="form" class="state active">
     <p>${escapeHtml(theme.welcomeText)}</p>
-    <form id="install-form" novalidate>
-      <label>E-mail *<input name="email" type="email" required maxlength="200"></label>
-      ${fields}
-      <label class="terms"><input type="checkbox" name="acceptedTerms" required><span>${terms}</span></label>
-      <div class="error" id="form-error"></div>
-      <button type="submit" id="submit">Instalar</button>
-    </form>
+    <div class="error" id="form-error"></div>
+    <button type="button" id="submit" disabled>Instalar</button>
+    <p class="terms">Ao clicar em Instalar, você aceita os ${terms}.</p>
   </section>
   <section id="installing" class="state"><p>Instalando… isso pode levar alguns segundos.</p></section>
   <section id="pending" class="state">
@@ -133,8 +113,7 @@ export function renderInstallPage(app: RegisteredApp): string {
 </main>
 <script>
 (function () {
-  var CONFIG = ${safeJson({ appCode: app.appCode, requiredContactFields: theme.requiredContactFields })};
-  var auth = null;
+  var CONFIG = ${safeJson({ appCode: app.appCode })};
 
   function show(id) {
     document.querySelectorAll('.state').forEach(function (el) { el.classList.toggle('active', el.id === id); });
@@ -165,23 +144,13 @@ export function renderInstallPage(app: RegisteredApp): string {
   }
 
   BX24.init(function () {
-    auth = currentAuth();
-    document.getElementById('install-form').addEventListener('submit', function (event) {
-      event.preventDefault();
-      var form = event.target;
-      var error = document.getElementById('form-error');
-      if (!form.acceptedTerms.checked) { error.textContent = 'É preciso aceitar os termos de uso.'; return; }
-      if (!form.email.value || !form.email.checkValidity()) { error.textContent = 'Informe um e-mail válido.'; return; }
-      for (var i = 0; i < CONFIG.requiredContactFields.length; i++) {
-        var field = form[CONFIG.requiredContactFields[i]];
-        if (field && !field.value.trim()) { error.textContent = 'Preencha os campos obrigatórios.'; return; }
-      }
-      error.textContent = '';
-      document.getElementById('submit').disabled = true;
-      var contact = { email: form.email.value.trim() };
-      ['name', 'phone', 'company'].forEach(function (name) { if (form[name] && form[name].value.trim()) contact[name] = form[name].value.trim(); });
+    var submit = document.getElementById('submit');
+    submit.disabled = false;
+    submit.addEventListener('click', function () {
+      document.getElementById('form-error').textContent = '';
+      submit.disabled = true;
       show('installing');
-      post('/v1/install', { appCode: CONFIG.appCode, auth: currentAuth(), contact: contact, acceptedTerms: true })
+      post('/v1/install', { appCode: CONFIG.appCode, auth: currentAuth(), acceptedTerms: true })
         .then(function (result) { handle(result, 'form-error'); })
         .catch(function () { handle({ status: 0, data: {} }, 'form-error'); });
     });

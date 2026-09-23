@@ -62,7 +62,7 @@ Código extraído do `hub-core` e generalizado (sem tipos de apps):
 
 ### D3. Fluxo de instalação
 1. A URL de instalação do app Bitrix aponta para `/install/{appCode}` (frontend mínimo da plataforma). O handler de eventos de instalação do app aponta para `POST /bitrix/events/{appCode}`.
-2. O formulário coleta email, nome, telefone, empresa e aceite de termos e chama `POST /v1/install` com o `BX24.getAuth()`.
+2. A página tem só o botão "Instalar" (o Bitrix não aceita formulário na instalação); o clique vale como aceite dos termos e chama `POST /v1/install` com o `BX24.getAuth()`. O contato do admin (email, nome, telefone, empresa) é lido no servidor via `user.current`.
 3. O servidor chama `app.info` e `profile` no domínio informado com o access token, exige que `member_id` e o `client_id` do app batam e normaliza `expires` (TTL, epoch em segundos ou milissegundos).
 4. Upsert da instalação por (`appCode`, `memberId`) com status `INSTALLING`, tokens cifrados, domínio e contato; upsert do item no SPA 1060 com Ambiente; vínculo.
 5. `event.bind` de `ONAPPUNINSTALL` para `POST /bitrix/events/{appCode}`.

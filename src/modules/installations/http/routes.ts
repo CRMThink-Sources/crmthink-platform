@@ -34,21 +34,22 @@ export type InstallationRoutesDeps = {
 export function publicInstallRoutes(deps: InstallationRoutesDeps): Router {
   const router = Router()
 
-  router.get(
-    '/install/:appCode',
-    asyncHandler(async (req, res) => {
-      const app = await deps.registry.get(req.params.appCode ?? '')
-      res.setHeader('Cache-Control', 'no-store')
-      if (!app?.active) {
-        res
-          .status(404)
-          .type('html')
-          .send(renderErrorPage('Aplicativo não encontrado ou inativo.'))
-        return
-      }
-      res.type('html').send(renderInstallPage(app))
-    }),
-  )
+  // O Bitrix abre o app com POST (form com AUTH_ID etc.); a página lê a autenticação
+  // pelo BX24.getAuth(), então o corpo é ignorado e GET e POST renderizam o mesmo.
+  const installPage = asyncHandler(async (req, res) => {
+    const app = await deps.registry.get(req.params.appCode ?? '')
+    res.setHeader('Cache-Control', 'no-store')
+    if (!app?.active) {
+      res
+        .status(404)
+        .type('html')
+        .send(renderErrorPage('Aplicativo não encontrado ou inativo.'))
+      return
+    }
+    res.type('html').send(renderInstallPage(app))
+  })
+  router.get('/install/:appCode', installPage)
+  router.post('/install/:appCode', installPage)
 
   router.post(
     '/v1/install',

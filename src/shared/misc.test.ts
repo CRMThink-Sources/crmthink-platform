@@ -8,6 +8,7 @@ import {
   resolveBitrixTokenExpiresAt,
   normalizeBitrixDomain,
 } from '@/shared/bitrix/normalize'
+import { BitrixOAuthClient } from '@/shared/bitrix/bitrix-oauth.client'
 import { scrubSecrets } from '@/shared/observability/logger'
 import { parseSpaEvent } from '@/modules/billing/application/spa-events'
 import { nextBackoffMs } from '@/modules/events/event-delivery'
@@ -184,5 +185,34 @@ describe('Stripe', () => {
       planId: 501,
     })
     expect(parsePlanChange('lixo')).toBeNull()
+  })
+})
+
+describe('OAuth do Bitrix', () => {
+  const refreshWith = (body: object) =>
+    new BitrixOAuthClient(
+      async () => new Response(JSON.stringify(body), { status: 200 }),
+    ).refresh({ clientId: 'c', clientSecret: 's', refreshToken: 'r' })
+
+  it('domínio do portal vem de client_endpoint, não do domain do servidor OAuth', async () => {
+    const tokens = await refreshWith({
+      access_token: 'a',
+      refresh_token: 'r2',
+      expires_in: 3600,
+      member_id: 'm1',
+      domain: 'oauth.bitrix.info',
+      client_endpoint: 'https://Cliente.Bitrix24.com.br/rest/',
+    })
+    expect(tokens.domain).toBe('cliente.bitrix24.com.br')
+  })
+
+  it('sem client_endpoint, oauth.bitrix.info não conta como portal', async () => {
+    const tokens = await refreshWith({
+      access_token: 'a',
+      refresh_token: 'r2',
+      member_id: 'm1',
+      domain: 'oauth.bitrix.info',
+    })
+    expect(tokens.domain).toBeNull()
   })
 })

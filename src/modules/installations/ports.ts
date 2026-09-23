@@ -17,8 +17,9 @@ export type InstallationView = {
   contact: InstallationContact | null
 }
 
+/** Dados do admin que instalou, lidos do Bitrix (`user.current`), não digitados. */
 export type InstallationContact = {
-  email: string
+  email?: string
   name?: string
   phone?: string
   company?: string

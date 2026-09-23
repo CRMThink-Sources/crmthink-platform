@@ -1,10 +1,10 @@
 ## ADDED Requirements
 
 ### Requirement: Página de instalação por app
-O sistema MUST servir a página `/install/{appCode}`, usada como URL de instalação do app no Bitrix24, com identidade própria de cada app definida no cadastro (nome, logotipo, cores, título e texto de boas-vindas, link e texto dos termos de uso, campos de contato exibidos e obrigatórios). O fluxo e as validações MUST ser os mesmos para todos os apps; só a apresentação muda. A página MUST enviar `POST /v1/install` com `{appCode, auth: {accessToken, refreshToken, expiresIn, memberId, domain}, contact, acceptedTerms}` obtido de `BX24.getAuth()` e só chamar `BX24.installFinish()` quando a instalação ficar `ACTIVE`.
+O sistema MUST servir a página `/install/{appCode}`, usada como URL de instalação do app no Bitrix24, com identidade própria de cada app definida no cadastro (nome, logotipo, cores, título e texto de boas-vindas, link e texto dos termos de uso). O fluxo e as validações MUST ser os mesmos para todos os apps; só a apresentação muda. A página MUST ter apenas o botão "Instalar", sem formulário (o Bitrix não aceita coleta de dados na instalação), com o aviso de que clicar aceita os termos de uso. A página MUST aceitar GET e POST (o Bitrix abre o app por POST). O clique MUST enviar `POST /v1/install` com `{appCode, auth: {accessToken, refreshToken, expiresIn, memberId, domain}, acceptedTerms}` obtido de `BX24.getAuth()` e a página só MUST chamar `BX24.installFinish()` quando a instalação ficar `ACTIVE`. O contato do administrador (e-mail, nome, telefone, empresa) MUST ser lido no servidor via `user.current` com o token verificado, nunca aceito do navegador.
 
 #### Scenario: Instalação concluída
-- **WHEN** o administrador do portal preenche o formulário, aceita os termos e a instalação fica `ACTIVE`
+- **WHEN** o administrador do portal clica em "Instalar" e a instalação fica `ACTIVE`
 - **THEN** a página exibe a conclusão e chama `BX24.installFinish()`
 
 #### Scenario: Identidade do app
@@ -16,7 +16,7 @@ O sistema MUST servir a página `/install/{appCode}`, usada como URL de instala�
 - **THEN** a página usa o tema padrão da plataforma com nome e logotipo do app
 
 #### Scenario: Termos não aceitos
-- **WHEN** o formulário é enviado sem aceite de termos
+- **WHEN** `POST /v1/install` chega sem `acceptedTerms: true`
 - **THEN** o sistema recusa com erro de validação e nada é gravado
 
 #### Scenario: App desconhecido ou inativo

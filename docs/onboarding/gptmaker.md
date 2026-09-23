@@ -20,7 +20,7 @@ enum e a leitura nunca reconhece o valor.
 | 1142 | `UF_CRM_91_MODALITY` (se ainda não existe) | `ufCrm91Modality` | texto (`stripe`/`manual`) |
 | 1146 Itens | `UF_CRM_93_ENVIRONMENT` | `ufCrm93Environment` | lista `production`/`homolog` (ou texto) |
 | 1146 | `UF_CRM_93_BILLABLE` | `ufCrm93Billable` | sim/não |
-| 1146 | `UF_CRM_93_EXTERNAL_REF` | `ufCrm93ExternalRef` | texto |
+| 1146 | `UF_CRM_93_EXTERNAL_REFERENCE` | `ufCrm93ExternalReference` | texto |
 | 1146 | `UF_CRM_93_METADATA` | `ufCrm93Metadata` | texto (JSON) |
 | 1146 | `UF_CRM_93_VERSION` | `ufCrm93Version` | texto |
 
@@ -69,9 +69,7 @@ curl -X POST https://<host>/admin/apps \
       "title": "Instalar GPTMaker",
       "welcomeText": "Agentes de IA no seu Bitrix24.",
       "termsUrl": "https://…/termos",
-      "termsText": "Li e aceito os termos de uso do GPTMaker",
-      "contactFields": ["name", "phone", "company"],
-      "requiredContactFields": ["name"]
+      "termsText": "termos de uso do GPTMaker"
     },
     "bitrixClientId": "<client_id do app Bitrix>",
     "bitrixClientSecret": "<client_secret>",

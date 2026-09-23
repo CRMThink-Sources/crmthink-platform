@@ -13,11 +13,6 @@ export const installThemeSchema = z
     welcomeText: z.string().max(2000).optional(),
     termsUrl: z.string().url().optional(),
     termsText: z.string().max(500).optional(),
-    /** Campos de contato exibidos. `email` é sempre exibido e obrigatório. */
-    contactFields: z.array(z.enum(['name', 'phone', 'company'])).optional(),
-    requiredContactFields: z
-      .array(z.enum(['name', 'phone', 'company']))
-      .optional(),
   })
   .strict()
 

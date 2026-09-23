@@ -44,6 +44,25 @@ type OAuthResponse = {
   error_description?: string
 }
 
+const OAUTH_SERVER_DOMAIN = 'oauth.bitrix.info'
+
+/**
+ * Domínio do portal segundo o OAuth. No refresh, `domain` vem como o próprio servidor
+ * OAuth (`oauth.bitrix.info`); o portal está no host de `client_endpoint`
+ * (`https://empresa.bitrix24.com.br/rest/`).
+ */
+function portalDomain(data: OAuthResponse): string | null {
+  if (data.client_endpoint) {
+    try {
+      return normalizeBitrixDomain(new URL(data.client_endpoint).host)
+    } catch {
+      // endpoint malformado: cai no `domain`
+    }
+  }
+  const domain = data.domain ? normalizeBitrixDomain(data.domain) : null
+  return domain === OAUTH_SERVER_DOMAIN ? null : domain
+}
+
 export interface BitrixOAuth {
   refresh(params: {
     clientId: string
@@ -118,7 +137,7 @@ export class BitrixOAuthClient implements BitrixOAuth {
         data.expires_in ?? data.expires ?? 3600,
       ),
       memberId: data.member_id ?? '',
-      domain: data.domain ? normalizeBitrixDomain(data.domain) : null,
+      domain: portalDomain(data),
       clientEndpoint: data.client_endpoint ?? null,
       scope: (data.scope ?? '')
         .split(',')

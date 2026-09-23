@@ -191,7 +191,6 @@ export function installPayload(
       memberId,
       domain,
     },
-    contact: { email: 'admin@cliente.com', name: 'Admin' },
     acceptedTerms: true as const,
   }
 }
