@@ -154,7 +154,7 @@ export const DEFAULT_SPA_CONFIG: SpaConfig = {
     status: 'ufCrm93Status',
     gatewayId: 'ufCrm93GatewayId',
     billable: 'ufCrm93Billable',
-    externalRef: 'ufCrm93ExternalRef',
+    externalRef: 'ufCrm93ExternalReference',
     metadata: 'ufCrm93Metadata',
     environment: 'ufCrm93Environment',
     version: 'ufCrm93Version',
