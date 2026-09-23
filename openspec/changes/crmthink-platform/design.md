@@ -62,9 +62,9 @@ Código extraído do `hub-core` e generalizado (sem tipos de apps):
 
 ### D3. Fluxo de instalação
 1. A URL de instalação do app Bitrix aponta para `/install/{appCode}` (frontend mínimo da plataforma). O handler de eventos de instalação do app aponta para `POST /bitrix/events/{appCode}`.
-2. A página tem só o botão "Instalar" (o Bitrix não aceita formulário na instalação); o clique vale como aceite dos termos e chama `POST /v1/install` com o `BX24.getAuth()`. O contato do admin (email, nome, telefone, empresa) é lido no servidor via `user.current`.
+2. A página tem só o botão "Instalar" (o marketplace do Bitrix não aceita coleta de dados do cliente na instalação); o clique vale como aceite dos termos e chama `POST /v1/install` com o `BX24.getAuth()`. Nenhum dado do cliente é coletado.
 3. O servidor chama `app.info` e `profile` no domínio informado com o access token, exige que `member_id` e o `client_id` do app batam e normaliza `expires` (TTL, epoch em segundos ou milissegundos).
-4. Upsert da instalação por (`appCode`, `memberId`) com status `INSTALLING`, tokens cifrados, domínio e contato; upsert do item no SPA 1060 com Ambiente; vínculo.
+4. Upsert da instalação por (`appCode`, `memberId`) com status `INSTALLING`, tokens cifrados e domínio; upsert do item no SPA 1060 com Ambiente; vínculo.
 5. `event.bind` de `ONAPPUNINSTALL` para `POST /bitrix/events/{appCode}`.
 6. `POST <installer_url>` síncrono e assinado com `{installationId, memberId, domain, appCode, isReinstall}`, timeout de 60s. O app usa a API de tokens para seus binds. 2xx ⇒ `ACTIVE`; erro ou timeout ⇒ `INSTALL_PENDING`, com botão "tentar novamente" que reexecuta só o instalador.
 7. Em `ACTIVE`: se `trial_on_install` e o trial nunca foi usado, o `billing` cria o trial; a plataforma emite `installation.created` ou `installation.reinstalled`; a página chama `BX24.installFinish()`.

@@ -4,9 +4,8 @@ import type { InstallTheme, RegisteredApp } from '@/modules/registry/domain/app'
  * Página `/install/{appCode}` (D12): fluxo e validações únicos, só a apresentação
  * muda por app. Sem tema cadastrado, usa o tema padrão com nome e logotipo do app.
  *
- * Só um botão "Instalar": o Bitrix não aceita formulário pedindo dados na instalação.
- * O contato do admin é lido no servidor (`user.current`) e o clique vale como aceite
- * dos termos exibidos logo abaixo.
+ * Só um botão "Instalar": o marketplace do Bitrix não aceita coleta de dados do
+ * cliente na instalação. O clique vale como aceite dos termos exibidos logo abaixo.
  *
  * `BX24.installFinish()` só é chamado quando a instalação fica `ACTIVE`; em
  * `INSTALL_PENDING` a página oferece "tentar novamente", que reexecuta só o

@@ -1,7 +1,6 @@
 import type { SpaConfig } from '@/config/spa-config'
 import type { BitrixRestClient } from '@/shared/bitrix/bitrix-rest.client'
 import type { SpaEnvironment } from '@/shared/spa/environment'
-import type { InstallationContact } from '../ports'
 
 /**
  * Espelho da instalação no SPA 1060 (Instalações) do portal CRMThink.
@@ -22,19 +21,6 @@ export class InstallationSpa {
 
   private get entityTypeId(): number {
     return this.config.entityTypes.installation
-  }
-
-  private contactFields(contact: InstallationContact): Record<string, string> {
-    const f = this.config.installation
-    const entries: Array<[string, string | undefined]> = [
-      [f.email, contact.email],
-      [f.name, contact.name],
-      [f.phone, contact.phone],
-      [f.company, contact.company],
-    ]
-    return Object.fromEntries(
-      entries.filter((entry): entry is [string, string] => Boolean(entry[1])),
-    )
   }
 
   /** Item existente deste app e portal, no ambiente desta instância. */
@@ -58,7 +44,6 @@ export class InstallationSpa {
     appName: string
     domain: string
     memberId: string
-    contact: InstallationContact
   }): Promise<number> {
     const f = this.config.installation
     const item = await this.crm.addItem(this.entityTypeId, {
@@ -67,19 +52,13 @@ export class InstallationSpa {
       [f.domain]: input.domain,
       [f.memberId]: input.memberId,
       [f.environment]: this.environment.writeValue,
-      ...this.contactFields(input.contact),
     })
     return Number(item.id)
   }
 
-  async update(
-    itemId: number,
-    input: { domain: string; contact: InstallationContact },
-  ): Promise<void> {
-    const f = this.config.installation
+  async update(itemId: number, input: { domain: string }): Promise<void> {
     await this.crm.updateItem(this.entityTypeId, itemId, {
-      [f.domain]: input.domain,
-      ...this.contactFields(input.contact),
+      [this.config.installation.domain]: input.domain,
     })
   }
 

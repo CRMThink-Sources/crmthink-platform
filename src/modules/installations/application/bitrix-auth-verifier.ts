@@ -11,7 +11,6 @@ import {
 import { normalizeBitrixDomain } from '@/shared/bitrix/normalize'
 import { forbidden, HttpError } from '@/shared/http/errors'
 import type { RegisteredApp } from '@/modules/registry/domain/app'
-import type { InstallationContact } from '../ports'
 
 /** Cliente REST autenticado com um access token num domínio. */
 export type BitrixClientFactory = (
@@ -25,34 +24,7 @@ type CurrentUser = {
   ID?: string | number
   NAME?: string
   LAST_NAME?: string
-  EMAIL?: string
-  PERSONAL_MOBILE?: string
-  WORK_PHONE?: string
-  PERSONAL_PHONE?: string
-  WORK_COMPANY?: string
   UF_DEPARTMENT?: Array<string | number> | string | number | null
-}
-
-const text = (value: string | undefined, max: number) => {
-  const trimmed = value?.trim()
-  return trimmed ? trimmed.slice(0, max) : undefined
-}
-
-/** Contato do admin segundo o Bitrix; campos vazios ficam de fora. */
-function contactOf(user: CurrentUser | undefined): InstallationContact {
-  const name = [user?.NAME, user?.LAST_NAME].filter(Boolean).join(' ')
-  const contact: InstallationContact = {
-    email: text(user?.EMAIL, 200),
-    name: text(name, 200),
-    phone: text(
-      user?.PERSONAL_MOBILE || user?.WORK_PHONE || user?.PERSONAL_PHONE,
-      50,
-    ),
-    company: text(user?.WORK_COMPANY, 200),
-  }
-  return Object.fromEntries(
-    Object.entries(contact).filter(([, value]) => value),
-  )
 }
 
 export const bitrixUnavailable = (detail: string) =>
@@ -80,7 +52,6 @@ export type VerifiedInstall = {
   memberId: string
   domain: string
   tokens: OAuthTokens
-  contact: InstallationContact
 }
 
 export type VerifiedUser = {
@@ -94,7 +65,7 @@ export type VerifiedUser = {
  * Nada que venha do navegador é aceito como identidade: tudo é conferido no Bitrix.
  *
  * - `app.info` com o token ⇒ o token é do app Bitrix cadastrado (`CODE`/`CLIENT_ID`).
- * - `profile` ⇒ quem instala é admin do portal; `user.current` ⇒ o contato dele.
+ * - `profile` ⇒ quem instala é admin do portal.
  * - troca do refresh token no `oauth.bitrix.info` com o `client_secret` do app ⇒ prova
  *   definitiva de que o token é deste `client_id` (só nós temos o segredo) e devolve o
  *   `member_id` e o domínio **segundo o Bitrix** — `app.info`/`profile` não trazem
@@ -147,12 +118,8 @@ export class BitrixAuthVerifier {
     )
 
     let profile: Profile
-    let user: CurrentUser
     try {
-      ;[profile, user] = await Promise.all([
-        client.call<Profile>('profile'),
-        client.call<CurrentUser>('user.current'),
-      ])
+      profile = await client.call<Profile>('profile')
     } catch (error) {
       translate(error)
     }
@@ -193,12 +160,7 @@ export class BitrixAuthVerifier {
       )
     }
 
-    return {
-      memberId: tokens.memberId,
-      domain,
-      tokens,
-      contact: contactOf(user),
-    }
+    return { memberId: tokens.memberId, domain, tokens }
   }
 
   /** Usuário e admin do Bitrix, para a sessão do iframe (`user.current` + `user.admin`). */

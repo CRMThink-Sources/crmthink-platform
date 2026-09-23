@@ -17,7 +17,10 @@ export type InstallationView = {
   contact: InstallationContact | null
 }
 
-/** Dados do admin que instalou, lidos do Bitrix (`user.current`), não digitados. */
+/**
+ * Contato do cliente. A instalação não coleta dados (regra do marketplace do Bitrix):
+ * só existe em instalações migradas do hub-core.
+ */
 export type InstallationContact = {
   email?: string
   name?: string

@@ -20,7 +20,7 @@ import type {
 import type { InstallationSpa } from '../infra/installation-spa'
 import type { InstallerClient } from '../infra/installer-client'
 import type { PendingApplicationTokens } from '../infra/pending-application-tokens'
-import type { InstallationContact, TrialStarter } from '../ports'
+import type { TrialStarter } from '../ports'
 
 /**
  * Orquestrador da instalação (D3). Generalizado de `install-app.ts` do hub-core:
@@ -117,7 +117,7 @@ export class InstallService {
         throw error
       }
 
-      const { memberId, domain, tokens, contact } = verified
+      const { memberId, domain, tokens } = verified
       this.checkScopes(app, tokens.scope)
 
       const existing = await db.installation.findUnique({
@@ -127,7 +127,6 @@ export class InstallService {
       const spaItemId = await this.resolveSpaItem(app, existing, {
         domain,
         memberId,
-        contact,
       })
 
       const previousStatus = existing?.status ?? null
@@ -141,7 +140,6 @@ export class InstallService {
           domain,
           status: 'INSTALLING' as const,
           spaItemId,
-          contact,
           uninstalledAt: null,
           pendingReinstall: existing?.everActivated ?? false,
         }
@@ -224,7 +222,7 @@ export class InstallService {
   private async resolveSpaItem(
     app: RegisteredApp,
     existing: Installation | null,
-    input: { domain: string; memberId: string; contact: InstallationContact },
+    input: { domain: string; memberId: string },
   ): Promise<number> {
     const { spa } = this.deps
     try {
@@ -242,7 +240,6 @@ export class InstallService {
         appName: app.name,
         domain: input.domain,
         memberId: input.memberId,
-        contact: input.contact,
       })
     } catch (error) {
       logger().error({ err: error }, 'install step failed: spa-1060')

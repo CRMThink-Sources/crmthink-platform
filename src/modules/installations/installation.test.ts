@@ -95,16 +95,12 @@ describe('instalação', () => {
       status: 'ACTIVE',
       memberId: MEMBER_ID,
       domain: DOMAIN,
-      // Contato do admin lido no Bitrix (`user.current`), sem formulário.
-      contact: {
-        email: 'ana@cliente.com',
-        name: 'Ana Silva',
-        phone: '+55 11 99999-0000',
-        company: 'Cliente Ltda',
-      },
     })
+    // Nenhum dado do cliente é coletado na instalação (regra do marketplace).
+    expect(installation.contact ?? null).toBeNull()
+    expect(h.portal.calls.some(c => c.method === 'user.current')).toBe(false)
 
-    // Item do SPA 1060 com app, portal, contato e Ambiente, sem STATUS/TRIAL_*.
+    // Item do SPA 1060 com app, portal e Ambiente, sem contato nem STATUS/TRIAL_*.
     const spa = await h.crm.getItem(1060, installationId)
     const f = h.config.installation
     expect(spa).toMatchObject({
@@ -112,9 +108,9 @@ describe('instalação', () => {
       [f.memberId]: MEMBER_ID,
       [f.domain]: DOMAIN,
       [f.environment]: 'homolog',
-      [f.email]: 'ana@cliente.com',
-      [f.name]: 'Ana Silva',
     })
+    for (const field of [f.email, f.name, f.phone, f.company])
+      expect(spa![field]).toBeUndefined()
     expect(Object.keys(spa!).some(key => key === 'ufCrm55_1776720499466')).toBe(
       false,
     )

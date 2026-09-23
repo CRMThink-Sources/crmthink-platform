@@ -165,15 +165,7 @@ export class FakeBitrixPortal {
   admins = new Set<string>()
   userByToken = new Map<
     string,
-    {
-      ID: string
-      NAME: string
-      LAST_NAME: string
-      EMAIL?: string
-      WORK_PHONE?: string
-      WORK_COMPANY?: string
-      UF_DEPARTMENT: number[]
-    }
+    { ID: string; NAME: string; LAST_NAME: string; UF_DEPARTMENT: number[] }
   >()
   calls: Array<{ domain: string; method: string; params: BitrixParams }> = []
   unavailable = false
@@ -202,9 +194,6 @@ export class FakeBitrixPortal {
             ID: '7',
             NAME: 'Ana',
             LAST_NAME: 'Silva',
-            EMAIL: 'ana@cliente.com',
-            WORK_PHONE: '+55 11 99999-0000',
-            WORK_COMPANY: 'Cliente Ltda',
             UF_DEPARTMENT: [1],
           }) as T
         case 'user.admin':

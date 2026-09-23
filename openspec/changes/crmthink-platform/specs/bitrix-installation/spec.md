@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Página de instalação por app
-O sistema MUST servir a página `/install/{appCode}`, usada como URL de instalação do app no Bitrix24, com identidade própria de cada app definida no cadastro (nome, logotipo, cores, título e texto de boas-vindas, link e texto dos termos de uso). O fluxo e as validações MUST ser os mesmos para todos os apps; só a apresentação muda. A página MUST ter apenas o botão "Instalar", sem formulário (o Bitrix não aceita coleta de dados na instalação), com o aviso de que clicar aceita os termos de uso. A página MUST aceitar GET e POST (o Bitrix abre o app por POST). O clique MUST enviar `POST /v1/install` com `{appCode, auth: {accessToken, refreshToken, expiresIn, memberId, domain}, acceptedTerms}` obtido de `BX24.getAuth()` e a página só MUST chamar `BX24.installFinish()` quando a instalação ficar `ACTIVE`. O contato do administrador (e-mail, nome, telefone, empresa) MUST ser lido no servidor via `user.current` com o token verificado, nunca aceito do navegador.
+O sistema MUST servir a página `/install/{appCode}`, usada como URL de instalação do app no Bitrix24, com identidade própria de cada app definida no cadastro (nome, logotipo, cores, título e texto de boas-vindas, link e texto dos termos de uso). O fluxo e as validações MUST ser os mesmos para todos os apps; só a apresentação muda. A página MUST ter apenas o botão "Instalar", sem formulário (o marketplace do Bitrix não aceita coleta de dados do cliente na instalação), com o aviso de que clicar aceita os termos de uso. A página MUST aceitar GET e POST (o Bitrix abre o app por POST). O clique MUST enviar `POST /v1/install` com `{appCode, auth: {accessToken, refreshToken, expiresIn, memberId, domain}, acceptedTerms}` obtido de `BX24.getAuth()` e a página só MUST chamar `BX24.installFinish()` quando a instalação ficar `ACTIVE`. A instalação MUST NOT coletar dados do cliente (e-mail, nome, telefone, empresa), nem pelo navegador nem pela API do Bitrix.
 
 #### Scenario: Instalação concluída
 - **WHEN** o administrador do portal clica em "Instalar" e a instalação fica `ACTIVE`
@@ -39,7 +39,7 @@ O sistema MUST NOT confiar em dados de identidade enviados pelo navegador. Antes
 - **THEN** o sistema responde erro recuperável e a página oferece nova tentativa
 
 ### Requirement: Registro da instalação e espelho no SPA 1060
-O sistema MUST fazer upsert da instalação por (`appCode`, `memberId`) com status `INSTALLING`, tokens cifrados, domínio e contato, fazer upsert do item no SPA 1060 (Instalações) com `APP_CODE`, `DOMAIN`, `MEMBER_ID`, contato e Ambiente, e usar o id desse item como `installationId`. O mesmo portal em apps diferentes MUST gerar instalações distintas.
+O sistema MUST fazer upsert da instalação por (`appCode`, `memberId`) com status `INSTALLING`, tokens cifrados e domínio, fazer upsert do item no SPA 1060 (Instalações) com `APP_CODE`, `DOMAIN`, `MEMBER_ID`, contato e Ambiente, e usar o id desse item como `installationId`. O mesmo portal em apps diferentes MUST gerar instalações distintas.
 
 #### Scenario: Primeira instalação
 - **WHEN** um portal instala pela primeira vez um app cadastrado
