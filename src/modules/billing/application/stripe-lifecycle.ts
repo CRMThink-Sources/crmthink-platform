@@ -116,10 +116,23 @@ export class StripeLifecycle {
     return this.context.withInstallationLock(
       installation.installationId,
       async () => {
+        // Relê sob o lock: um cancelamento que aconteceu depois da leitura acima (ex.:
+        // `subscription.deleted` processado em paralelo) não pode virar item `active`.
+        const current = await this.gateway.readSubscription(
+          gatewaySubscriptionId,
+          { fresh: true },
+        )
+        if (current.status !== 'active') {
+          logger().info(
+            { gatewaySubscriptionId, status: current.rawStatus },
+            'assinatura deixou de estar ativa antes da ativação — nada criado',
+          )
+          return null
+        }
         const planId = await this.planIdFor(
           app,
-          state,
-          (metadata ?? state.metadata)?.planId,
+          current,
+          (metadata ?? current.metadata)?.planId,
         )
         const existing = await this.context.subscriptions.findByGatewayId(
           gatewaySubscriptionId,
@@ -134,10 +147,10 @@ export class StripeLifecycle {
           planId,
           status: 'active' as const,
           modality: 'stripe' as const,
-          periodStart: state.periodStart,
-          periodEnd: state.periodEnd,
+          periodStart: current.periodStart,
+          periodEnd: current.periodEnd,
           gatewaySubscriptionId,
-          cancelAtPeriodEnd: state.cancelAtPeriodEnd,
+          cancelAtPeriodEnd: current.cancelAtPeriodEnd,
         }
 
         let subscription: Subscription
@@ -266,7 +279,18 @@ export class StripeLifecycle {
             'assinatura Stripe sem item no SPA — item criado',
           )
         }
+        return
       }
+      // Sem item ainda, mas uma ativação concorrente pode estar criando-o: espera o
+      // lock da instalação e procura de novo; se o item surgiu, aplica este estado
+      // (ex.: cancelamento ⇒ `subscription.ended`).
+      const target = await this.resolve(state.metadata)
+      if (!target) return
+      const created = await this.context.withInstallationLock(
+        target.installation.installationId,
+        () => this.context.subscriptions.findByGatewayId(state.id),
+      )
+      if (created) await this.syncExisting(created, state, source, {})
       return
     }
     await this.syncExisting(existing, state, source, {})

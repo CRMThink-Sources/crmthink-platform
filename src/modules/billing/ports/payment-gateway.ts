@@ -147,8 +147,10 @@ export interface PaymentGateway {
     returnUrl: string,
   ): Promise<{ url: string }>
 
+  /** `fresh`: ignora o cache de leitura (decisão sob lock que não pode usar estado velho). */
   readSubscription(
     gatewaySubscriptionId: string,
+    options?: { fresh?: boolean },
   ): Promise<GatewaySubscriptionState>
 
   /** Todas as assinaturas (para a varredura), paginadas pelo adapter. */

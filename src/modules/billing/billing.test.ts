@@ -336,6 +336,86 @@ describe('checkout e ciclo de vida Stripe', () => {
     ).toBe('13623')
   })
 
+  const firstInvoicePaid = (gatewaySubscriptionId: string) => ({
+    type: 'invoice.paid' as const,
+    invoiceId: `in_${gatewaySubscriptionId}`,
+    gatewaySubscriptionId,
+    billingReason: 'subscription_create',
+    periodStart: null,
+    periodEnd: null,
+    amountPaid: 9900,
+    metadata: {
+      appCode: GPTMAKER,
+      installationId,
+      planId: 501,
+      intent: 'subscribe' as const,
+    },
+  })
+
+  /**
+   * Roda `onAcquire` na primeira vez que o lock de cobrança da instalação é obtido, e
+   * só então devolve o lock ao dono. `contended` resolve quando outra operação tenta o
+   * mesmo lock e fica esperando.
+   */
+  function onBillingLock(
+    onAcquire: (contended: Promise<void>) => void | Promise<unknown>,
+  ) {
+    const set = h.locks.set.bind(h.locks)
+    let fired = false
+    let signalContended = () => {}
+    const contended = new Promise<void>(resolve => {
+      signalContended = resolve
+    })
+    h.locks.set = async (key: string, value: string) => {
+      const result = await set(key, value)
+      if (!key.includes('billing:installation:')) return result
+      if (result === null) signalContended()
+      if (result === 'OK' && !fired) {
+        fired = true
+        await onAcquire(contended)
+      }
+      return result
+    }
+  }
+
+  it('cancelada no Stripe entre a leitura e o lock: ativação não cria item active', async () => {
+    const state = stripeSubscription(h, { id: 'sub_race', installationId })
+    onBillingLock(() => {
+      state.status = 'cancelled'
+      state.rawStatus = 'canceled'
+    })
+    await stripeEvent(h, firstInvoicePaid('sub_race'))
+    expect(
+      spaSubscriptions(h).some(x => x[s(h).gatewayId] === 'sub_race'),
+    ).toBe(false)
+    expect(outbox(h).some(e => e.type === 'subscription.activated')).toBe(false)
+  })
+
+  it('subscription.deleted durante a ativação: espera o lock e encerra o item criado', async () => {
+    const state = stripeSubscription(h, { id: 'sub_race', installationId })
+    const pending: Array<Promise<unknown>> = []
+    // A ativação segura o lock até o `deleted` terminar ou ficar esperando o lock.
+    onBillingLock(contended => {
+      const deleted = stripeEvent(h, {
+        type: 'subscription.deleted',
+        subscription: { ...state, status: 'cancelled', rawStatus: 'canceled' },
+      })
+      pending.push(deleted)
+      return Promise.race([deleted, contended])
+    })
+    await stripeEvent(h, firstInvoicePaid('sub_race'))
+    await Promise.all(pending)
+    expect(pending).toHaveLength(1)
+
+    const item = spaSubscriptions(h).find(
+      x => x[s(h).gatewayId] === 'sub_race',
+    )!
+    expect(item[s(h).status]).toBe('13623')
+    expect(outbox(h).filter(e => e.type === 'subscription.ended')).toHaveLength(
+      1,
+    )
+  })
+
   it('Customer Portal: URL para Stripe; NO_GATEWAY_SUBSCRIPTION sem assinatura Stripe', async () => {
     const none = await http(h)
       .post('/v1/billing-portal-sessions')

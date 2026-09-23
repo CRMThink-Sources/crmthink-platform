@@ -68,8 +68,13 @@ export class CacheInvalidatingPaymentGateway implements PaymentGateway {
     return this.inner.createBillingPortalSession(id, returnUrl)
   }
 
-  async readSubscription(id: string): Promise<GatewaySubscriptionState> {
-    const cached = await this.cache.get<Serialized>(key(id))
+  async readSubscription(
+    id: string,
+    options?: { fresh?: boolean },
+  ): Promise<GatewaySubscriptionState> {
+    const cached = options?.fresh
+      ? null
+      : await this.cache.get<Serialized>(key(id))
     if (cached) {
       return {
         ...cached,
