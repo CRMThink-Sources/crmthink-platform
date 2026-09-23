@@ -102,8 +102,8 @@ export const DEFAULT_SPA_CONFIG: SpaConfig = {
   product: {
     billingModel: 'ufCrm87BillingModel',
     active: 'ufCrm87Active',
-    // 13605 Padrão, 13607 Por unidade → assinatura. "Compra única" é criado no onboarding.
-    oneTimeBillingModelIds: [],
+    // 13605 Padrão, 13607 Por unidade → assinatura; 14455 Compra única → pacote.
+    oneTimeBillingModelIds: ['14455'],
   },
   plan: {
     product: 'ufCrm89Product',

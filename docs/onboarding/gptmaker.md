@@ -37,8 +37,9 @@ Conferência: `GET /health/ready` → `checks.spaConfig.ok = true`.
 ## 17.2 Produtos e planos
 
 - SPA 1134: produto **GPTMaker** (modelo de cobrança "Padrão") e **Créditos GPTMaker**
-  (modelo novo **"Compra única"** em `ufCrm87BillingModel`). O ID de enum de "Compra única"
-  vai em `SPA_CONFIG_FILE` → `{"product": {"oneTimeBillingModelIds": ["<id>"]}}`.
+  (modelo novo **"Compra única"** em `ufCrm87BillingModel`). No portal CRMThink o ID de enum de
+  "Compra única" é `14455`, já no padrão de `src/config/spa-config.ts`; outro portal usa
+  `SPA_CONFIG_FILE` → `{"product": {"oneTimeBillingModelIds": ["<id>"]}}`.
 - SPA 1138: plano de trial (sem price, R$ 0, intervalo mensal) e planos pagos do GPTMaker
   com intervalo; um plano por pacote de créditos no produto "Créditos GPTMaker", sem
   intervalo.
