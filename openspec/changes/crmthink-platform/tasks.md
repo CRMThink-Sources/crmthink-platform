@@ -106,7 +106,7 @@
 
 - [x] 15.1 Testes unitários de mappers, máquina de estados, cifragem, JWT e assinatura HMAC
 - [x] 15.2 Testes de instalação com Bitrix simulado: verificação de token, `member_id`/`client_id` divergentes, instalador com falha e nova tentativa, desinstalação forjada
-- [ ] 15.3 Testes de integração com Stripe CLI (`stripe trigger`) cobrindo todos os eventos tratados
+- [x] 15.3 Testes de integração com Stripe CLI (`stripe trigger`) cobrindo todos os eventos tratados
 - [x] 15.4 Testes de idempotência, ordenação e reenvio
 
 ## 16. Deploy
