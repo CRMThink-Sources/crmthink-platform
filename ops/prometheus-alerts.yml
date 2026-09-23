@@ -1,0 +1,75 @@
+# Regras de alerta (task 16.4). Scrape: api `:4100/metrics` e worker `:9464/metrics`.
+groups:
+  - name: crmthink-platform
+    rules:
+      - alert: PlatformDown
+        expr: up{job=~"crmthink-platform-(api|worker)"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: 'crmthink-platform {{ $labels.job }} fora do ar'
+          description: 'Apps dependem da plataforma para tokens e login. Token do Bitrix vale ~1h: restaurar antes disso.'
+
+      - alert: TokenApiSlow
+        expr: histogram_quantile(0.95, sum(rate(platform_token_api_duration_seconds_bucket[5m])) by (le)) > 1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: 'API de tokens com p95 > 1s'
+
+      - alert: TokenRefreshFailures
+        expr: sum(increase(platform_token_refresh_failures_total[15m])) by (appCode) > 5
+        labels: { severity: warning }
+        annotations:
+          summary: 'Falhas de renovação de token ({{ $labels.appCode }})'
+
+      - alert: InstallationsAuthError
+        expr: increase(platform_operational_alerts_total{kind="token.auth_error"}[1h]) > 0
+        labels: { severity: warning }
+        annotations:
+          summary: 'Instalação entrou em AUTH_ERROR (precisa reinstalar)'
+
+      - alert: InstallationsPending
+        expr: platform_installations_pending > 0
+        for: 30m
+        labels: { severity: warning }
+        annotations:
+          summary: '{{ $value }} instalação(ões) em INSTALL_PENDING há 30 min (instalador do app falhando)'
+
+      - alert: EventsDeadLetter
+        expr: platform_events_dead > 0
+        labels: { severity: critical }
+        annotations:
+          summary: '{{ $value }} evento(s) em dead-letter — reenviar por POST /admin/events/resend'
+
+      - alert: EventsBacklog
+        expr: platform_events_pending > 200
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: 'Fila de eventos para apps acumulando ({{ $value }})'
+
+      - alert: StripeWebhookFailures
+        expr: sum(increase(platform_stripe_webhook_failures_total[15m])) by (reason) > 3
+        labels: { severity: critical }
+        annotations:
+          summary: 'Webhook Stripe falhando ({{ $labels.reason }})'
+          description: 'reason=signature: segredo do endpoint errado; reason=dead_letter: processamento esgotou tentativas.'
+
+      - alert: SweepFailed
+        expr: increase(platform_sweep_failures_total[2h]) > 0
+        labels: { severity: warning }
+        annotations:
+          summary: 'Varredura {{ $labels.kind }} falhou'
+
+      - alert: SweepDivergences
+        expr: sum(increase(platform_sweep_divergences_total[6h])) by (kind) > 10
+        labels: { severity: warning }
+        annotations:
+          summary: 'Varredura {{ $labels.kind }} corrigindo muitas divergências — webhooks/eventos sendo perdidos?'
+
+      - alert: ChargeDisputed
+        expr: increase(platform_operational_alerts_total{kind="charge.disputed"}[1h]) > 0
+        labels: { severity: warning }
+        annotations:
+          summary: 'Cobrança contestada no cartão'
