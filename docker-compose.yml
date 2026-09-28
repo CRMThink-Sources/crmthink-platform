@@ -1,0 +1,58 @@
+# Desenvolvimento local: MySQL e Redis. A api e o worker rodam no host (`yarn dev:api`,
+# `yarn dev:worker`) ou pelo perfil `app` (`docker compose --profile app up`).
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: crmthink-platform-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: crmthink_platform
+      MYSQL_USER: platform
+      MYSQL_PASSWORD: platform
+    ports:
+      - '3307:3306'
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-uroot', '-proot']
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: crmthink-platform-redis
+    ports:
+      - '6380:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 20
+
+  api:
+    profiles: ['app']
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: mysql://platform:platform@mysql:3306/crmthink_platform
+      REDIS_URL: redis://redis:6379
+    ports:
+      - '4100:4100'
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  worker:
+    profiles: ['app']
+    build: .
+    command: ['node', 'dist/src/worker.js']
+    env_file: .env
+    environment:
+      DATABASE_URL: mysql://platform:platform@mysql:3306/crmthink_platform
+      REDIS_URL: redis://redis:6379
+      PORT: '9464'
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+volumes:
+  mysql-data:

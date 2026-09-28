@@ -1,0 +1,29 @@
+# Deploy (staging/produção) na VPS. Imagem, portas e projeto vêm de variáveis dos
+# GitHub Environments; o `.env` é escrito pelo pipeline a partir do secret `ENV_PLATFORM`.
+#
+# O nome dos containers começa com `crmthink-platform-` para o Promtail coletar.
+services:
+  api:
+    image: ${PLATFORM_IMAGE:?PLATFORM_IMAGE}
+    container_name: ${COMPOSE_PROJECT_NAME:-crmthink-platform}-api
+    restart: unless-stopped
+    env_file: ./.env
+    environment:
+      PORT: '4100'
+    ports:
+      - '${API_PORT:-4100}:4100'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  worker:
+    image: ${PLATFORM_IMAGE:?PLATFORM_IMAGE}
+    container_name: ${COMPOSE_PROJECT_NAME:-crmthink-platform}-worker
+    restart: unless-stopped
+    command: ['node', 'dist/src/worker.js']
+    env_file: ./.env
+    environment:
+      PORT: '9464'
+    ports:
+      - '${WORKER_METRICS_PORT:-9464}:9464'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

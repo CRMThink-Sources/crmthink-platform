@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ─────────────── Registro de aplicações ───────────────
+
+model App {
+  appCode                    String    @id @map("app_code") @db.VarChar(100)
+  name                       String    @db.VarChar(200)
+  logoUrl                    String?   @map("logo_url") @db.VarChar(500)
+  /// Tema da página de instalação (cores, textos, termos, campos de contato). `null` = tema padrão.
+  installTheme               Json?     @map("install_theme")
+  bitrixClientId             String    @unique @map("bitrix_client_id") @db.VarChar(200)
+  bitrixClientSecretEnc      String    @map("bitrix_client_secret_enc") @db.Text
+  /// Escopos esperados do app Bitrix (ex.: ["crm","imbot","imopenlines"]).
+  scopes                     Json
+  installerUrl               String?   @map("installer_url") @db.VarChar(500)
+  webhookUrl                 String?   @map("webhook_url") @db.VarChar(500)
+  webhookSecretEnc           String    @map("webhook_secret_enc") @db.Text
+  /// Segredo anterior, ainda assinado em paralelo até `previousWebhookSecretUntil`.
+  previousWebhookSecretEnc   String?   @map("previous_webhook_secret_enc") @db.Text
+  previousWebhookSecretUntil DateTime? @map("previous_webhook_secret_until")
+  apiKeyHash                 String    @unique @map("api_key_hash") @db.VarChar(128)
+  previousApiKeyHash         String?   @unique @map("previous_api_key_hash") @db.VarChar(128)
+  previousApiKeyUntil        DateTime? @map("previous_api_key_until")
+  trialDays                  Int       @default(0) @map("trial_days")
+  trialOnInstall             Boolean   @default(false) @map("trial_on_install")
+  /// Plano (SPA 1138) referenciado pela assinatura de trial.
+  trialPlanId                Int?      @map("trial_plan_id")
+  active                     Boolean   @default(true)
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
+
+  products      AppProduct[]
+  installations Installation[]
+
+  @@map("app")
+}
+
+model AppProduct {
+  appCode      String @map("app_code") @db.VarChar(100)
+  productSpaId Int    @map("product_spa_id")
+
+  app App @relation(fields: [appCode], references: [appCode], onDelete: Cascade)
+
+  @@id([appCode, productSpaId])
+  @@index([productSpaId])
+  @@map("app_product")
+}
+
+// ─────────────── Instalações ───────────────
+
+enum InstallationStatus {
+  INSTALLING
+  INSTALL_PENDING
+  ACTIVE
+  UNINSTALLED
+  AUTH_ERROR
+}
+
+model Installation {
+  /// `installationId`: id do primeiro item do SPA 1060 criado para a instalação. Estável entre reinstalações.
+  id             Int                @id
+  appCode        String             @map("app_code") @db.VarChar(100)
+  memberId       String             @map("member_id") @db.VarChar(100)
+  domain         String             @db.VarChar(255)
+  status         InstallationStatus
+  /// Item atual do SPA 1060. `null` quando o item foi removido à mão (desvinculado).
+  spaItemId      Int?               @unique @map("spa_item_id")
+  contact        Json?
+  trialUsed      Boolean            @default(false) @map("trial_used")
+  installedAt    DateTime           @default(now()) @map("installed_at")
+  activatedAt    DateTime?          @map("activated_at")
+  uninstalledAt  DateTime?          @map("uninstalled_at")
+  /// Se já emitimos `installation.created` (o próximo ACTIVE vira `installation.reinstalled`).
+  everActivated  Boolean            @default(false) @map("ever_activated")
+  pendingReinstall Boolean          @default(false) @map("pending_reinstall")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  app              App               @relation(fields: [appCode], references: [appCode])
+  credential       Credential?
+  applicationToken ApplicationToken?
+  attempts         InstallAttempt[]
+
+  @@unique([appCode, memberId])
+  @@index([status])
+  @@map("installation")
+}
+
+model Credential {
+  installationId   Int      @id @map("installation_id")
+  accessTokenEnc   String   @map("access_token_enc") @db.Text
+  refreshTokenEnc  String   @map("refresh_token_enc") @db.Text
+  expiresAt        DateTime @map("expires_at")
+  clientEndpoint   String?  @map("client_endpoint") @db.VarChar(255)
+  refreshFailures  Int      @default(0) @map("refresh_failures")
+  lastRefreshError String?  @map("last_refresh_error") @db.Text
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  installation Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("credential")
+}
+
+model ApplicationToken {
+  installationId Int      @id @map("installation_id")
+  tokenEnc       String   @map("token_enc") @db.Text
+  receivedAt     DateTime @default(now()) @map("received_at")
+
+  installation Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+
+  @@map("application_token")
+}
+
+model InstallAttempt {
+  id             Int      @id @default(autoincrement())
+  installationId Int      @map("installation_id")
+  step           String   @db.VarChar(50)
+  status         String   @db.VarChar(20)
+  error          String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  installation Installation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+
+  @@index([installationId, createdAt])
+  @@map("install_attempt")
+}
+
+model SigningKey {
+  kid           String    @id @db.VarChar(64)
+  publicJwk     Json      @map("public_jwk")
+  privateKeyEnc String    @map("private_key_enc") @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  /// Quando passou a assinar. `null` = publicada, ainda não usada para assinar.
+  activatedAt   DateTime? @map("activated_at")
+  /// Quando deixou de assinar. Continua no JWKS até `retiredAt + validade do token`.
+  retiredAt     DateTime? @map("retired_at")
+
+  @@map("signing_key")
+}
+
+// ─────────────── Cobrança ───────────────
+
+model StripeEvent {
+  eventId     String    @id @map("event_id") @db.VarChar(255)
+  type        String    @db.VarChar(100)
+  appCode     String?   @map("app_code") @db.VarChar(100)
+  receivedAt  DateTime  @default(now()) @map("received_at")
+  processedAt DateTime? @map("processed_at")
+  /// received | processed | ignored | failed | dead
+  status      String    @db.VarChar(20)
+  error       String?   @db.Text
+  attempts    Int       @default(0)
+  /// Evento cru (JSON), reprocessável a partir do banco.
+  payload     Json?
+
+  @@index([status])
+  @@map("stripe_event")
+}
+
+model SubscriptionVersion {
+  subscriptionSpaId Int      @id @map("subscription_spa_id")
+  version           Int      @default(0)
+  /// Último marcador de versão escrito pela plataforma no SPA (anti-loop).
+  lastWrittenMarker String?  @map("last_written_marker") @db.VarChar(64)
+  /// Último estado observado (status/período/plano) para decidir o evento de uma mudança humana.
+  lastSnapshot      Json?    @map("last_snapshot")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("subscription_version")
+}
+
+model ItemVersion {
+  itemSpaId         Int      @id @map("item_spa_id")
+  version           Int      @default(0)
+  lastWrittenMarker String?  @map("last_written_marker") @db.VarChar(64)
+  lastSnapshot      Json?    @map("last_snapshot")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("item_version")
+}
+
+model SweepRun {
+  id         Int       @id @default(autoincrement())
+  kind       String    @db.VarChar(50)
+  startedAt  DateTime  @default(now()) @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  fixed      Int       @default(0)
+  errors     Int       @default(0)
+  detail     Json?
+
+  @@index([kind, startedAt])
+  @@map("sweep_run")
+}
+
+model PeriodNotice {
+  subscriptionSpaId Int      @map("subscription_spa_id")
+  periodEnd         DateTime @map("period_end")
+  daysLeft          Int      @map("days_left")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@id([subscriptionSpaId, periodEnd, daysLeft])
+  @@map("period_notice")
+}
+
+model Purchase {
+  id                Int      @id @default(autoincrement())
+  appCode           String   @map("app_code") @db.VarChar(100)
+  installationId    Int      @map("installation_id")
+  planId            Int      @map("plan_id")
+  quantity          Int      @default(1)
+  checkoutSessionId String   @unique @map("checkout_session_id") @db.VarChar(255)
+  chargeId          String?  @unique @map("charge_id") @db.VarChar(255)
+  paymentIntentId   String?  @unique @map("payment_intent_id") @db.VarChar(255)
+  amount            Int?
+  amountRefunded    Int      @default(0) @map("amount_refunded")
+  /// pending | paid | expired | refunded | partially_refunded | disputed
+  status            String   @db.VarChar(30)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([installationId])
+  @@map("purchase")
+}
+
+// ─────────────── Eventos para apps ───────────────
+
+model OutboxEvent {
+  eventId        String   @id @map("event_id") @db.VarChar(36)
+  /// Ordem de gravação (estrita): define a ordem de entrega por instalação.
+  seq            Int      @unique @default(autoincrement())
+  appCode        String   @map("app_code") @db.VarChar(100)
+  type           String   @db.VarChar(60)
+  installationId Int      @map("installation_id")
+  subscriptionId Int?     @map("subscription_id")
+  version        Int?
+  payload        Json
+  /// pending | delivered | dead
+  status         String    @default("pending") @db.VarChar(20)
+  /// Chave de deduplicação da decisão (ex.: `renewed:<sub>:<periodStart>`). Garante evento único por decisão.
+  dedupeKey      String?   @unique @map("dedupe_key") @db.VarChar(255)
+  attempts       Int       @default(0)
+  nextAttemptAt  DateTime  @default(now()) @map("next_attempt_at")
+  /// Início da janela de reenvio (criação, ou o reenvio manual mais recente).
+  windowStartedAt DateTime @default(now()) @map("window_started_at")
+  deliveredAt    DateTime? @map("delivered_at")
+  deadAt         DateTime? @map("dead_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  deliveries EventDelivery[]
+
+  @@index([status, nextAttemptAt])
+  @@index([appCode, installationId, status, seq])
+  @@index([appCode, createdAt])
+  @@map("outbox_event")
+}
+
+model EventDelivery {
+  id            Int       @id @default(autoincrement())
+  eventId       String    @map("event_id") @db.VarChar(36)
+  attempt       Int
+  statusCode    Int?      @map("status_code")
+  error         String?   @db.Text
+  nextAttemptAt DateTime? @map("next_attempt_at")
+  deliveredAt   DateTime? @map("delivered_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  event OutboxEvent @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
+
+  @@index([eventId, attempt])
+  @@map("event_delivery")
+}
