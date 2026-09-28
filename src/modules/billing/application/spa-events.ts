@@ -16,7 +16,7 @@ import type { ManualLifecycle } from './manual-lifecycle'
  * fila (o worker busca o item completo com `crm.item.get`).
  */
 
-const payloadSchema = z.object({
+export const spaEventSchema = z.object({
   event: z.string().optional(),
   data: z
     .object({
@@ -41,7 +41,7 @@ export type SpaEventJob = {
 }
 
 export function parseSpaEvent(body: unknown): SpaEventJob | null {
-  const parsed = payloadSchema.safeParse(body)
+  const parsed = spaEventSchema.safeParse(body)
   if (!parsed.success) return null
   const match = parsed.data.event
     ? EVENT_PATTERN.exec(parsed.data.event.trim())

@@ -19,6 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:stripe": "tsx scripts/stripe-trigger-e2e.ts",
+    "docs:openapi": "tsx scripts/generate-openapi.ts",
     "admin:rotate-signing-key": "tsx scripts/rotate-signing-key.ts",
     "admin:generate-encryption-key": "node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\""
   },

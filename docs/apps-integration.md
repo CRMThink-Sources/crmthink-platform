@@ -14,6 +14,12 @@ SDKs prontos:
 Os dois SDKs são testados contra a implementação real da plataforma
 (`sdk/typescript/index.test.ts`; `PlatformSignatureTest.java` com o vetor gerado pelo Node).
 
+**Referência da API** — fonte oficial de campos, tipos e códigos de erro de cada rota e de
+cada evento: `https://<plataforma>/docs` (navegável) ou `https://<plataforma>/openapi.json`
+(OpenAPI 3.1, também versionado em [`docs/api/openapi.json`](api/openapi.json)). Este guia
+explica o fluxo e as obrigações do app; quando os dois divergirem, vale a referência. Os
+eventos estão na seção *Webhooks* da referência.
+
 ---
 
 ## 1. Cadastro
@@ -89,6 +95,8 @@ fica `INSTALL_PENDING` e o admin do portal vê "tentar novamente", que chama **s
 instalador de novo. Por isso ele precisa ser **idempotente** (reinstalação e nova
 tentativa chamam o mesmo endpoint).
 
+Referência: webhook `installer` em `/docs`.
+
 ## 4. Tokens do Bitrix
 
 ```
@@ -105,6 +113,8 @@ POST /v1/installations/{id}/token/refresh    {staleAccessToken} → mesmo format
   precisa reinstalar). `404` = instalação não é do seu app (ou foi desvinculada).
 
 `PlatformTokenClient` (TypeScript) já implementa cache + refresh.
+
+Referência: operações `getInstallationToken` e `refreshInstallationToken` (tag *Tokens*) em `/docs`.
 
 Outras consultas: `GET /v1/installations/{id}` (inclui `applicationToken`, para validar
 eventos do Bitrix que o seu app recebe) e `GET /v1/installations?memberId=`.
@@ -144,6 +154,8 @@ Rotação de chaves: a chave nova aparece no JWKS antes de assinar (10 min de an
 e a antiga continua publicada até expirarem os tokens dela. Os verificadores recarregam o
 JWKS ao ver um `kid` desconhecido; não é preciso configurar nada.
 
+Referência: `createSession` e `getJwks` (tag *Sessão*) em `/docs`.
+
 ## 6. Eventos
 
 `POST <webhookUrl>` com o envelope:
@@ -163,6 +175,8 @@ JWKS ao ver um `kid` desconhecido; não é preciso configurar nada.
 ```
 
 Headers: `X-Platform-Signature`, `X-Platform-Event-Id`, `X-Platform-Event-Type`.
+
+O schema de cada tipo (envelope e `data`) está na seção *Webhooks* de `/docs`.
 
 | Tipo | `data` |
 | --- | --- |
@@ -203,6 +217,9 @@ Garantias e obrigações do app:
 | `POST /v1/billing-portal-sessions` | `{installationId, returnUrl}` → URL do Customer Portal (abrir em aba nova) |
 | `POST /v1/subscriptions/{id}/change-plan` | `{planId}`: upgrade imediato (fatura proporcional) ou downgrade no próximo ciclo |
 | `POST/PATCH/DELETE /v1/subscriptions/{id}/items[/{itemId}]` | Itens no SPA 1146, idempotentes por `externalRef`; `billable` sincroniza quantidade no Stripe |
+
+Campos e erros de cada rota: tag *Cobrança* em `/docs`. Catálogo completo de códigos:
+[`docs/technical/error-codes.md`](technical/error-codes.md).
 
 Códigos de erro estáveis: `PLAN_TYPE_MISMATCH`, `SUBSCRIPTION_ALREADY_EXISTS`,
 `NO_ACTIVE_SUBSCRIPTION`, `NO_GATEWAY_SUBSCRIPTION`, `MANUAL_SUBSCRIPTION`,

@@ -28,7 +28,7 @@ const int = (fallback: number) =>
     )
     .pipe(z.number().int())
 
-const schema = z.object({
+export const envSchema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: int(4100),
   LOG_LEVEL: z.string().default('info'),
@@ -107,7 +107,7 @@ const schema = z.object({
 
 export type Env = ReturnType<typeof buildEnv>
 
-function databaseUrl(raw: z.infer<typeof schema>): string {
+function databaseUrl(raw: z.infer<typeof envSchema>): string {
   if (raw.DATABASE_URL) return raw.DATABASE_URL
   if (!raw.DATABASE_HOST || !raw.DATABASE_NAME) return ''
   const user = encodeURIComponent(raw.DATABASE_USER)
@@ -143,7 +143,7 @@ export function parseSessionCorsOrigins(raw: string): Map<string, Set<string>> {
 }
 
 export function buildEnv(source: NodeJS.ProcessEnv = process.env) {
-  const parsed = schema.safeParse(source)
+  const parsed = envSchema.safeParse(source)
   if (!parsed.success) {
     const detail = parsed.error.issues
       .map(issue => `${issue.path.join('.') || '(env)'}: ${issue.message}`)

@@ -32,12 +32,19 @@ yarn dev:worker
 | `yarn lint` / `yarn check-types` | |
 | `yarn build` | `dist/` |
 | `yarn test:stripe` | integração com Stripe CLI contra uma instância rodando |
+| `yarn docs:openapi` | regera `docs/api/*.json` e `docs/technical/error-codes.md` |
 | `yarn admin:generate-encryption-key` | chave AES-256 para `TOKEN_ENCRYPTION_KEY` |
 | `yarn admin:rotate-signing-key` | nova chave do JWT (também por `POST /admin/signing-keys/rotate`) |
 | `yarn tsx scripts/import-hub-core.ts` | importação de instalações do hub-core (dry-run por padrão) |
 
 ## Documentação
 
+- **Referência da API** (OpenAPI 3.1): `GET /docs` (navegável) e `GET /openapi.json` na
+  própria API; arquivos em `docs/api/openapi.json` (apps) e `docs/api/openapi-admin.json`
+  (com rotas de operador). Gerados de `src/docs/` por `yarn docs:openapi` — os testes falham
+  se ficarem desatualizados.
+- `docs/technical/` — documentação técnica: arquitetura, ciclo da requisição, segurança,
+  modelo de dados, fluxos, filas, observabilidade, configuração e catálogo de erros.
 - `docs/apps-integration.md` — contrato para os apps (instalador, eventos, tokens,
   sessão, cobrança) e SDKs em `sdk/typescript` e `sdk/java`.
 - `docs/operations/runbook.md` — provisionamento, TLS, webhook do portal, alertas,

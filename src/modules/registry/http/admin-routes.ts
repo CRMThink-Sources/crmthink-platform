@@ -23,7 +23,7 @@ export type AdminRoutesDeps = {
   sweeps: Sweeps
 }
 
-const resendSchema = z.union([
+export const resendSchema = z.union([
   z.object({ eventId: z.string().uuid() }),
   z.object({
     appCode: z.string().min(1),
@@ -33,6 +33,10 @@ const resendSchema = z.union([
     type: z.string().optional(),
   }),
 ])
+
+export const rotateSigningKeySchema = z.object({
+  leadMinutes: z.number().int().min(0).max(1440).default(10),
+})
 
 /**
  * Rotas de operador, com credencial própria (`ADMIN_API_TOKENS`), nunca a chave de um
@@ -191,9 +195,7 @@ export function adminRoutes(deps: AdminRoutesDeps): Router {
   router.post(
     '/admin/signing-keys/rotate',
     asyncHandler(async (req, res) => {
-      const lead = z
-        .object({ leadMinutes: z.number().int().min(0).max(1440).default(10) })
-        .parse(req.body ?? {})
+      const lead = rotateSigningKeySchema.parse(req.body ?? {})
       res
         .status(201)
         .json(await deps.signingKeys.rotate(lead.leadMinutes * 60_000))

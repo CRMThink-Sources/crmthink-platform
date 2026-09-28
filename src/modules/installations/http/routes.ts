@@ -157,7 +157,7 @@ export function sessionRoutes(deps: InstallationRoutesDeps): Router {
   return router
 }
 
-const refreshSchema = z.object({ staleAccessToken: z.string().min(1) })
+export const refreshSchema = z.object({ staleAccessToken: z.string().min(1) })
 
 /** Rotas servidor-a-servidor dos apps. Montadas atrás de `appAuth` (ver `app.ts`). */
 export function appInstallationRoutes(deps: InstallationRoutesDeps): Router {

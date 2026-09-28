@@ -24,7 +24,7 @@ import type { PendingApplicationTokens } from '../infra/pending-application-toke
  *   `ONAPPINSTALL` perdido), só é aceito se o portal já recusa o token da instalação.
  */
 
-const payloadSchema = z.object({
+export const bitrixAppEventSchema = z.object({
   event: z.string().optional(),
   auth: z
     .object({
@@ -50,7 +50,7 @@ export class BitrixAppEvents {
   ) {}
 
   async handle(appCode: string, body: unknown): Promise<AppEventResult> {
-    const parsed = payloadSchema.safeParse(body)
+    const parsed = bitrixAppEventSchema.safeParse(body)
     const payload = parsed.success ? parsed.data : {}
     const event = payload.event?.toUpperCase()
     const auth = payload.auth ?? {}

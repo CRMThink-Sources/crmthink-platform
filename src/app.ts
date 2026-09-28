@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import express, { Router, type Express } from 'express'
+import { docsRoutes } from '@/docs/docs-routes'
 import { errorMiddleware } from '@/shared/http/errors'
 import { runWithLogContext } from '@/shared/observability/log-context'
 import { logger } from '@/shared/observability/logger'
@@ -64,6 +65,8 @@ export function createApp(container: Container, health: HealthState): Express {
       .then(body => res.type(metricsRegistry.contentType).send(body))
       .catch(next)
   })
+
+  app.use(docsRoutes(container.env.publicBaseUrl))
 
   const installationDeps: InstallationRoutesDeps = {
     registry: container.registry,

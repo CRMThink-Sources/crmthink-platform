@@ -18,6 +18,11 @@ export function createPrismaClient(databaseUrl: string): PrismaClient {
     password: decodeURIComponent(url.password),
     database: url.pathname.replace(/^\//, ''),
     connectionLimit: 10,
+    // MySQL 8.4 (`caching_sha2_password`) sem TLS exige buscar a chave RSA do servidor.
+    // Opt-in pela URL (`?allowPublicKeyRetrieval=true`), só para dev local: sem TLS a
+    // chave pode ser trocada no caminho. Sem isso o erro aparece como "pool timeout".
+    allowPublicKeyRetrieval:
+      url.searchParams.get('allowPublicKeyRetrieval') === 'true',
   })
   return new PrismaClient({ adapter })
 }
