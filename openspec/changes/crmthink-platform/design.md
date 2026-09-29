@@ -58,7 +58,7 @@ Código extraído do `hub-core` e generalizado (sem tipos de apps):
 - Cobrança: porta neutra `PaymentGateway` e `GatewayEvent` (`api/src/modules/thinkzap/domain/ports/payment-gateway.port.ts:188-287`), adaptador Stripe e decorator de cache (`stripe-payment.gateway.ts`, `cache-invalidating-payment.gateway.ts`).
 - SPAs: entidades e mappers (`modules/application/domain/entities/*`, `modules/application/infra/bitrix/mappers/{subscription,subscription-item,plan,product}.mapper.ts`), guardas `ensure*Field` (falham alto se campo UF falta, já que `crm.item.update` descarta campo desconhecido sem erro), controller de eventos SPA (`spa-webhook.controller.ts`), `spa-calendar-date.ts`, `plan-price.ts`, repositórios cacheados e chaves de invalidação.
 - Um único cliente REST Bitrix (substitui `BitrixClient`, `BitrixRestClient` e as três fábricas `makeBitrixClient*`).
-- *Alternativa*: Java/Spring como o backend GPTMaker. Rejeitada: reescreveria o que já funciona em produção e dificultaria a migração dos apps TypeScript; como os apps falam com a plataforma só por HTTP e JWKS, a stack da plataforma não afeta os apps.
+- *Alternativa*: Java/Spring (stack original do backend GPTMaker, hoje migrado para TypeScript). Rejeitada: reescreveria o que já funciona em produção e dificultaria a migração dos apps TypeScript; como os apps falam com a plataforma só por HTTP e JWKS, a stack da plataforma não afeta os apps.
 
 ### D3. Fluxo de instalação
 1. A URL de instalação do app Bitrix aponta para `/install/{appCode}` (frontend mínimo da plataforma). O handler de eventos de instalação do app aponta para `POST /bitrix/events/{appCode}`.

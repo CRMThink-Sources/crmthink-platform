@@ -87,7 +87,7 @@ Script: `scripts/import-hub-core.ts` (dry-run por padrão; `--apply` para gravar
 
 1. **Repositório novo do app** com o instalador (`POST /platform/installer`), o receptor
    de eventos (`POST /platform/events`), o cliente de tokens e a validação do JWT
-   (SDK em `sdk/typescript` ou `sdk/java`). O app mantém sua política de acesso.
+   (SDK em `sdk/typescript`). O app mantém sua política de acesso.
 2. **Cadastro** na plataforma (staging primeiro): `POST /admin/apps` com o `client_id`/
    secret do app Bitrix atual, escopos, `installerUrl`, `webhookUrl`, produtos, trial e
    `trial_on_install` (desligado para apps com base instalada, se não houver trial na

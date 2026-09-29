@@ -15,7 +15,6 @@ export default defineConfig(
       'coverage/**',
       'prisma/generated/**',
       'public/**',
-      'sdk/java/**',
       '*.js',
       '**/*.cjs',
       '*.d.ts',

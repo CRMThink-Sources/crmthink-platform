@@ -55,8 +55,7 @@ X-Platform-Signature: t=<unix>,v1=<hex(hmac-sha256(webhookSecret, t + "." + corp
 ```
 
 O app deve usar o corpo cru, rejeitar `|agora − t| > 300 s` (proteção contra replay) e comparar
-em tempo constante. SDKs: `sdk/typescript` (`verifyPlatformSignature`) e `sdk/java`
-(`PlatformSignature`).
+em tempo constante. SDK: `sdk/typescript` (`verifyPlatformSignature`).
 
 ## Verificações de entrada
 
