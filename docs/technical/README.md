@@ -39,7 +39,9 @@ Procedimentos de operação (provisionamento, TLS, incidentes) estão em
 | Rota nova ou alterada | Entrada em `src/docs/openapi/operations.ts` (+ schema de resposta em `responses.ts`); `yarn docs:openapi` |
 | Campo novo em resposta | Schema em `src/docs/openapi/responses.ts` (são `strictObject`: o teste de integração acusa o campo) |
 | Código de erro novo | `src/docs/errors.ts` + `errors` da operação; `yarn docs:openapi` |
-| Tipo de evento novo | `EVENT_DATA` em `src/docs/openapi/events.ts`; `yarn docs:openapi` |
+| Tipo de evento novo | `EVENT_DATA` em `src/docs/openapi/events.ts`; `yarn docs:openapi` (+ `EVENT_TYPES` em `sdk/typescript/test/contract.test.ts`) |
+| Rota nova com chave de app | Além do contrato, entrada em `OPERATIONS` e método em `sdk/typescript/src/client.ts` |
+| Qualquer mudança em `docs/api/openapi.json` | `yarn sdk:types` no mesmo PR (o teste de deriva do SDK falha sem isso) |
 | Variável de ambiente nova | Tabela em [configuration.md](configuration.md) |
 | Fluxo ou decisão de arquitetura | Documento correspondente desta pasta |
 

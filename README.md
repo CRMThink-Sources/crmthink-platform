@@ -33,6 +33,7 @@ yarn dev:worker
 | `yarn build` | `dist/` |
 | `yarn test:stripe` | integração com Stripe CLI contra uma instância rodando |
 | `yarn docs:openapi` | regera `docs/api/*.json` e `docs/technical/error-codes.md` |
+| `yarn sdk:types` / `yarn sdk:build` | tipos do SDK a partir de `docs/api/openapi.json` / pacote em `sdk/typescript/dist` |
 | `yarn admin:generate-encryption-key` | chave AES-256 para `TOKEN_ENCRYPTION_KEY` |
 | `yarn admin:rotate-signing-key` | nova chave do JWT (também por `POST /admin/signing-keys/rotate`) |
 | `yarn tsx scripts/import-hub-core.ts` | importação de instalações do hub-core (dry-run por padrão) |
@@ -46,7 +47,8 @@ yarn dev:worker
 - `docs/technical/` — documentação técnica: arquitetura, ciclo da requisição, segurança,
   modelo de dados, fluxos, filas, observabilidade, configuração e catálogo de erros.
 - `docs/apps-integration.md` — contrato para os apps (instalador, eventos, tokens,
-  sessão, cobrança) e SDK em `sdk/typescript`.
+  sessão, cobrança) e o SDK `@crmthink-sources/platform-sdk` em
+  [`sdk/typescript`](sdk/typescript/README.md).
 - `docs/operations/runbook.md` — provisionamento, TLS, webhook do portal, alertas,
   procedimentos. Regras Prometheus em `ops/prometheus-alerts.yml`.
 - `docs/onboarding/gptmaker.md` — campos dos SPAs, produtos, apps Bitrix, cadastro e

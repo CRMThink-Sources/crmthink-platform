@@ -4,9 +4,13 @@ Guia para o time de cada aplicação (GPTMaker primeiro). A plataforma cuida de 
 no Bitrix24, tokens, login do iframe e cobrança; o app cuida dos próprios binds, da
 política de acesso e do produto.
 
-SDK pronto (TypeScript): `sdk/typescript/index.ts`, com `verifyPlatformSignature`,
-`createSessionVerifier`, `PlatformTokenClient` e `shouldApply`. É testado contra a
-implementação real da plataforma (`sdk/typescript/index.test.ts`).
+**SDK** (TypeScript): pacote `@crmthink-sources/platform-sdk` no GitHub Packages da
+organização — instalação, `.npmrc` e todos os métodos em
+[`sdk/typescript/README.md`](../sdk/typescript/README.md). Traz `PlatformClient` (um
+método por rota servidor-a-servidor, com cache e renovação de token),
+`verifyPlatformSignature`, `createSessionVerifier`, `shouldApply` e os tipos de
+requisição, resposta e eventos gerados do contrato. É testado contra a implementação
+real da plataforma e contra `docs/api/openapi.json` (`sdk/typescript/test/`).
 
 **Referência da API** — fonte oficial de campos, tipos e códigos de erro de cada rota e de
 cada evento: `https://<plataforma>/docs` (navegável) ou `https://<plataforma>/openapi.json`
@@ -47,7 +51,7 @@ Express:
 
 ```ts
 import express from 'express'
-import { verifyPlatformSignature } from './platform-sdk'
+import { verifyPlatformSignature } from '@crmthink-sources/platform-sdk'
 
 app.post('/platform/events', express.raw({ type: 'application/json' }), (req, res) => {
   const check = verifyPlatformSignature({
@@ -93,12 +97,22 @@ POST /v1/installations/{id}/token/refresh    {staleAccessToken} → mesmo format
 - `410` = instalação desinstalada. `409 AUTH_ERROR` = credencial inválida (o portal
   precisa reinstalar). `404` = instalação não é do seu app (ou foi desvinculada).
 
-`PlatformTokenClient` já implementa cache + refresh.
+`PlatformClient` já implementa cache + refresh (pedidos simultâneos da mesma instalação
+viram uma requisição só):
+
+```ts
+import { PlatformClient } from '@crmthink-sources/platform-sdk'
+const platform = new PlatformClient({ platformUrl: process.env.PLATFORM_URL!, apiKey: process.env.PLATFORM_API_KEY! })
+const token = await platform.getInstallationToken(installationId)
+// Bitrix respondeu expired_token:
+const renewed = await platform.refreshInstallationToken(installationId, token.accessToken)
+```
 
 Referência: operações `getInstallationToken` e `refreshInstallationToken` (tag *Tokens*) em `/docs`.
 
 Outras consultas: `GET /v1/installations/{id}` (inclui `applicationToken`, para validar
-eventos do Bitrix que o seu app recebe) e `GET /v1/installations?memberId=`.
+eventos do Bitrix que o seu app recebe) e `GET /v1/installations?memberId=`
+(`getInstallation` e `listInstallations` no SDK).
 
 ## 5. Sessão do iframe
 
@@ -117,7 +131,7 @@ Claims: `sub` (id do usuário Bitrix), `installationId`, `memberId`, `domain`, `
 `name`, `departmentIds`, `iss`, `aud`, `exp`. Permissões finas são do app, a partir disso.
 
 ```ts
-import { createSessionVerifier } from './platform-sdk'
+import { createSessionVerifier } from '@crmthink-sources/platform-sdk'
 const verifySession = createSessionVerifier({ platformUrl: process.env.PLATFORM_URL!, appCode: 'crmthink.gptmaker' })
 const claims = await verifySession(bearerToken) // lança se inválido/expirado/de outro app
 ```
@@ -148,7 +162,9 @@ Referência: `createSession` e `getJwks` (tag *Sessão*) em `/docs`.
 
 Headers: `X-Platform-Signature`, `X-Platform-Event-Id`, `X-Platform-Event-Type`.
 
-O schema de cada tipo (envelope e `data`) está na seção *Webhooks* de `/docs`.
+O schema de cada tipo (envelope e `data`) está na seção *Webhooks* de `/docs`. No SDK,
+`PlatformEvent` é a união desses tipos: `if (event.type === 'purchase.paid')` estreita o
+`data`.
 
 | Tipo | `data` |
 | --- | --- |
@@ -189,6 +205,10 @@ Garantias e obrigações do app:
 | `POST /v1/billing-portal-sessions` | `{installationId, returnUrl}` → URL do Customer Portal (abrir em aba nova) |
 | `POST /v1/subscriptions/{id}/change-plan` | `{planId}`: upgrade imediato (fatura proporcional) ou downgrade no próximo ciclo |
 | `POST/PATCH/DELETE /v1/subscriptions/{id}/items[/{itemId}]` | Itens no SPA 1146, idempotentes por `externalRef`; `billable` sincroniza quantidade no Stripe |
+
+No SDK: `listPlans`, `getSubscription`, `createCheckoutSession`,
+`createBillingPortalSession`, `changePlan`, `listItems`, `createItem`, `updateItem` e
+`removeItem`; erro da plataforma vira `PlatformError` com o `code` abaixo.
 
 Campos e erros de cada rota: tag *Cobrança* em `/docs`. Catálogo completo de códigos:
 [`docs/technical/error-codes.md`](technical/error-codes.md).

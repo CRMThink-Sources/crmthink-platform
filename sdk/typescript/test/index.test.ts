@@ -13,7 +13,7 @@ import {
   shouldApply,
   verifyPlatformSignature,
   type PlatformEvent,
-} from './index'
+} from '../src/index.js'
 
 /** O SDK é validado contra a implementação real da plataforma (assinatura e JWKS). */
 
@@ -75,7 +75,7 @@ describe('SDK: dedupe e versão', () => {
             periodEnd: '',
             version,
           },
-    data: {},
+    data: { invoiceId: null, hostedInvoiceUrl: null },
   })
   const state = { seen: (id: string) => id === 'dup', lastVersion: () => 6 }
 

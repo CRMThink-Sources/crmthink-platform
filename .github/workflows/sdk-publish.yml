@@ -1,0 +1,39 @@
+name: Publicar SDK
+
+# Tag `sdk-v<versão>` (ex.: sdk-v1.0.0) publica @crmthink-sources/platform-sdk no
+# GitHub Packages. A tag precisa ser igual à `version` de sdk/typescript/package.json.
+on:
+  push:
+    tags: ['sdk-v*']
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Testar e publicar o SDK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: yarn
+          registry-url: https://npm.pkg.github.com
+          scope: '@crmthink-sources'
+      - name: Tag igual à versão do pacote
+        run: |
+          version=$(node -p "require('./sdk/typescript/package.json').version")
+          if [ "${GITHUB_REF_NAME}" != "sdk-v${version}" ]; then
+            echo "tag ${GITHUB_REF_NAME} não bate com a versão ${version}" >&2
+            exit 1
+          fi
+      - run: yarn install --frozen-lockfile
+      - run: yarn check-types
+      - run: yarn test sdk
+      - run: yarn sdk:build
+      - run: npm publish
+        working-directory: sdk/typescript
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

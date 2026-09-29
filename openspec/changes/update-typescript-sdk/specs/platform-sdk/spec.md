@@ -18,8 +18,8 @@ O SDK MUST oferecer um cliente configurado com a URL da plataforma e a chave de 
 - **THEN** o SDK faz `POST /v1/checkout-sessions` com esse corpo em JSON e devolve a sessão de checkout
 
 #### Scenario: Remoção de item
-- **WHEN** o app remove um item de assinatura e a plataforma responde `204`
-- **THEN** o método resolve sem valor
+- **WHEN** o app remove um item de assinatura
+- **THEN** o SDK faz `DELETE /v1/subscriptions/{id}/items/{itemId}` e devolve o item removido, com `deletedAt` preenchido
 
 ### Requirement: Erros da plataforma
 Toda resposta não-2xx MUST virar um erro com o status HTTP, o `code` estável do envelope `{ error: { code, message, details } }`, a mensagem e os `details`. Quando o corpo não for o envelope, o `code` MUST ser `HTTP_<status>`. Falha de rede ou tempo esgotado MUST virar erro distinguível dos erros da plataforma. O cliente MUST aceitar um tempo máximo por requisição e MUST NOT repetir requisições automaticamente, exceto a renovação de token descrita abaixo.
@@ -74,7 +74,7 @@ O SDK MUST manter a verificação do header `X-Platform-Signature` (corpo cru, t
 - **THEN** a regra de consumo indica que ele não deve ser aplicado
 
 ### Requirement: Pacote versionado
-O SDK MUST ser distribuído como pacote `@crmthink/platform-sdk` ESM para Node ≥ 20, com declarações de tipo, versão semântica e `jose` como única dependência de execução. O pacote MUST NOT importar código da plataforma nem incluir testes. Mudança incompatível na API pública do SDK MUST aumentar a versão maior.
+O SDK MUST ser distribuído como pacote `@crmthink-sources/platform-sdk` ESM para Node ≥ 20, com declarações de tipo, versão semântica e `jose` como única dependência de execução. O pacote MUST NOT importar código da plataforma nem incluir testes. Mudança incompatível na API pública do SDK MUST aumentar a versão maior.
 
 #### Scenario: Instalação no app
 - **WHEN** um app TypeScript instala o pacote e importa o cliente

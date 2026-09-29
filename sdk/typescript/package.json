@@ -1,0 +1,32 @@
+{
+  "name": "@crmthink-sources/platform-sdk",
+  "version": "1.0.0",
+  "description": "SDK TypeScript para apps que falam com o crmthink-platform: assinatura, sessão do iframe, tokens do Bitrix e cobrança.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "jose": "^6.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CRMThink-Sources/crmthink-platform.git",
+    "directory": "sdk/typescript"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}
