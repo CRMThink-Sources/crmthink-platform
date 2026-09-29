@@ -138,7 +138,8 @@ jobs:
           done
           # PEM colado com quebras de linha → uma linha com `\n` literal (o env.ts converte de volta).
           JWT_SIGNING_PRIVATE_KEY="$(printf '%s' "$JWT_SIGNING_PRIVATE_KEY" | tr -d '\r' | awk '{printf "%s\\n", $0}')"
-          umask 077
+          # Sem umask restrito: o scp-action roda num container com outro usuário e precisa
+          # ler o arquivo. No droplet ele cai no DEPLOY_DIR (750) e vira `.env` com chmod 600.
           {
             echo "NODE_ENV=production"
             for k in PUBLIC_BASE_URL PLATFORM_ENVIRONMENT QUEUE_PREFIX SESSION_CORS_ORIGINS LOG_LEVEL LOKI_URL \
