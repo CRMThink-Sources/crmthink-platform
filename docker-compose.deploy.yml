@@ -1,5 +1,9 @@
 # Deploy (staging/produção) na VPS. Imagem, portas e projeto vêm de variáveis dos
-# GitHub Environments; o `.env` é escrito pelo pipeline a partir do secret `ENV_PLATFORM`.
+# GitHub Environments; o `.env` é montado pelo pipeline a partir das Variables e Secrets do Environment.
+#
+# Roda na rede externa `crmthink` (ops/droplet): MySQL em `mysql:3306`, Redis em
+# `redis:6379` e o Caddy faz proxy para `<COMPOSE_PROJECT>-api:4100`. As portas ficam só
+# em 127.0.0.1 (o Docker ignora o UFW): acesso externo apenas pelo Caddy.
 #
 # O nome dos containers começa com `crmthink-platform-` para o Promtail coletar.
 services:
@@ -11,7 +15,7 @@ services:
     environment:
       PORT: '4100'
     ports:
-      - '${API_PORT:-4100}:4100'
+      - '127.0.0.1:${API_PORT:-4100}:4100'
     extra_hosts:
       - 'host.docker.internal:host-gateway'
 
@@ -24,6 +28,11 @@ services:
     environment:
       PORT: '9464'
     ports:
-      - '${WORKER_METRICS_PORT:-9464}:9464'
+      - '127.0.0.1:${WORKER_METRICS_PORT:-9464}:9464'
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+
+networks:
+  default:
+    name: crmthink
+    external: true
