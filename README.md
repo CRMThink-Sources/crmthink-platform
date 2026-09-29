@@ -46,7 +46,7 @@ yarn dev:worker
 - `docs/technical/` — documentação técnica: arquitetura, ciclo da requisição, segurança,
   modelo de dados, fluxos, filas, observabilidade, configuração e catálogo de erros.
 - `docs/apps-integration.md` — contrato para os apps (instalador, eventos, tokens,
-  sessão, cobrança) e SDKs em `sdk/typescript` e `sdk/java`.
+  sessão, cobrança) e SDK em `sdk/typescript`.
 - `docs/operations/runbook.md` — provisionamento, TLS, webhook do portal, alertas,
   procedimentos. Regras Prometheus em `ops/prometheus-alerts.yml`.
 - `docs/onboarding/gptmaker.md` — campos dos SPAs, produtos, apps Bitrix, cadastro e

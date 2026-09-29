@@ -4,15 +4,9 @@ Guia para o time de cada aplicação (GPTMaker primeiro). A plataforma cuida de 
 no Bitrix24, tokens, login do iframe e cobrança; o app cuida dos próprios binds, da
 política de acesso e do produto.
 
-SDKs prontos:
-
-| Linguagem | Onde | O que tem |
-| --- | --- | --- |
-| TypeScript | `sdk/typescript/index.ts` | `verifyPlatformSignature`, `createSessionVerifier`, `PlatformTokenClient`, `shouldApply` |
-| Java 17+ | `sdk/java/src/main/java/br/com/crmthink/platform/` | `PlatformSignature` (só JDK), `PlatformSessionVerifier` (nimbus-jose-jwt 9.37+) |
-
-Os dois SDKs são testados contra a implementação real da plataforma
-(`sdk/typescript/index.test.ts`; `PlatformSignatureTest.java` com o vetor gerado pelo Node).
+SDK pronto (TypeScript): `sdk/typescript/index.ts`, com `verifyPlatformSignature`,
+`createSessionVerifier`, `PlatformTokenClient` e `shouldApply`. É testado contra a
+implementação real da plataforma (`sdk/typescript/index.test.ts`).
 
 **Referência da API** — fonte oficial de campos, tipos e códigos de erro de cada rota e de
 cada evento: `https://<plataforma>/docs` (navegável) ou `https://<plataforma>/openapi.json`
@@ -49,7 +43,7 @@ X-Platform-Signature: t=<unix>,v1=<hex(hmac-sha256(webhookSecret, t + "." + corp
 Regras: use o **corpo cru**; rejeite `t` com mais de 5 minutos de diferença; aceite se
 qualquer `v1=` conferir com qualquer segredo vigente seu.
 
-TypeScript (Express):
+Express:
 
 ```ts
 import express from 'express'
@@ -64,19 +58,6 @@ app.post('/platform/events', express.raw({ type: 'application/json' }), (req, re
   if (!check.ok) return res.status(401).end()
   // persistir e responder 2xx; processar assíncrono
 })
-```
-
-Java (Spring):
-
-```java
-@PostMapping(value = "/platform/events", consumes = "application/json")
-public ResponseEntity<Void> events(@RequestHeader("X-Platform-Signature") String signature,
-                                   @RequestBody byte[] rawBody) {
-    var result = PlatformSignature.verify(signature, rawBody, List.of(webhookSecret));
-    if (result != PlatformSignature.Result.OK) return ResponseEntity.status(401).build();
-    // persistir e responder 2xx; processar assíncrono
-    return ResponseEntity.ok().build();
-}
 ```
 
 ## 3. Instalador do app
@@ -112,7 +93,7 @@ POST /v1/installations/{id}/token/refresh    {staleAccessToken} → mesmo format
 - `410` = instalação desinstalada. `409 AUTH_ERROR` = credencial inválida (o portal
   precisa reinstalar). `404` = instalação não é do seu app (ou foi desvinculada).
 
-`PlatformTokenClient` (TypeScript) já implementa cache + refresh.
+`PlatformTokenClient` já implementa cache + refresh.
 
 Referência: operações `getInstallationToken` e `refreshInstallationToken` (tag *Tokens*) em `/docs`.
 
@@ -135,19 +116,10 @@ eventos do Bitrix que o seu app recebe) e `GET /v1/installations?memberId=`.
 Claims: `sub` (id do usuário Bitrix), `installationId`, `memberId`, `domain`, `isAdmin`,
 `name`, `departmentIds`, `iss`, `aud`, `exp`. Permissões finas são do app, a partir disso.
 
-TypeScript:
-
 ```ts
 import { createSessionVerifier } from './platform-sdk'
 const verifySession = createSessionVerifier({ platformUrl: process.env.PLATFORM_URL!, appCode: 'crmthink.gptmaker' })
 const claims = await verifySession(bearerToken) // lança se inválido/expirado/de outro app
-```
-
-Java (`com.nimbusds:nimbus-jose-jwt:9.40`):
-
-```java
-var verifier = new PlatformSessionVerifier(platformUrl, "crmthink.gptmaker");
-PlatformSessionVerifier.Session session = verifier.verify(bearerToken);
 ```
 
 Rotação de chaves: a chave nova aparece no JWKS antes de assinar (10 min de antecedência)
@@ -201,7 +173,7 @@ Garantias e obrigações do app:
 
 - **Pelo menos uma vez**: persista e responda 2xx; deduplique por `eventId`.
 - **Ordem**: ignore evento de assinatura com `subscription.version` menor que a última
-  aplicada (`shouldApply` no SDK TS). A plataforma entrega em ordem por instalação, mas
+  aplicada (`shouldApply` no SDK). A plataforma entrega em ordem por instalação, mas
   reenvios manuais podem chegar depois.
 - Reenvio com backoff por até 24h; depois dead-letter e reenvio manual pelo operador.
 - Carência, corte de acesso, créditos e limites são decisão do app: a plataforma só

@@ -2,8 +2,8 @@
 
 Código: `src/modules/installations/application/session-service.ts`,
 `application/signing-keys.ts`, `application/bitrix-auth-verifier.ts` (`verifyUser`),
-`http/routes.ts` (`sessionCors`), `scripts/rotate-signing-key.ts`; SDKs `sdk/typescript`
-(`createSessionVerifier`) e `sdk/java` (`PlatformSessionVerifier`).
+`http/routes.ts` (`sessionCors`), `scripts/rotate-signing-key.ts`; SDK `sdk/typescript`
+(`createSessionVerifier`).
 
 Operações: `createSession`, `getJwks`, `rotateSigningKey`.
 
