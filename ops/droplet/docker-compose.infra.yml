@@ -1,0 +1,77 @@
+# Infraestrutura compartilhada do droplet: MySQL, Redis e Caddy (TLS). Staging e produção
+# usam as mesmas instâncias, com database, usuário e DB do Redis próprios.
+#
+# Tudo fica na rede externa `crmthink` (criada pelo bootstrap). Os composes da plataforma
+# entram na mesma rede e acessam `mysql:3306` e `redis:6379`. Só o Caddy publica portas.
+name: crmthink-infra
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: crmthink-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent',
+        ]
+      interval: 5s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    container_name: crmthink-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD}
+    # BullMQ exige `noeviction`; AOF para não perder filas num restart.
+    command:
+      [
+        'sh',
+        '-c',
+        'exec redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --maxmemory-policy noeviction',
+      ]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'redis-cli -a "$$REDIS_PASSWORD" --no-auth-warning ping | grep -q PONG',
+        ]
+      interval: 5s
+      retries: 30
+
+  caddy:
+    image: caddy:2
+    container_name: crmthink-caddy
+    restart: unless-stopped
+    environment:
+      STAGING_HOST: ${STAGING_HOST:?STAGING_HOST}
+      PRODUCTION_HOST: ${PRODUCTION_HOST:?PRODUCTION_HOST}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL}
+      ADMIN_ALLOWED_IPS: ${ADMIN_ALLOWED_IPS:-0.0.0.0/0 ::/0}
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+networks:
+  default:
+    name: crmthink
+    external: true
+
+volumes:
+  mysql-data:
+  redis-data:
+  caddy-data:
+  caddy-config:

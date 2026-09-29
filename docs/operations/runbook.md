@@ -2,12 +2,16 @@
 
 ## Provisionamento (16.1)
 
+Staging e produção rodam no mesmo droplet (DigitalOcean, Ubuntu 22.04/24.04), com MySQL,
+Redis e Caddy compartilhados em `ops/droplet` (ver [Droplet](#droplet)).
+
 Por ambiente (`staging` a partir de `develop`, `production` a partir de `main`):
 
-1. **Banco**: MySQL 8 (mesma infra do hub-core), database própria
+1. **Banco**: MySQL 8.4 do droplet (`crmthink-mysql`), database própria
    (`crmthink_platform_staging` / `crmthink_platform`) e usuário com DDL (as migrações
-   rodam no deploy).
-2. **Redis**: instância/DB própria, `QUEUE_PREFIX` diferente por ambiente.
+   rodam no deploy). O bootstrap cria os dois.
+2. **Redis**: instância do droplet (`crmthink-redis`), DB `1` em staging e `0` em
+   produção, `QUEUE_PREFIX` diferente por ambiente.
 3. **Segredos** — gerar e guardar no cofre da equipe **antes** do primeiro deploy:
    - `TOKEN_ENCRYPTION_KEY`: `yarn admin:generate-encryption-key`. Perdê-la = perder todos
      os tokens (clientes reinstalam). Nunca reutilizar a do hub-core.
@@ -23,15 +27,83 @@ Por ambiente (`staging` a partir de `develop`, `production` a partir de `main`):
    `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`,
    `charge.dispute.created`. O endpoint do hub-core continua existindo até cada app migrar.
    Customer Portal habilitado (cancelamento no fim do período, atualização de cartão).
-5. **GitHub Environments** `staging` e `production`:
-   - vars: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_DIR` (ex.: `~/crmthink-platform-staging`),
-     `COMPOSE_PROJECT`, `API_PORT`, `WORKER_METRICS_PORT`;
-   - secrets: `DEPLOY_SSH_KEY`, `DEPLOY_SSH_KEY_PASSPHRASE`, `ENV_PLATFORM` (conteúdo do
-     `.env`, a partir de `.env.example`).
+5. **GitHub Environments** `staging` e `production`. O deploy monta o `.env` a partir
+   deles (`.github/workflows/ci.yml`, passo "Montar .env"); item vazio fica fora do `.env`
+   e vale o padrão de `src/config/env.ts`. \* = obrigatório.
+
+   Deploy:
+
+   |                                    | staging                                  | production                                  |
+   | ---------------------------------- | ---------------------------------------- | ------------------------------------------- |
+   | var `DEPLOY_HOST`\*                | IP do droplet                            | IP do droplet                               |
+   | var `DEPLOY_USER`\*                | `deploy`                                 | `deploy`                                    |
+   | var `DEPLOY_DIR`\*                 | `/home/deploy/crmthink-platform-staging` | `/home/deploy/crmthink-platform-production` |
+   | var `COMPOSE_PROJECT`\*            | `crmthink-platform-staging`              | `crmthink-platform-production`              |
+   | var `API_PORT`\*                   | `4101`                                   | `4100`                                      |
+   | var `WORKER_METRICS_PORT`\*        | `9465`                                   | `9464`                                      |
+   | secret `DEPLOY_SSH_KEY`\*          | chave privada do CI                      | chave privada do CI                         |
+   | secret `DEPLOY_SSH_KEY_PASSPHRASE` | só se a chave tiver senha                | idem                                        |
+
+   Plataforma:
+
+   |                                                             | staging                                                      | production                         |
+   | ----------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------- |
+   | var `PUBLIC_BASE_URL`\*                                     | `https://platform-staging.crmthink.com.br`                   | `https://platform.crmthink.com.br` |
+   | var `PLATFORM_ENVIRONMENT`\*                                | `homolog`                                                    | `production`                       |
+   | var `QUEUE_PREFIX`\*                                        | `crmthink-platform-staging`                                  | `crmthink-platform-production`     |
+   | var `SESSION_CORS_ORIGINS`                                  | `crmthink.gptmaker=https://gptmaker-staging.crmthink.com.br` | origem de produção do GPTMaker     |
+   | secret `DATABASE_URL`\*                                     | impressa pelo bootstrap                                      | impressa pelo bootstrap            |
+   | secret `REDIS_URL`\*                                        | impressa pelo bootstrap (`/1`)                               | impressa pelo bootstrap (`/0`)     |
+   | secret `TOKEN_ENCRYPTION_KEY`\*                             | `openssl rand -base64 32`                                    | outra, nunca a de staging          |
+   | secret `JWT_SIGNING_PRIVATE_KEY`\*                          | PEM com quebras de linha, colado como está                   | outra                              |
+   | secret `ADMIN_API_TOKENS`                                   | `openssl rand -hex 32` (vírgula entre operadores)            | outros                             |
+   | secret `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`         | test mode                                                    | live                               |
+   | secret `CRMTHINK_WEBHOOK_URL`, `CRMTHINK_APPLICATION_TOKEN` | 16.3                                                         | 16.3                               |
+
+   Ajustes opcionais, como var: `LOG_LEVEL`, `LOKI_URL`, `JWT_ISSUER`, `JWT_TTL_SECONDS`,
+   `BITRIX_TLS_REJECT_UNAUTHORIZED`, `INSTALLER_TIMEOUT_MS`, `WEBHOOK_TIMEOUT_MS`,
+   `CREDENTIAL_ROTATION_GRACE_HOURS`, `EVENT_RETRY_WINDOW_HOURS`, `WORKER_DISABLE_SCHEDULES`.
+   Variável nova da plataforma precisa entrar na lista do passo "Montar .env".
+
+   `DEPLOY_DIR` é caminho absoluto (`~` não expande). `COMPOSE_PROJECT` tem que ser
+   exatamente esse: o Caddyfile faz proxy para `<COMPOSE_PROJECT>-api`. As portas ficam só
+   em `127.0.0.1` (Prometheus local). O GitHub não devolve secrets: `TOKEN_ENCRYPTION_KEY`
+   e `ADMIN_API_TOKENS` ficam também no cofre.
+
 6. Push em `develop` ⇒ CI ⇒ imagem `ghcr.io/<org>/crmthink-platform:<sha>` ⇒
    `prisma migrate deploy` ⇒ `docker compose -f docker-compose.deploy.yml up -d`.
 7. Conferir `GET /health/ready` (banco, Redis, chave JWT e **configuração dos SPAs**: o
    relatório lista SPA e campo que faltam).
+
+## Droplet
+
+Uma vez por droplet, a partir da raiz do repositório:
+
+1. Chave SSH do CI (sem senha), só para o usuário `deploy`:
+   `ssh-keygen -t ed25519 -N "" -C github-actions-deploy -f ~/.ssh/crmthink-deploy`. A privada
+   (`~/.ssh/crmthink-deploy`) vai no secret `DEPLOY_SSH_KEY` dos dois Environments.
+2. Copiar e rodar o bootstrap como root:
+
+   ```sh
+   scp -r ops/droplet root@<ip>:/root/
+   ssh root@<ip> \
+     DEPLOY_PUBKEY="'$(cat ~/.ssh/crmthink-deploy.pub)'" \
+     STAGING_HOST=platform-staging.crmthink.com.br \
+     PRODUCTION_HOST=platform.crmthink.com.br \
+     ACME_EMAIL=<email> \
+     bash /root/droplet/bootstrap.sh
+   ```
+
+   Ele instala Docker, cria o usuário `deploy` (grupo `docker`), liga o UFW (22/80/443),
+   cria swap, a rede `crmthink` e sobe `/opt/crmthink-infra` (MySQL, Redis, Caddy). As
+   senhas geradas ficam em `/opt/crmthink-infra/.env` (guardar no cofre). O script é
+   idempotente, então dá para rodar de novo para atualizar hosts e o Caddyfile.
+
+3. DNS: registro A dos dois hosts para o IP do droplet. O Caddy emite o TLS sozinho.
+4. Restringir `/admin/*`: `ADMIN_ALLOWED_IPS="<ip>/32 ..."` em `/opt/crmthink-infra/.env`
+   e `docker compose -f /opt/crmthink-infra/docker-compose.infra.yml up -d caddy`.
+5. Backups: ativar os Backups do droplet na DigitalOcean. Para restauração lógica:
+   `docker exec crmthink-mysql sh -c 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --single-transaction --databases crmthink_platform crmthink_platform_staging' > dump.sql`.
 
 ## Domínio e TLS (16.2)
 
@@ -41,15 +113,9 @@ com TLS válido — o Bitrix24 recusa handler sem HTTPS. Proxy reverso na VPS pa
 `/bitrix/*`, `/webhooks/stripe`, `/health`. **Não** expor: `/metrics` (só a rede do
 Prometheus) e, de preferência, `/admin/*` (restringir por IP/VPN).
 
-Exemplo (Caddy):
-
-```
-platform.crmthink.com.br {
-  @internal path /metrics
-  respond @internal 404
-  reverse_proxy 127.0.0.1:4100
-}
-```
+No droplet, o Caddy (`ops/droplet/Caddyfile`) faz exatamente isso: `/metrics` → 404,
+`/admin/*` só de `ADMIN_ALLOWED_IPS`, e o resto vai para `<COMPOSE_PROJECT>-api:4100`
+na rede `crmthink`.
 
 `PUBLIC_BASE_URL` = `https://<host>` (entra no `iss` do JWT e nos handlers registrados no
 Bitrix: trocar depois exige reinstalação).

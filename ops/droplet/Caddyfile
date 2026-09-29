@@ -1,0 +1,29 @@
+# Proxy TLS (Let's Encrypt automático) para a api de cada ambiente. O upstream é o
+# container_name do compose de deploy: `<COMPOSE_PROJECT>-api`.
+{
+	email {$ACME_EMAIL}
+}
+
+(platform) {
+	# /metrics só pela rede interna (Prometheus).
+	@metrics path /metrics /metrics/*
+	respond @metrics 404
+
+	# /admin/* só dos IPs em ADMIN_ALLOWED_IPS (além dos tokens de operador).
+	@admin {
+		path /admin/*
+		not remote_ip {$ADMIN_ALLOWED_IPS}
+	}
+	respond @admin 403
+
+	encode gzip
+	reverse_proxy {args[0]}
+}
+
+{$STAGING_HOST} {
+	import platform crmthink-platform-staging-api:4100
+}
+
+{$PRODUCTION_HOST} {
+	import platform crmthink-platform-production-api:4100
+}

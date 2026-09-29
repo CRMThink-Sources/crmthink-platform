@@ -12,7 +12,6 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE: ghcr.io/${{ github.repository_owner }}/crmthink-platform
 
 jobs:
   ci:
@@ -63,6 +62,7 @@ jobs:
     if: github.event_name == 'push'
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
+      image: ${{ steps.tag.outputs.image }}
     steps:
       - uses: actions/checkout@v5
       - uses: docker/setup-buildx-action@v3
@@ -74,16 +74,18 @@ jobs:
       - name: Tag
         id: tag
         run: |
+          # O Docker só aceita nome de imagem em minúsculas (o owner é CRMThink-Sources).
+          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/crmthink-platform" >> "$GITHUB_OUTPUT"
           if [ "${{ github.ref_name }}" = "main" ]; then echo "tag=production" >> "$GITHUB_OUTPUT"; else echo "tag=staging" >> "$GITHUB_OUTPUT"; fi
       - uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
-            ${{ env.IMAGE }}:${{ steps.tag.outputs.tag }}
-            ${{ env.IMAGE }}:${{ github.sha }}
-          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache-${{ steps.tag.outputs.tag }}
-          cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache-${{ steps.tag.outputs.tag }},mode=max
+            ${{ steps.tag.outputs.image }}:${{ steps.tag.outputs.tag }}
+            ${{ steps.tag.outputs.image }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ steps.tag.outputs.image }}:buildcache-${{ steps.tag.outputs.tag }}
+          cache-to: type=registry,ref=${{ steps.tag.outputs.image }}:buildcache-${{ steps.tag.outputs.tag }},mode=max
           provenance: false
 
   deploy:
@@ -91,32 +93,80 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     if: github.event_name == 'push'
-    # Destino do deploy (host, usuário, chave, diretório, projeto compose, portas) vem
-    # das variáveis e secrets do GitHub Environment — nunca do código:
+    # Destino do deploy e configuração da plataforma vêm das Variables e Secrets do GitHub
+    # Environment — nunca do código (docs/operations/runbook.md, DEPLOY_DIR em caminho absoluto):
     #   vars:    DEPLOY_HOST, DEPLOY_USER, DEPLOY_DIR, COMPOSE_PROJECT, API_PORT, WORKER_METRICS_PORT
-    #   secrets: DEPLOY_SSH_KEY, DEPLOY_SSH_KEY_PASSPHRASE (opcional), ENV_PLATFORM (conteúdo do .env)
+    #            + configuração não secreta (ver "Montar .env")
+    #   secrets: DEPLOY_SSH_KEY, DEPLOY_SSH_KEY_PASSPHRASE (opcional) + segredos da plataforma
     environment:
       name: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
     env:
-      PLATFORM_IMAGE: ghcr.io/${{ github.repository_owner }}/crmthink-platform:${{ github.sha }}
+      PLATFORM_IMAGE: ${{ needs.build.outputs.image }}:${{ github.sha }}
     steps:
       - uses: actions/checkout@v5
 
-      - name: Copiar compose para a VPS
+      # Vazio = padrão do src/config/env.ts (a linha não entra no .env).
+      - name: Montar .env
+        env:
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+          PLATFORM_ENVIRONMENT: ${{ vars.PLATFORM_ENVIRONMENT }}
+          QUEUE_PREFIX: ${{ vars.QUEUE_PREFIX }}
+          SESSION_CORS_ORIGINS: ${{ vars.SESSION_CORS_ORIGINS }}
+          LOG_LEVEL: ${{ vars.LOG_LEVEL }}
+          LOKI_URL: ${{ vars.LOKI_URL }}
+          JWT_ISSUER: ${{ vars.JWT_ISSUER }}
+          JWT_TTL_SECONDS: ${{ vars.JWT_TTL_SECONDS }}
+          BITRIX_TLS_REJECT_UNAUTHORIZED: ${{ vars.BITRIX_TLS_REJECT_UNAUTHORIZED }}
+          INSTALLER_TIMEOUT_MS: ${{ vars.INSTALLER_TIMEOUT_MS }}
+          WEBHOOK_TIMEOUT_MS: ${{ vars.WEBHOOK_TIMEOUT_MS }}
+          CREDENTIAL_ROTATION_GRACE_HOURS: ${{ vars.CREDENTIAL_ROTATION_GRACE_HOURS }}
+          EVENT_RETRY_WINDOW_HOURS: ${{ vars.EVENT_RETRY_WINDOW_HOURS }}
+          WORKER_DISABLE_SCHEDULES: ${{ vars.WORKER_DISABLE_SCHEDULES }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          TOKEN_ENCRYPTION_KEY: ${{ secrets.TOKEN_ENCRYPTION_KEY }}
+          JWT_SIGNING_PRIVATE_KEY: ${{ secrets.JWT_SIGNING_PRIVATE_KEY }}
+          ADMIN_API_TOKENS: ${{ secrets.ADMIN_API_TOKENS }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          CRMTHINK_WEBHOOK_URL: ${{ secrets.CRMTHINK_WEBHOOK_URL }}
+          CRMTHINK_APPLICATION_TOKEN: ${{ secrets.CRMTHINK_APPLICATION_TOKEN }}
+        run: |
+          set -euo pipefail
+          for k in PUBLIC_BASE_URL PLATFORM_ENVIRONMENT QUEUE_PREFIX DATABASE_URL REDIS_URL TOKEN_ENCRYPTION_KEY JWT_SIGNING_PRIVATE_KEY; do
+            [ -n "${!k:-}" ] || { echo "::error::$k não configurada no Environment ${{ github.ref_name == 'main' && 'production' || 'staging' }}"; exit 1; }
+          done
+          # PEM colado com quebras de linha → uma linha com `\n` literal (o env.ts converte de volta).
+          JWT_SIGNING_PRIVATE_KEY="$(printf '%s' "$JWT_SIGNING_PRIVATE_KEY" | tr -d '\r' | awk '{printf "%s\\n", $0}')"
+          umask 077
+          {
+            echo "NODE_ENV=production"
+            for k in PUBLIC_BASE_URL PLATFORM_ENVIRONMENT QUEUE_PREFIX SESSION_CORS_ORIGINS LOG_LEVEL LOKI_URL \
+              JWT_ISSUER JWT_TTL_SECONDS BITRIX_TLS_REJECT_UNAUTHORIZED INSTALLER_TIMEOUT_MS WEBHOOK_TIMEOUT_MS \
+              CREDENTIAL_ROTATION_GRACE_HOURS EVENT_RETRY_WINDOW_HOURS WORKER_DISABLE_SCHEDULES \
+              DATABASE_URL REDIS_URL TOKEN_ENCRYPTION_KEY JWT_SIGNING_PRIVATE_KEY ADMIN_API_TOKENS \
+              STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET CRMTHINK_WEBHOOK_URL CRMTHINK_APPLICATION_TOKEN; do
+              v="${!k:-}"
+              [ -n "$v" ] || continue
+              case "$v" in *$'\n'*) echo "::error::$k tem quebra de linha"; exit 1 ;; esac
+              printf '%s=%s\n' "$k" "$v"
+            done
+          } > platform.env
+
+      - name: Copiar compose e .env para a VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ vars.DEPLOY_HOST }}
           username: ${{ vars.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           passphrase: ${{ secrets.DEPLOY_SSH_KEY_PASSPHRASE }}
-          source: docker-compose.deploy.yml
+          source: docker-compose.deploy.yml,platform.env
           target: ${{ vars.DEPLOY_DIR }}
 
-      - name: Escrever .env, migrar e subir
+      - name: Migrar e subir
         uses: appleboy/ssh-action@v1.2.0
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ENV_PLATFORM: ${{ secrets.ENV_PLATFORM }}
           PLATFORM_IMAGE: ${{ env.PLATFORM_IMAGE }}
           DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
           COMPOSE_PROJECT: ${{ vars.COMPOSE_PROJECT }}
@@ -128,16 +178,15 @@ jobs:
           username: ${{ vars.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           passphrase: ${{ secrets.DEPLOY_SSH_KEY_PASSPHRASE }}
-          envs: GH_TOKEN,ENV_PLATFORM,PLATFORM_IMAGE,DEPLOY_DIR,COMPOSE_PROJECT,API_PORT,WORKER_METRICS_PORT,ACTOR
+          envs: GH_TOKEN,PLATFORM_IMAGE,DEPLOY_DIR,COMPOSE_PROJECT,API_PORT,WORKER_METRICS_PORT,ACTOR
           script: |
             set -euo pipefail
-            mkdir -p "$DEPLOY_DIR"
             cd "$DEPLOY_DIR"
-            umask 077
-            printf '%s\n' "$ENV_PLATFORM" > .env
+            chmod 600 platform.env
+            mv platform.env .env
             echo "$GH_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
             docker pull "$PLATFORM_IMAGE"
-            docker run --rm --network host --env-file .env "$PLATFORM_IMAGE" npx prisma migrate deploy
+            docker run --rm --network crmthink --env-file .env "$PLATFORM_IMAGE" npx prisma migrate deploy
             export PLATFORM_IMAGE API_PORT WORKER_METRICS_PORT
             export COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT"
             docker compose -p "$COMPOSE_PROJECT" -f docker-compose.deploy.yml up -d --remove-orphans
