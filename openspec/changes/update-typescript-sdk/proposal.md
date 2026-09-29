@@ -8,7 +8,7 @@ Com o GPTMaker migrado para TypeScript, `sdk/typescript` passou a ser o único S
 - Erros da plataforma como `PlatformError` com `status`, `code` estável, `message` e `details`; timeout configurável por requisição.
 - Tipos de requisição, resposta e eventos derivados do `docs/api/openapi.json`, gerados em arquivo versionado. `PlatformEvent` vira união discriminada por `type`, com o `data` tipado de cada evento; o payload do instalador também ganha tipo.
 - `PlatformTokenClient` continua exportado, delegando ao `PlatformClient`, para não quebrar quem já copiou o SDK.
-- Empacotamento como `@crmthink/platform-sdk`: `package.json` próprio (ESM, Node ≥ 20, `jose` como única dependência), build para `dist/` com declarações, versão semântica e publicação no GitHub Packages da organização.
+- Empacotamento como `@crmthink-sources/platform-sdk`: `package.json` próprio (ESM, Node ≥ 20, `jose` como única dependência), build para `dist/` com declarações, versão semântica e publicação no GitHub Packages da organização.
 - Testes de deriva: toda operação `appApiKey` do contrato público tem método no SDK e vice-versa (mesmo método HTTP e caminho); os tipos gerados batem com o `openapi.json` versionado; todo tipo de evento do contrato está na união `PlatformEvent`.
 - `docs/apps-integration.md` passa a documentar a instalação do pacote e o uso do `PlatformClient` nas seções de tokens e cobrança.
 

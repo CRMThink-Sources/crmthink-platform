@@ -12,6 +12,8 @@ export default defineConfig(
       'prisma.config.ts',
       'node_modules/**',
       'dist/**',
+      'sdk/typescript/dist/**',
+      'sdk/typescript/src/generated/**',
       'coverage/**',
       'prisma/generated/**',
       'public/**',

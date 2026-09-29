@@ -34,21 +34,21 @@ O contrato público está em `docs/api/openapi.json` (OpenAPI 3.1, gerado por `y
 Tokens: mesmo cache até `expiresAt − 5 min` e `refresh` pela plataforma; `get` concorrente da mesma instalação passa a compartilhar a mesma promessa em voo, para não disparar N buscas no arranque do app. `PlatformTokenClient` vira um invólucro fino com o construtor posicional atual.
 
 ### 4. Layout e build do pacote
-`sdk/typescript/` passa a ter `package.json` (`@crmthink/platform-sdk`, `type: module`, `exports` → `dist/index.js` + `dist/index.d.ts`, `files: ["dist"]`, `engines.node >= 20`, `dependencies: { jose }`, `publishConfig` do GitHub Packages), `README.md`, `tsconfig.build.json` (`NodeNext`, `declaration`, `rootDir: src`, exclui `*.test.ts`) e `src/` dividido em `signature.ts`, `session.ts`, `events.ts`, `client.ts`, `index.ts` e `generated/`. Imports relativos com extensão `.js`. Testes ficam em `sdk/typescript/test/` e continuam no vitest da raiz, podendo importar a plataforma. O build de `tsc -p sdk/typescript/tsconfig.build.json` falha se algo em `src/` importar `@/`, porque o `tsconfig` do pacote não conhece o alias.
+`sdk/typescript/` passa a ter `package.json` (`@crmthink-sources/platform-sdk`, `type: module`, `exports` → `dist/index.js` + `dist/index.d.ts`, `files: ["dist"]`, `engines.node >= 20`, `dependencies: { jose }`, `publishConfig` do GitHub Packages), `README.md`, `tsconfig.build.json` (`NodeNext`, `declaration`, `rootDir: src`, exclui `*.test.ts`) e `src/` dividido em `signature.ts`, `session.ts`, `events.ts`, `client.ts`, `index.ts` e `generated/`. Imports relativos com extensão `.js`. Testes ficam em `sdk/typescript/test/` e continuam no vitest da raiz, podendo importar a plataforma. O build de `tsc -p sdk/typescript/tsconfig.build.json` falha se algo em `src/` importar `@/`, porque o `tsconfig` do pacote não conhece o alias.
 - *Alternativa*: workspaces do yarn. Rejeitada por ora: muda instalação, Docker e CI da plataforma por um pacote com uma dependência.
 
 ### 5. Versão e publicação
-Primeira versão publicada `1.0.0` (a união de eventos tipada já é incompatível com quem atribui `type` livre). Publicação por workflow disparado em tag `sdk-v<versão>`, que confere tag = `version` do `package.json`, roda testes do SDK, build e `npm publish` no GitHub Packages da organização `CRMThink-Sources` com o `GITHUB_TOKEN`.
+Primeira versão publicada `1.0.0` (a união de eventos tipada já é incompatível com quem atribui `type` livre). Publicação por workflow disparado em tag `sdk-v<versão>`, que confere tag = `version` do `package.json`, roda testes do SDK, build e `npm publish` no GitHub Packages da organização `CRMThink-Sources` com o `GITHUB_TOKEN` (o GitHub Packages exige escopo igual ao dono do repositório, por isso `@crmthink-sources`).
 
 ## Risks / Trade-offs
 
 - [Mudança no contrato quebra apps ao atualizar o pacote] → versão maior em mudança incompatível; o teste de tipos desatualizados obriga a regenerar no mesmo PR que muda o contrato, então a quebra aparece na revisão.
 - [Saída do `openapi-typescript` muda entre versões e dispara o teste de deriva] → versão fixa (sem `^`) na devDependency.
 - [Tipos gerados ficam verbosos para o usuário] → aliases nomeados exportados por `index.ts`; o arquivo gerado não é importado diretamente pelos apps.
-- [GitHub Packages exige token até para instalar] → documentar `.npmrc` com `@crmthink:registry` e token de leitura no guia de integração.
+- [GitHub Packages exige token até para instalar] → documentar `.npmrc` com `@crmthink-sources:registry` e token de leitura no guia de integração.
 
 ## Migration Plan
 
 1. Mesclar com o pacote em `1.0.0` e publicar a tag `sdk-v1.0.0`.
-2. GPTMaker instala `@crmthink/platform-sdk`, apaga a pasta copiada e ajusta imports; nomes atuais continuam existindo.
+2. GPTMaker instala `@crmthink-sources/platform-sdk`, apaga a pasta copiada e ajusta imports; nomes atuais continuam existindo.
 3. Rollback: o app volta à versão anterior do pacote ou à pasta copiada; nada muda na plataforma.
