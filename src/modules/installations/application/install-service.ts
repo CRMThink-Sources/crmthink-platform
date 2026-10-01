@@ -194,7 +194,7 @@ export class InstallService {
       return runWithLogContext(
         { installationId: installation.id },
         async () => {
-          await this.bindUninstall(app, installation, tokens.accessToken)
+          await this.bindAppEvents(app, installation, tokens.accessToken)
           return this.runInstaller(app, installation)
         },
       )
@@ -251,17 +251,21 @@ export class InstallService {
     }
   }
 
-  private async bindUninstall(
+  /**
+   * `ONAPPINSTALL` precisa estar registrado antes do `installFinish`: é ele que traz o
+   * `application_token`, e o Bitrix só o envia a handlers já vinculados.
+   */
+  private async bindAppEvents(
     app: RegisteredApp,
     installation: Installation,
     accessToken: string,
   ): Promise<void> {
     const client = this.deps.clientFor(installation.domain, accessToken)
+    const handler = this.eventsHandlerUrl(app.appCode)
     try {
-      await callBitrixIdempotent(client, 'event.bind', {
-        event: 'ONAPPUNINSTALL',
-        handler: this.eventsHandlerUrl(app.appCode),
-      })
+      for (const event of ['ONAPPINSTALL', 'ONAPPUNINSTALL']) {
+        await callBitrixIdempotent(client, 'event.bind', { event, handler })
+      }
       await this.recordAttempt(installation.id, 'event-bind', 'ok')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -269,7 +273,7 @@ export class InstallService {
       throw new HttpError(
         error instanceof BitrixUnavailableError ? 503 : 502,
         'EVENT_BIND_FAILED',
-        'Não foi possível registrar o evento de desinstalação no portal. Tente novamente.',
+        'Não foi possível registrar os eventos de instalação no portal. Tente novamente.',
       )
     }
   }

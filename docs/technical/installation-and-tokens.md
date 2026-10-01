@@ -28,20 +28,25 @@ sequenceDiagram
   U->>B: instala o app
   B->>P: POST /install/{appCode} (form)
   P-->>B: página de instalação (tema do app)
-  B-->>P: POST /bitrix/events/{appCode} ONAPPINSTALL (application_token)
-  Note over P: guarda o application_token pendente no Redis<br/>(só depois de provar a origem)
   U->>P: clica "Instalar" → POST /v1/install {auth do BX24.getAuth(), acceptedTerms}
   P->>B: verifica token: app, portal, admin (OAuth + REST)
   P->>C: localiza ou cria o item da instalação
-  P->>P: grava installation (INSTALLING), credential cifrada,<br/>application_token, install_attempt "register"
-  P->>B: event.bind ONAPPUNINSTALL → install_attempt "event-bind"
+  P->>P: grava installation (INSTALLING), credential cifrada,<br/>install_attempt "register"
+  P->>B: event.bind ONAPPINSTALL e ONAPPUNINSTALL → install_attempt "event-bind"
   P->>A: POST installerUrl (assinado) {installationId, memberId, domain, isReinstall}
   A->>P: GET /v1/installations/{id}/token (binds do app no portal)
   A-->>P: 2xx
   P->>P: ACTIVE + outbox installation.created|reinstalled<br/>+ trial automático (se trialOnInstall)
   P-->>U: {installationId, status: ACTIVE}
   Note over U,B: a página chama BX24.installFinish()
+  B-->>P: POST /bitrix/events/{appCode} ONAPPINSTALL (application_token)
+  Note over P: prova a origem (access_token do evento) e grava<br/>o application_token cifrado
 ```
+
+O Bitrix só envia `ONAPPINSTALL` depois do `installFinish` e só a handlers já vinculados —
+por isso o `event.bind` dele acontece no `POST /v1/install`. Se o evento chegar antes da
+instalação estar gravada (handler também cadastrado no cartão do app), o token fica pendente
+no Redis e é gravado pelo `POST /v1/install`.
 
 Propriedades:
 

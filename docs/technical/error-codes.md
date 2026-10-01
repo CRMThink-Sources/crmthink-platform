@@ -53,7 +53,7 @@ em `src/docs/openapi/operations.ts` e rode `yarn docs:openapi`. O teste
 | `TRIAL_NOT_CONFIGURED` | 422 | O app não tem trial configurado. | Configurar `trialDays`/`trialPlanId` no cadastro. | startTrial | `billing/application/trial-service.ts` |
 | `AUTH_MISSING` | 500 | Rota de app montada sem `appAuth` (defeito da plataforma). | Reportar; não é causado pelo app. | — | `registry/http/auth.ts` |
 | `INTERNAL_ERROR` | 500 | Erro não tratado; registrado no log com o `X-Request-Id`. | Repetir com backoff; persistindo, reportar com o `X-Request-Id`. | — | `shared/http/errors.ts` |
-| `EVENT_BIND_FAILED` | 502 | Falha ao registrar `ONAPPUNINSTALL` no portal (503 se o portal não respondeu). | Repetir a instalação; ela retoma sem duplicar. | install | `installations/application/install-service.ts` |
+| `EVENT_BIND_FAILED` | 502 | Falha ao registrar `ONAPPINSTALL`/`ONAPPUNINSTALL` no portal (503 se o portal não respondeu). | Repetir a instalação; ela retoma sem duplicar. | install | `installations/application/install-service.ts` |
 | `GATEWAY_ERROR` | 502 | O Stripe recusou ou falhou na operação. | Repetir com backoff; persistindo, reportar. | createCheckoutSession, createItem, updateItem, removeItem | `billing/application/checkout-service.ts, billing/application/items-service.ts` |
 | `TOKEN_REFRESH_FAILED` | 502 | O OAuth do Bitrix falhou ao renovar o token. | Repetir com backoff. | getInstallationToken, refreshInstallationToken | `installations/application/token-vault.ts` |
 | `BITRIX_UNAVAILABLE` | 503 | O portal Bitrix24 não respondeu a tempo. | Repetir com backoff. | install, retryInstall, createSession, getInstallationToken, refreshInstallationToken | `installations/application/bitrix-auth-verifier.ts, installations/application/token-vault.ts` |
