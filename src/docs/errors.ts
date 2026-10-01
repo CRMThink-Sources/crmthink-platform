@@ -132,7 +132,7 @@ export const ERROR_CATALOG = {
   EVENT_BIND_FAILED: {
     status: 502,
     meaning:
-      'Falha ao registrar `ONAPPUNINSTALL` no portal (503 se o portal não respondeu).',
+      'Falha ao registrar `ONAPPINSTALL`/`ONAPPUNINSTALL` no portal (503 se o portal não respondeu).',
     action: 'Repetir a instalação; ela retoma sem duplicar.',
     origin: 'installations/application/install-service.ts',
   },

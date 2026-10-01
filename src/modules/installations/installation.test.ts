@@ -122,12 +122,16 @@ describe('instalação', () => {
       'access-1',
     )
 
-    // event.bind do ONAPPUNINSTALL para o handler da plataforma.
-    const bind = h.portal.calls.find(call => call.method === 'event.bind')
-    expect(bind?.params).toEqual({
-      event: 'ONAPPUNINSTALL',
-      handler: `https://platform.test/bitrix/events/${GPTMAKER}`,
-    })
+    // event.bind do ONAPPINSTALL (traz o application_token) e do ONAPPUNINSTALL.
+    const handler = `https://platform.test/bitrix/events/${GPTMAKER}`
+    expect(
+      h.portal.calls
+        .filter(call => call.method === 'event.bind')
+        .map(call => call.params),
+    ).toEqual([
+      { event: 'ONAPPINSTALL', handler },
+      { event: 'ONAPPUNINSTALL', handler },
+    ])
 
     // Instalador síncrono, assinado com o segredo do webhook.
     expect(installerCalls).toHaveLength(1)

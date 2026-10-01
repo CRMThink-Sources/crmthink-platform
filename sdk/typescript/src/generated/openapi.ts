@@ -222,7 +222,7 @@ export interface paths {
         put?: never;
         /**
          * Instalar o app no portal
-         * @description Chamado pela página de instalação. Verifica o token no Bitrix (administrador, app e portal corretos), registra a instalação no SPA 1060, guarda os tokens cifrados, registra `ONAPPUNINSTALL` e chama o instalador do app. Idempotente: repetir retoma sem duplicar. Se o instalador do app falhar, responde `INSTALL_PENDING` com `error`.
+         * @description Chamado pela página de instalação. Verifica o token no Bitrix (administrador, app e portal corretos), registra a instalação no SPA 1060, guarda os tokens cifrados, registra `ONAPPINSTALL` e `ONAPPUNINSTALL` e chama o instalador do app. Idempotente: repetir retoma sem duplicar. Se o instalador do app falhar, responde `INSTALL_PENDING` com `error`.
          */
         post: operations["install"];
         delete?: never;
@@ -2200,7 +2200,7 @@ export interface operations {
             };
             /**
              * @description Falha em serviço externo
-             *     - `EVENT_BIND_FAILED`: Falha ao registrar `ONAPPUNINSTALL` no portal (503 se o portal não respondeu).
+             *     - `EVENT_BIND_FAILED`: Falha ao registrar `ONAPPINSTALL`/`ONAPPUNINSTALL` no portal (503 se o portal não respondeu).
              */
             502: {
                 headers: {

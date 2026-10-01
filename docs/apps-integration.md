@@ -33,6 +33,8 @@ No app Bitrix24 (staging e produção são apps distintos):
 
 - **URL de instalação**: `https://<plataforma>/install/<appCode>`
 - **Handler de eventos de instalação**: `https://<plataforma>/bitrix/events/<appCode>`
+  (onde o app tiver esse campo; a plataforma também faz o `event.bind` de `ONAPPINSTALL` e
+  `ONAPPUNINSTALL` na instalação, que é o que garante o `application_token` em app local)
 
 Rotação: `POST /admin/apps/<appCode>/rotate-api-key` e `/rotate-webhook-secret`. A
 credencial anterior continua valendo por 24h (`CREDENTIAL_ROTATION_GRACE_HOURS`);

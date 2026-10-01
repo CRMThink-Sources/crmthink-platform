@@ -1797,7 +1797,7 @@
           "Instalação"
         ],
         "summary": "Instalar o app no portal",
-        "description": "Chamado pela página de instalação. Verifica o token no Bitrix (administrador, app e portal corretos), registra a instalação no SPA 1060, guarda os tokens cifrados, registra `ONAPPUNINSTALL` e chama o instalador do app. Idempotente: repetir retoma sem duplicar. Se o instalador do app falhar, responde `INSTALL_PENDING` com `error`.",
+        "description": "Chamado pela página de instalação. Verifica o token no Bitrix (administrador, app e portal corretos), registra a instalação no SPA 1060, guarda os tokens cifrados, registra `ONAPPINSTALL` e `ONAPPUNINSTALL` e chama o instalador do app. Idempotente: repetir retoma sem duplicar. Se o instalador do app falhar, responde `INSTALL_PENDING` com `error`.",
         "security": [],
         "requestBody": {
           "required": true,
@@ -1926,7 +1926,7 @@
             }
           },
           "502": {
-            "description": "Falha em serviço externo\n- `EVENT_BIND_FAILED`: Falha ao registrar `ONAPPUNINSTALL` no portal (503 se o portal não respondeu).",
+            "description": "Falha em serviço externo\n- `EVENT_BIND_FAILED`: Falha ao registrar `ONAPPINSTALL`/`ONAPPUNINSTALL` no portal (503 se o portal não respondeu).",
             "x-error-codes": [
               "EVENT_BIND_FAILED"
             ],
@@ -1940,7 +1940,7 @@
                     "value": {
                       "error": {
                         "code": "EVENT_BIND_FAILED",
-                        "message": "Falha ao registrar `ONAPPUNINSTALL` no portal (503 se o portal não respondeu)."
+                        "message": "Falha ao registrar `ONAPPINSTALL`/`ONAPPUNINSTALL` no portal (503 se o portal não respondeu)."
                       }
                     }
                   }
