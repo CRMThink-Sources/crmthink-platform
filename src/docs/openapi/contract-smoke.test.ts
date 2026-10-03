@@ -50,7 +50,7 @@ describe('contrato: rotas sem teste de domínio', () => {
     await http(h).get('/admin/apps').expect(401)
 
     await http(h)
-      .post(`/v1/installations/${installationId}/trial`)
+      .post(`/admin/installations/${installationId}/trial`)
       .set(ADMIN)
       .expect(201)
     await http(h)

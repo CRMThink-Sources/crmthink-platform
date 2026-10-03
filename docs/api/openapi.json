@@ -662,7 +662,7 @@
             }
           },
           "409": {
-            "description": "Conflito\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga (ou trial, no trial manual).",
+            "description": "Conflito\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.",
             "x-error-codes": [
               "INSTALLATION_NOT_ACTIVE",
               "SUBSCRIPTION_ALREADY_EXISTS"
@@ -685,7 +685,7 @@
                     "value": {
                       "error": {
                         "code": "SUBSCRIPTION_ALREADY_EXISTS",
-                        "message": "A instalação já tem assinatura paga (ou trial, no trial manual)."
+                        "message": "A instalação já tem assinatura paga vigente."
                       }
                     }
                   }
@@ -1921,6 +1921,221 @@
                       "error": {
                         "code": "BITRIX_UNAVAILABLE",
                         "message": "O portal Bitrix24 não respondeu a tempo."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/installations/{id}/trial": {
+      "post": {
+        "operationId": "requestTrial",
+        "tags": [
+          "Cobrança"
+        ],
+        "summary": "Solicitar trial com dados de contato",
+        "description": "O contato (nome, e-mail, telefone, empresa e cargo) é gravado na instalação e no SPA 1060, e o e-mail passa a ser usado no checkout. Sem trial anterior, cria o trial (201, evento `subscription.trial_started`). Com trial vigente, como o criado por `trial_on_install`, só grava o contato e devolve o trial atual (200). Nos 409 o contato também fica gravado.",
+        "security": [
+          {
+            "appApiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da instalação (`installationId`)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrialRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Trial já vigente; contato gravado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialStarted"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Trial iniciado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialStarted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `APP_INACTIVE`: Aplicação desativada ou inexistente.",
+            "x-error-codes": [
+              "APP_INACTIVE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "APP_INACTIVE": {
+                    "value": {
+                      "error": {
+                        "code": "APP_INACTIVE",
+                        "message": "Aplicação desativada ou inexistente."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `INSTALLATION_NOT_FOUND`: Instalação inexistente, de outro app ou desvinculada do SPA 1060.",
+            "x-error-codes": [
+              "INSTALLATION_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INSTALLATION_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "INSTALLATION_NOT_FOUND",
+                        "message": "Instalação inexistente, de outro app ou desvinculada do SPA 1060."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `TRIAL_ALREADY_USED`: A instalação já usou o trial (na rota de operador, também quando o trial está vigente).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.\n- `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.",
+            "x-error-codes": [
+              "TRIAL_ALREADY_USED",
+              "SUBSCRIPTION_ALREADY_EXISTS",
+              "BILLING_BUSY"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "TRIAL_ALREADY_USED": {
+                    "value": {
+                      "error": {
+                        "code": "TRIAL_ALREADY_USED",
+                        "message": "A instalação já usou o trial (na rota de operador, também quando o trial está vigente)."
+                      }
+                    }
+                  },
+                  "SUBSCRIPTION_ALREADY_EXISTS": {
+                    "value": {
+                      "error": {
+                        "code": "SUBSCRIPTION_ALREADY_EXISTS",
+                        "message": "A instalação já tem assinatura paga vigente."
+                      }
+                    }
+                  },
+                  "BILLING_BUSY": {
+                    "value": {
+                      "error": {
+                        "code": "BILLING_BUSY",
+                        "message": "Outra operação de cobrança da mesma instalação está em andamento."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Não processável\n- `TRIAL_NOT_CONFIGURED`: O app não tem trial configurado.",
+            "x-error-codes": [
+              "TRIAL_NOT_CONFIGURED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "TRIAL_NOT_CONFIGURED": {
+                    "value": {
+                      "error": {
+                        "code": "TRIAL_NOT_CONFIGURED",
+                        "message": "O app não tem trial configurado."
                       }
                     }
                   }
@@ -7024,6 +7239,60 @@
         "required": [
           "staleAccessToken"
         ]
+      },
+      "TrialRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 200,
+            "format": "email"
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "company": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "role": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "phone",
+          "company",
+          "role"
+        ]
+      },
+      "TrialStarted": {
+        "type": "object",
+        "properties": {
+          "subscriptionId": {
+            "type": "integer"
+          },
+          "trialEndsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "subscriptionId",
+          "trialEndsAt"
+        ],
+        "additionalProperties": false
       },
       "UpdateItemRequest": {
         "type": "object",

@@ -203,12 +203,21 @@ Garantias e obrigações do app:
 | --- | --- |
 | `GET /v1/plans` | Planos ativos dos produtos do app (`type: subscription\|one_time`, `trial`) |
 | `GET /v1/installations/{id}/subscription` | Assinatura vigente, `cancelAtPeriodEnd`, trial e `version` |
+| `POST /v1/installations/{id}/trial` | `{name, email, phone, company, role}` (todos obrigatórios) → `{subscriptionId, trialEndsAt}`: `201` cria o trial, `200` já estava em trial (só grava o contato) |
 | `POST /v1/checkout-sessions` | `{installationId, planId, intent: subscribe\|purchase, quantity?}` → `{clientSecret, sessionId}` para o **Checkout embutido** |
 | `POST /v1/billing-portal-sessions` | `{installationId, returnUrl}` → URL do Customer Portal (abrir em aba nova) |
 | `POST /v1/subscriptions/{id}/change-plan` | `{planId}`: upgrade imediato (fatura proporcional) ou downgrade no próximo ciclo |
 | `POST/PATCH/DELETE /v1/subscriptions/{id}/items[/{itemId}]` | Itens no SPA 1146, idempotentes por `externalRef`; `billable` sincroniza quantidade no Stripe |
 
-No SDK: `listPlans`, `getSubscription`, `createCheckoutSession`,
+**Trial com contato.** A instalação não coleta dados do cliente (regra do marketplace do
+Bitrix). Para o comercial acompanhar o trial, o app mostra um formulário e envia o
+contato a `POST /v1/installations/{id}/trial`. O contato vai para a instalação (SPA
+1060) e o e-mail passa a preencher o checkout. Com `trial_on_install`, o trial já existe
+quando o app chama a rota: a resposta é `200` com o trial atual. Sem `trial_on_install`,
+é essa chamada que cria o trial (`201`, evento `subscription.trial_started`). Em
+`TRIAL_ALREADY_USED` e `SUBSCRIPTION_ALREADY_EXISTS` o contato também fica gravado.
+
+No SDK: `listPlans`, `getSubscription`, `requestTrial`, `createCheckoutSession`,
 `createBillingPortalSession`, `changePlan`, `listItems`, `createItem`, `updateItem` e
 `removeItem`; erro da plataforma vira `PlatformError` com o `code` abaixo.
 

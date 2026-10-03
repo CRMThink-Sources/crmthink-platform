@@ -86,6 +86,7 @@ export function createApp(container: Container, health: HealthState): Express {
     items: container.items,
     stripeIngest: container.stripeIngest,
     spaIngest: container.spaIngest,
+    trials: container.trials,
   }
 
   app.use(billingWebhookRoutes(billingDeps))

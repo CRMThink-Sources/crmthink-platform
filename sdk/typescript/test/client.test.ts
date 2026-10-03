@@ -58,6 +58,32 @@ describe('SDK: transporte do PlatformClient', () => {
     expect(calls[1]!.headers.get('content-type')).toBe('application/json')
   })
 
+  it('requestTrial: created pelo status (201 criado, 200 já vigente)', async () => {
+    const body = { subscriptionId: 9, trialEndsAt: '2026-10-17T23:59:59.999Z' }
+    const contact = {
+      name: 'Ana',
+      email: 'ana@cliente.com',
+      phone: '11 99999-0000',
+      company: 'Cliente',
+      role: 'Diretora',
+    }
+    let status = 201
+    const { calls, impl } = fakeFetch(() => json(body, status))
+    const platform = client(impl)
+
+    expect(await platform.requestTrial(5, contact)).toEqual({
+      ...body,
+      created: true,
+    })
+    status = 200
+    expect((await platform.requestTrial(5, contact)).created).toBe(false)
+    expect(calls[0]).toMatchObject({
+      method: 'POST',
+      url: 'https://p.test/v1/installations/5/trial',
+      body: JSON.stringify(contact),
+    })
+  })
+
   it('204 resolve sem valor', async () => {
     const { impl } = fakeFetch(() => new Response(null, { status: 204 }))
     await expect(client(impl).listPlans()).resolves.toBeUndefined()

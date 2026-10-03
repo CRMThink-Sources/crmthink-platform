@@ -342,6 +342,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/installations/{id}/trial": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Solicitar trial com dados de contato
+         * @description O contato (nome, e-mail, telefone, empresa e cargo) é gravado na instalação e no SPA 1060, e o e-mail passa a ser usado no checkout. Sem trial anterior, cria o trial (201, evento `subscription.trial_started`). Com trial vigente, como o criado por `trial_on_install`, só grava o contato e devolve o trial atual (200). Nos 409 o contato também fica gravado.
+         */
+        post: operations["requestTrial"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/plans": {
         parameters: {
             query?: never;
@@ -1638,6 +1658,19 @@ export interface components {
         TokenRefreshRequest: {
             staleAccessToken: string;
         };
+        TrialRequest: {
+            name: string;
+            /** Format: email */
+            email: string;
+            phone: string;
+            company: string;
+            role: string;
+        };
+        TrialStarted: {
+            subscriptionId: number;
+            /** Format: date-time */
+            trialEndsAt: string;
+        };
         UpdateItemRequest: {
             /** @enum {string} */
             status?: "active" | "cancelled";
@@ -2086,7 +2119,7 @@ export interface operations {
             /**
              * @description Conflito
              *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).
-             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga (ou trial, no trial manual).
+             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.
              */
             409: {
                 headers: {
@@ -2713,6 +2746,116 @@ export interface operations {
              *     - `BITRIX_UNAVAILABLE`: O portal Bitrix24 não respondeu a tempo.
              */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    requestTrial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Id da instalação (`installationId`) */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrialRequest"];
+            };
+        };
+        responses: {
+            /** @description Trial já vigente; contato gravado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialStarted"];
+                };
+            };
+            /** @description Trial iniciado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialStarted"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `APP_INACTIVE`: Aplicação desativada ou inexistente.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `INSTALLATION_NOT_FOUND`: Instalação inexistente, de outro app ou desvinculada do SPA 1060.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Conflito
+             *     - `TRIAL_ALREADY_USED`: A instalação já usou o trial (na rota de operador, também quando o trial está vigente).
+             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.
+             *     - `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não processável
+             *     - `TRIAL_NOT_CONFIGURED`: O app não tem trial configurado.
+             */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1,6 +1,6 @@
 {
   "name": "@crmthink-sources/platform-sdk",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "SDK TypeScript para apps que falam com o crmthink-platform: assinatura, sessão do iframe, tokens do Bitrix e cobrança.",
   "license": "UNLICENSED",
   "type": "module",
