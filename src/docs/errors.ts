@@ -245,7 +245,7 @@ export const ERROR_CATALOG = {
   },
   SUBSCRIPTION_ALREADY_EXISTS: {
     status: 409,
-    meaning: 'A instalação já tem assinatura paga (ou trial, no trial manual).',
+    meaning: 'A instalação já tem assinatura paga vigente.',
     action: 'Usar troca de plano ou o Customer Portal.',
     origin:
       'billing/application/checkout-service.ts, billing/application/trial-service.ts',
@@ -310,13 +310,16 @@ export const ERROR_CATALOG = {
   TRIAL_NOT_CONFIGURED: {
     status: 422,
     meaning: 'O app não tem trial configurado.',
-    action: 'Configurar `trialDays`/`trialPlanId` no cadastro.',
+    action:
+      'Pedir ao operador para configurar `trialDays`/`trialPlanId` no cadastro do app.',
     origin: 'billing/application/trial-service.ts',
   },
   TRIAL_ALREADY_USED: {
     status: 409,
-    meaning: 'A instalação já usou o trial.',
-    action: 'Oferecer checkout.',
+    meaning:
+      'A instalação já usou o trial (na rota de operador, também quando o trial está vigente).',
+    action:
+      'Oferecer checkout. Na solicitação do app, o contato enviado já foi gravado.',
     origin: 'billing/application/trial-service.ts',
   },
 

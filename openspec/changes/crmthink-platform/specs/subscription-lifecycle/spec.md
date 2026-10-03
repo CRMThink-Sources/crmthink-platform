@@ -8,7 +8,7 @@ Cada assinatura MUST existir como item do SPA 1142 vinculado à instalação (`p
 - **THEN** o sistema retorna status, modalidade, plano, período, `cancelAtPeriodEnd`, dados de trial e versão atual
 
 ### Requirement: Trial
-O sistema MUST criar automaticamente, quando a instalação de um app com `trial_on_install` fica `ACTIVE` pela primeira vez (ver `bitrix-installation`), uma assinatura `trialing` sem ID de gateway, com fim do período igual a agora mais a duração de trial da aplicação, uma única vez por instalação, e emitir `subscription.trial_started`. A rota `POST /v1/installations/{id}/trial` MUST existir apenas como rota administrativa, com credencial de operador, para casos excepcionais. Ao fim do trial sem assinatura paga, o sistema MUST marcar `trial_expired` e emitir `subscription.ended` com `reason = trial_expired`.
+O sistema MUST criar automaticamente, quando a instalação de um app com `trial_on_install` fica `ACTIVE` pela primeira vez (ver `bitrix-installation`), uma assinatura `trialing` sem ID de gateway, com fim do período igual a agora mais a duração de trial da aplicação, uma única vez por instalação, e emitir `subscription.trial_started`. O app MAY solicitar o trial enviando os dados de contato do cliente por `POST /v1/installations/{id}/trial` (ver `trial-request`), e a rota `POST /admin/installations/{id}/trial` MUST existir, com credencial de operador, para casos excepcionais. Ao fim do trial sem assinatura paga, o sistema MUST marcar `trial_expired` e emitir `subscription.ended` com `reason = trial_expired`.
 
 #### Scenario: Iniciar trial
 - **WHEN** uma instalação nova do GPTMaker (trial de 14 dias, `trial_on_install`) fica `ACTIVE`
@@ -16,7 +16,7 @@ O sistema MUST criar automaticamente, quando a instalação de um app com `trial
 
 #### Scenario: Trial repetido
 - **WHEN** uma instalação que já usou trial é reinstalada, ou um operador tenta iniciar trial nela pela rota administrativa
-- **THEN** nenhum trial é criado; a rota administrativa responde `TRIAL_ALREADY_USED`
+- **THEN** nenhum trial é criado; a rota de operador responde `TRIAL_ALREADY_USED`
 
 #### Scenario: Trial expirado
 - **WHEN** o job de expiração encontra trial vencido sem assinatura paga

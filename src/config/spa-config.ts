@@ -9,8 +9,8 @@ import z from 'zod'
  * sobrescrita por arquivo (`SPA_CONFIG_FILE`) — e são conferidos no boot contra
  * `crm.item.fields` (ver `billing/infra/spa/validate-spa-config.ts`).
  *
- * Campos novos da plataforma (Ambiente, trial usado, `billable`, `externalRef`, versão,
- * `cancelAtPeriodEnd`) são criados pelo dono do portal; os códigos abaixo são os nomes
+ * Campos novos da plataforma (Ambiente, trial usado, cargo do contato, `billable`,
+ * `externalRef`, versão, `cancelAtPeriodEnd`) são criados pelo dono do portal; os códigos abaixo são os nomes
  * de leitura esperados e devem ser confirmados no onboarding.
  */
 
@@ -48,6 +48,8 @@ const spaConfigSchema = z.object({
     email: z.string(),
     phone: z.string(),
     company: z.string(),
+    /** Cargo do contato, informado na solicitação de trial. */
+    role: z.string(),
     environment: z.string(),
     trialUsed: z.string(),
   }),
@@ -127,6 +129,7 @@ export const DEFAULT_SPA_CONFIG: SpaConfig = {
     email: 'ufCrm55_1764705052074',
     phone: 'ufCrm55_1764705060227',
     company: 'ufCrm55_1764705072229',
+    role: 'ufCrm55Role',
     environment: 'ufCrm55Environment',
     trialUsed: 'ufCrm55TrialUsed',
   },

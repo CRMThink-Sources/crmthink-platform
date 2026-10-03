@@ -62,7 +62,7 @@ Propriedades:
 - **Reinstalação**: portal que já teve `ACTIVE` recebe `isReinstall: true` e o evento
   `installation.reinstalled`. Se estava em `AUTH_ERROR`, sai também `installation.auth_restored`.
 - **Trial automático** falho não impede a instalação: fica no log e o operador usa
-  `POST /v1/installations/{id}/trial`.
+  `POST /admin/installations/{id}/trial`.
 - Escopos do app Bitrix diferentes do cadastro geram alerta `install.scopes_missing`.
 
 ## Desinstalação

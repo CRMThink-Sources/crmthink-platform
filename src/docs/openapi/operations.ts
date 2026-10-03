@@ -16,6 +16,7 @@ import {
   updateItemSchema,
 } from '@/modules/billing/application/items-service'
 import { spaEventSchema } from '@/modules/billing/application/spa-events'
+import { trialRequestSchema } from '@/modules/billing/application/trial-service'
 import {
   createAppSchema,
   updateAppSchema,
@@ -105,6 +106,7 @@ const req = {
   createItem: named('CreateItemRequest', createItemSchema),
   updateItem: named('UpdateItemRequest', updateItemSchema),
   spaEvent: named('SpaEvent', spaEventSchema),
+  trialRequest: named('TrialRequest', trialRequestSchema),
   stripeEvent: named(
     'StripeEvent',
     z
@@ -466,6 +468,29 @@ export const OPERATIONS: Operation[] = [
   },
   {
     method: 'post',
+    path: '/v1/installations/{id}/trial',
+    operationId: 'requestTrial',
+    tag: 'Cobrança',
+    summary: 'Solicitar trial com dados de contato',
+    description:
+      'O contato (nome, e-mail, telefone, empresa e cargo) é gravado na instalação e no SPA 1060, e o e-mail passa a ser usado no checkout. Sem trial anterior, cria o trial (201, evento `subscription.trial_started`). Com trial vigente, como o criado por `trial_on_install`, só grava o contato e devolve o trial atual (200). Nos 409 o contato também fica gravado.',
+    security: 'appApiKey',
+    pathParams: installationId,
+    body: { schema: req.trialRequest },
+    responses: {
+      201: json('Trial iniciado', res.trialStarted),
+      200: json('Trial já vigente; contato gravado', res.trialStarted),
+    },
+    errors: [
+      'INSTALLATION_NOT_FOUND',
+      'TRIAL_NOT_CONFIGURED',
+      'TRIAL_ALREADY_USED',
+      'SUBSCRIPTION_ALREADY_EXISTS',
+      'BILLING_BUSY',
+    ],
+  },
+  {
+    method: 'post',
     path: '/v1/checkout-sessions',
     operationId: 'createCheckoutSession',
     tag: 'Cobrança',
@@ -702,12 +727,15 @@ export const OPERATIONS: Operation[] = [
   },
   {
     method: 'post',
-    path: '/v1/installations/{id}/trial',
+    path: '/admin/installations/{id}/trial',
     operationId: 'startTrial',
     tag: 'Operador',
     summary: 'Iniciar trial manualmente',
+    description:
+      'Casos excepcionais. Com trial vigente responde `TRIAL_ALREADY_USED`. O contato é opcional; quando enviado, é gravado como na solicitação do app.',
     security: 'adminToken',
     pathParams: installationId,
+    body: { schema: req.trialRequest, required: false },
     responses: { 201: json('Trial iniciado', res.trialStarted) },
     errors: [
       'INSTALLATION_NOT_FOUND',

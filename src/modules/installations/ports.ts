@@ -19,19 +19,25 @@ export type InstallationView = {
 
 /**
  * Contato do cliente. A instalação não coleta dados (regra do marketplace do Bitrix):
- * só existe em instalações migradas do hub-core.
+ * vem da solicitação de trial feita pelo app ou, nas instalações migradas, do hub-core.
  */
 export type InstallationContact = {
   email?: string
   name?: string
   phone?: string
   company?: string
+  role?: string
 }
 
 export interface InstallationDirectory {
   get(installationId: number): Promise<InstallationView | null>
   findBySpaItemId(spaItemId: number): Promise<InstallationView | null>
   markTrialUsed(installationId: number): Promise<void>
+  /** Substitui o contato inteiro: vale o último informado. */
+  saveContact(
+    installationId: number,
+    contact: InstallationContact,
+  ): Promise<void>
 }
 
 export interface TrialStarter {

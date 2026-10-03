@@ -544,14 +544,22 @@ describe('trial', () => {
     ;({ installationId } = await installedGptMaker(h))
   })
 
-  it('rota administrativa: TRIAL_ALREADY_USED', async () => {
+  it('rota de operador: TRIAL_ALREADY_USED; caminho antigo e chave de app recusados', async () => {
     const res = await http(h)
-      .post(`/v1/installations/${installationId}/trial`)
+      .post(`/admin/installations/${installationId}/trial`)
       .set('Authorization', 'Bearer admin-token')
     expect(res.status).toBe(409)
     expect(res.body.error.code).toBe('TRIAL_ALREADY_USED')
     expect(
-      (await http(h).post(`/v1/installations/${installationId}/trial`)).status,
+      (await http(h).post(`/admin/installations/${installationId}/trial`))
+        .status,
+    ).toBe(401)
+    expect(
+      (
+        await http(h)
+          .post(`/v1/installations/${installationId}/trial`)
+          .set('Authorization', 'Bearer admin-token')
+      ).status,
     ).toBe(401)
   })
 
@@ -564,6 +572,208 @@ describe('trial', () => {
     expect(ended.payload.data.reason).toBe('trial_expired')
     expect(ended.payload.subscription.status).toBe('trial_expired')
     expect(await h.container.trials.expireDue()).toBe(0)
+  })
+})
+
+describe('solicitação de trial com contato', () => {
+  const contact = {
+    name: 'Ana Souza',
+    email: 'ana@cliente.com',
+    phone: '+55 11 99999-0000',
+    company: 'Cliente Ltda',
+    role: 'Diretora comercial',
+  }
+
+  let h: Harness
+  let apiKey: string
+  let installationId: number
+
+  const request = (body: object = contact, id = installationId) =>
+    http(h)
+      .post(`/v1/installations/${id}/trial`)
+      .set('Authorization', `Bearer ${apiKey}`)
+      .send(body)
+  const savedContact = async () =>
+    (
+      await h.container.db.installation.findUnique({
+        where: { id: installationId },
+      })
+    )?.contact
+  const spaItem = async () => (await h.crm.getItem(1060, installationId))!
+  const trialEvents = () =>
+    outbox(h).filter(e => e.type === 'subscription.trial_started')
+
+  describe('sem trial na instalação', () => {
+    beforeEach(async () => {
+      h = createHarness()
+      ;({ apiKey, installationId } = await installedGptMaker(h, {
+        trialOnInstall: false,
+      }))
+    })
+
+    it('cria o trial (201), grava o contato no banco e no SPA 1060', async () => {
+      const res = await request()
+      expect(res.status).toBe(201)
+      // O SPA guarda o fim do período como data (fim do dia).
+      expect(res.body.trialEndsAt.slice(0, 10)).toBe(
+        new Date(h.clock.now().getTime() + 14 * 86_400_000)
+          .toISOString()
+          .slice(0, 10),
+      )
+      expect(trialEvents()).toHaveLength(1)
+      expect(await savedContact()).toEqual(contact)
+      const f = h.config.installation
+      expect(await spaItem()).toMatchObject({
+        [f.name]: contact.name,
+        [f.email]: contact.email,
+        [f.phone]: contact.phone,
+        [f.company]: contact.company,
+        [f.role]: contact.role,
+      })
+    })
+
+    it('checkout usa o e-mail informado', async () => {
+      await request()
+      await http(h)
+        .post('/v1/checkout-sessions')
+        .set('Authorization', `Bearer ${apiKey}`)
+        .send({ installationId, planId: 501, intent: 'subscribe' })
+      expect(h.gateway.checkouts[0]).toMatchObject({
+        customerEmail: contact.email,
+      })
+    })
+
+    it('corpo inválido: VALIDATION_ERROR sem gravar nada', async () => {
+      const { phone: _, ...withoutPhone } = contact
+      const res = await request({ ...withoutPhone, company: '   ' })
+      expect(res.status).toBe(400)
+      expect(res.body.error.code).toBe('VALIDATION_ERROR')
+      const paths = res.body.error.details.map((d: any) => d.path)
+      expect(paths).toEqual(expect.arrayContaining(['phone', 'company']))
+      expect(
+        (await request({ ...contact, email: 'não-é-email' })).body.error
+          .details[0].path,
+      ).toBe('email')
+      expect(await savedContact()).toBeNull()
+      expect(trialEvents()).toHaveLength(0)
+    })
+
+    it('instalação de outro app: INSTALLATION_NOT_FOUND', async () => {
+      const other = await h.container.registry.create({
+        appCode: 'crmthink.extrator',
+        name: 'Extrator',
+        bitrixClientId: 'local.extrator',
+        bitrixClientSecret: 'secret-extrator',
+        scopes: ['crm'],
+        installerUrl: 'https://extrator.app/installer',
+        webhookUrl: 'https://extrator.app/events',
+        productSpaIds: [],
+        trialDays: 7,
+        trialOnInstall: false,
+        trialPlanId: 500,
+        active: true,
+      })
+      const res = await http(h)
+        .post(`/v1/installations/${installationId}/trial`)
+        .set('Authorization', `Bearer ${other.credentials.apiKey}`)
+        .send(contact)
+      expect(res.status).toBe(404)
+      expect(res.body.error.code).toBe('INSTALLATION_NOT_FOUND')
+      expect(await savedContact()).toBeNull()
+    })
+
+    it('app sem trial configurado: TRIAL_NOT_CONFIGURED sem gravar', async () => {
+      await h.container.registry.update(GPTMAKER, { trialPlanId: null })
+      const res = await request()
+      expect(res.status).toBe(422)
+      expect(res.body.error.code).toBe('TRIAL_NOT_CONFIGURED')
+      expect(await savedContact()).toBeNull()
+    })
+
+    it('solicitações simultâneas criam um só trial', async () => {
+      const [a, b] = await Promise.all([request(), request()])
+      expect([a.status, b.status].sort()).toEqual([200, 201])
+      expect(a.body.subscriptionId).toBe(b.body.subscriptionId)
+      expect(trialEvents()).toHaveLength(1)
+    })
+
+    it('falha no SPA 1060 não muda a resposta; o banco guarda o contato', async () => {
+      const original = h.crm.updateItem.bind(h.crm)
+      h.crm.updateItem = async (entityTypeId, id, fields) => {
+        if (entityTypeId === 1060 && h.config.installation.role in fields)
+          throw new Error('Bitrix 503')
+        return original(entityTypeId, id, fields)
+      }
+      const res = await request()
+      expect(res.status).toBe(201)
+      expect(await savedContact()).toEqual(contact)
+    })
+
+    it('operador sem corpo cria o trial sem tocar no contato', async () => {
+      const res = await http(h)
+        .post(`/admin/installations/${installationId}/trial`)
+        .set('Authorization', 'Bearer admin-token')
+      expect(res.status).toBe(201)
+      expect(await savedContact()).toBeNull()
+    })
+
+    it('operador com contato grava o contato', async () => {
+      const res = await http(h)
+        .post(`/admin/installations/${installationId}/trial`)
+        .set('Authorization', 'Bearer admin-token')
+        .send(contact)
+      expect(res.status).toBe(201)
+      expect(await savedContact()).toEqual(contact)
+    })
+  })
+
+  describe('com trial criado na instalação', () => {
+    beforeEach(async () => {
+      h = createHarness()
+      ;({ apiKey, installationId } = await installedGptMaker(h))
+    })
+
+    it('trial vigente: 200 com o trial atual, sem novo evento', async () => {
+      const [trial] = spaSubscriptions(h)
+      const res = await request()
+      expect(res.status).toBe(200)
+      expect(res.body.subscriptionId).toBe(trial!.id)
+      expect(trialEvents()).toHaveLength(1)
+      expect(await savedContact()).toEqual(contact)
+    })
+
+    it('trial expirado: TRIAL_ALREADY_USED com contato gravado', async () => {
+      h.clock.advance(15 * 86_400_000)
+      await h.container.trials.expireDue()
+      const res = await request()
+      expect(res.status).toBe(409)
+      expect(res.body.error.code).toBe('TRIAL_ALREADY_USED')
+      expect(await savedContact()).toEqual(contact)
+      expect((await spaItem())[h.config.installation.role]).toBe(contact.role)
+    })
+
+    it('assinatura paga: SUBSCRIPTION_ALREADY_EXISTS com contato gravado', async () => {
+      stripeSubscription(h, { id: 'sub_1', installationId })
+      await stripeEvent(h, {
+        type: 'checkout.completed',
+        sessionId: 'cs_1',
+        mode: 'subscription',
+        paid: true,
+        metadata: {
+          appCode: GPTMAKER,
+          installationId,
+          planId: 501,
+          intent: 'subscribe',
+        },
+        gatewaySubscriptionId: 'sub_1',
+        paymentIntentId: null,
+        amountTotal: 9900,
+      })
+      const res = await request()
+      expect(res.status).toBe(409)
+      expect(res.body.error.code).toBe('SUBSCRIPTION_ALREADY_EXISTS')
+      expect(await savedContact()).toEqual(contact)
+    })
   })
 })
 

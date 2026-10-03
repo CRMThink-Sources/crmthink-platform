@@ -86,7 +86,14 @@ cancelamento). Mudanças feitas lá chegam por webhook como qualquer outra.
 
 ## Trial
 
-- Automático na instalação (`trialOnInstall`) ou manual (`POST /v1/installations/{id}/trial`).
+- Automático na instalação (`trialOnInstall`), solicitado pelo app com o contato do
+  cliente (`POST /v1/installations/{id}/trial`, chave do app) ou manual pelo operador
+  (`POST /admin/installations/{id}/trial`, contato opcional).
+- Solicitação pelo app: grava o contato (`installation.contact` e campos do SPA 1060, com
+  cargo em `installation.role`) antes das checagens, sob o lock da instalação. Sem trial,
+  cria (`201`). Com trial vigente devolve esse trial (`200`). O operador recebe
+  `TRIAL_ALREADY_USED` nesse caso. Falha ao gravar no SPA só vai ao log (`warn`); o banco
+  é a fonte do contato, e o checkout usa o e-mail dele.
 - Cria assinatura `trialing` no SPA 1142 com o plano de trial (`trialPlanId`) e fim em
   `agora + trialDays`; marca `trial_used` na instalação (um trial por instalação:
   `TRIAL_ALREADY_USED`). Evento `subscription.trial_started`.

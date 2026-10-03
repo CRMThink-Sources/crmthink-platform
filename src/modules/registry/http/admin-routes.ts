@@ -4,7 +4,10 @@ import type { Db } from '@/shared/infra/prisma'
 import { asyncHandler, intParam } from '@/shared/http/errors'
 import type { EventDelivery } from '@/modules/events/event-delivery'
 import type { SigningKeys } from '@/modules/installations/application/signing-keys'
-import type { TrialService } from '@/modules/billing/application/trial-service'
+import {
+  trialRequestSchema,
+  type TrialService,
+} from '@/modules/billing/application/trial-service'
 import type { Sweeps } from '@/modules/billing/application/sweeps'
 import {
   createAppSchema,
@@ -48,12 +51,6 @@ export function adminRoutes(deps: AdminRoutesDeps): Router {
     '/admin',
     adminAuth(deps.adminTokens),
     express.json({ limit: '64kb' }),
-  )
-  // Rota administrativa do contrato: trial manual por instalação.
-  router.use(
-    '/v1/installations/:id/trial',
-    adminAuth(deps.adminTokens),
-    express.json({ limit: '4kb' }),
   )
 
   router.get(
@@ -113,11 +110,19 @@ export function adminRoutes(deps: AdminRoutesDeps): Router {
     }),
   )
 
+  // Trial manual por instalação (casos excepcionais); o contato é opcional.
   router.post(
-    '/v1/installations/:id/trial',
+    '/admin/installations/:id/trial',
     asyncHandler(async (req, res) => {
-      const subscription = await deps.trials.start(
+      const body: unknown = req.body
+      const hasBody =
+        typeof body === 'object' &&
+        body !== null &&
+        Object.keys(body).length > 0
+      const { subscription } = await deps.trials.request(
+        { kind: 'operator' },
         intParam(req.params.id, 'INSTALLATION_NOT_FOUND'),
+        hasBody ? trialRequestSchema.parse(body) : undefined,
       )
       res.status(201).json({
         subscriptionId: subscription.id,

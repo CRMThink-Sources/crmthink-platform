@@ -11,7 +11,7 @@ Código: `src/shared/crypto/*`, `src/modules/registry/http/auth.ts`,
 | --- | --- | --- | --- |
 | Chave de API do app | `cp_<32 bytes base64url>` | Só o hash SHA-256 (`app.api_key_hash`) | `Authorization: Bearer` nas rotas servidor-a-servidor |
 | Segredo de webhook | `whsec_<32 bytes base64url>` | Cifrado (`app.webhook_secret_enc`) | HMAC dos eventos e do instalador |
-| Token de operador | livre | Variável `ADMIN_API_TOKENS` (lista) | `/admin/*`, trial manual |
+| Token de operador | livre | Variável `ADMIN_API_TOKENS` (lista) | `/admin/*` (inclui o trial manual, `/admin/installations/{id}/trial`) |
 
 Chave e segredo aparecem **uma única vez**, na resposta do cadastro ou da rotação. SHA-256
 simples é suficiente para a chave de API: ela tem 256 bits aleatórios, então hash lento não
