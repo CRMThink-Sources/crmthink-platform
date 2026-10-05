@@ -21,6 +21,7 @@ erDiagram
   App {
     string appCode PK
     string bitrixClientId UK
+    string bitrixAppCode "CODE do app.info (parceiro)"
     string bitrixClientSecretEnc "cifrado"
     string webhookSecretEnc "cifrado"
     string apiKeyHash UK "SHA-256"

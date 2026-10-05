@@ -211,9 +211,10 @@
             }
           },
           "409": {
-            "description": "Conflito\n- `APP_ALREADY_EXISTS`: Já existe aplicação com este appCode.",
+            "description": "Conflito\n- `APP_ALREADY_EXISTS`: Já existe aplicação com este appCode.\n- `BITRIX_CLIENT_ID_IN_USE`: O client_id do Bitrix já pertence a outra aplicação cadastrada.",
             "x-error-codes": [
-              "APP_ALREADY_EXISTS"
+              "APP_ALREADY_EXISTS",
+              "BITRIX_CLIENT_ID_IN_USE"
             ],
             "content": {
               "application/json": {
@@ -226,6 +227,14 @@
                       "error": {
                         "code": "APP_ALREADY_EXISTS",
                         "message": "Já existe aplicação com este appCode."
+                      }
+                    }
+                  },
+                  "BITRIX_CLIENT_ID_IN_USE": {
+                    "value": {
+                      "error": {
+                        "code": "BITRIX_CLIENT_ID_IN_USE",
+                        "message": "O client_id do Bitrix já pertence a outra aplicação cadastrada."
                       }
                     }
                   }
@@ -432,6 +441,29 @@
                       "error": {
                         "code": "APP_NOT_FOUND",
                         "message": "appCode não cadastrado ou inativo."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `BITRIX_CLIENT_ID_IN_USE`: O client_id do Bitrix já pertence a outra aplicação cadastrada.",
+            "x-error-codes": [
+              "BITRIX_CLIENT_ID_IN_USE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "BITRIX_CLIENT_ID_IN_USE": {
+                    "value": {
+                      "error": {
+                        "code": "BITRIX_CLIENT_ID_IN_USE",
+                        "message": "O client_id do Bitrix já pertence a outra aplicação cadastrada."
                       }
                     }
                   }
@@ -2035,7 +2067,7 @@
             }
           },
           "403": {
-            "description": "Proibido\n- `NOT_PORTAL_ADMIN`: Instalar ou refazer instalação exige administrador do portal.\n- `MEMBER_ID_MISMATCH`: memberId informado não é o do portal dono do token.\n- `DOMAIN_MISMATCH`: Domínio informado não é o do portal dono do token.\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (client_id diferente).",
+            "description": "Proibido\n- `NOT_PORTAL_ADMIN`: Instalar ou refazer instalação exige administrador do portal.\n- `MEMBER_ID_MISMATCH`: memberId informado não é o do portal dono do token.\n- `DOMAIN_MISMATCH`: Domínio informado não é o do portal dono do token.\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).",
             "x-error-codes": [
               "NOT_PORTAL_ADMIN",
               "MEMBER_ID_MISMATCH",
@@ -2085,7 +2117,7 @@
                     "value": {
                       "error": {
                         "code": "TOKEN_APP_MISMATCH",
-                        "message": "O access token pertence a outro app Bitrix (client_id diferente)."
+                        "message": "O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`)."
                       }
                     }
                   }
@@ -2228,7 +2260,7 @@
             }
           },
           "403": {
-            "description": "Proibido\n- `NOT_PORTAL_ADMIN`: Instalar ou refazer instalação exige administrador do portal.\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (client_id diferente).\n- `INSTALLATION_MISMATCH`: Retry de instalação para portal diferente do registrado.",
+            "description": "Proibido\n- `NOT_PORTAL_ADMIN`: Instalar ou refazer instalação exige administrador do portal.\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).\n- `INSTALLATION_MISMATCH`: Retry de instalação para portal diferente do registrado.",
             "x-error-codes": [
               "NOT_PORTAL_ADMIN",
               "BITRIX_TOKEN_REJECTED",
@@ -2261,7 +2293,7 @@
                     "value": {
                       "error": {
                         "code": "TOKEN_APP_MISMATCH",
-                        "message": "O access token pertence a outro app Bitrix (client_id diferente)."
+                        "message": "O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`)."
                       }
                     }
                   },
@@ -3471,7 +3503,7 @@
             }
           },
           "403": {
-            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada para o appCode (`SESSION_CORS_ORIGINS`).\n- `APP_INACTIVE`: Aplicação desativada ou inexistente.\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (client_id diferente).\n- `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.",
+            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada para o appCode (`SESSION_CORS_ORIGINS`).\n- `APP_INACTIVE`: Aplicação desativada ou inexistente.\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).\n- `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.",
             "x-error-codes": [
               "ORIGIN_NOT_ALLOWED",
               "APP_INACTIVE",
@@ -3522,7 +3554,7 @@
                     "value": {
                       "error": {
                         "code": "TOKEN_APP_MISMATCH",
-                        "message": "O access token pertence a outro app Bitrix (client_id diferente)."
+                        "message": "O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`)."
                       }
                     }
                   },
@@ -5695,6 +5727,12 @@
           "bitrixClientId": {
             "type": "string"
           },
+          "bitrixAppCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "scopes": {
             "type": "array",
             "items": {
@@ -5741,6 +5779,7 @@
           "logoUrl",
           "installTheme",
           "bitrixClientId",
+          "bitrixAppCode",
           "scopes",
           "installerUrl",
           "webhookUrl",
@@ -6340,6 +6379,18 @@
           "bitrixClientSecret": {
             "type": "string",
             "minLength": 1
+          },
+          "bitrixAppCode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "scopes": {
             "default": [],
@@ -9223,6 +9274,18 @@
           "bitrixClientId": {
             "type": "string",
             "minLength": 1
+          },
+          "bitrixAppCode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "scopes": {
             "default": [],

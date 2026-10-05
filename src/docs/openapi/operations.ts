@@ -674,7 +674,11 @@ export const OPERATIONS: Operation[] = [
     security: 'adminToken',
     body: { schema: req.createApp },
     responses: { 201: json('Aplicação e credenciais', res.appCreated) },
-    errors: ['APP_ALREADY_EXISTS', 'TRIAL_CONFIG_INVALID'],
+    errors: [
+      'APP_ALREADY_EXISTS',
+      'BITRIX_CLIENT_ID_IN_USE',
+      'TRIAL_CONFIG_INVALID',
+    ],
   },
   {
     method: 'get',
@@ -697,7 +701,11 @@ export const OPERATIONS: Operation[] = [
     pathParams: { appCode: 'Código do app' },
     body: { schema: req.updateApp },
     responses: { 200: json('Aplicação atualizada', res.app) },
-    errors: ['APP_NOT_FOUND', 'TRIAL_CONFIG_INVALID'],
+    errors: [
+      'APP_NOT_FOUND',
+      'BITRIX_CLIENT_ID_IN_USE',
+      'TRIAL_CONFIG_INVALID',
+    ],
   },
   {
     method: 'post',

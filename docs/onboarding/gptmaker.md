@@ -74,6 +74,7 @@ curl -X POST https://<host>/admin/apps \
     },
     "bitrixClientId": "<client_id do app Bitrix>",
     "bitrixClientSecret": "<client_secret>",
+    "bitrixAppCode": "<CODE do app.info, só se o client_id for app.…>",
     "scopes": ["crm", "imbot", "imopenlines", "im", "user_brief", "placement"],
     "installerUrl": "https://<backend GPTMaker>/platform/installer",
     "webhookUrl": "https://<backend GPTMaker>/platform/events",

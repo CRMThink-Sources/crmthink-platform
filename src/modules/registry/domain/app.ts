@@ -25,6 +25,8 @@ export type RegisteredApp = {
   logoUrl: string | null
   installTheme: InstallTheme | null
   bitrixClientId: string
+  /** `CODE` do `app.info` quando não é o client_id (app de parceiro). `null` = o próprio client_id. */
+  bitrixAppCode: string | null
   scopes: string[]
   installerUrl: string | null
   webhookUrl: string | null

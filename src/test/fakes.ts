@@ -162,6 +162,8 @@ export class FakeCrm {
 /** Portal do cliente: responde `app.info`, `profile`, `user.*`, `event.bind`. */
 export class FakeBitrixPortal {
   clientIdByToken = new Map<string, string>()
+  /** `CODE` do `app.info` quando não é o client_id (app de parceiro). */
+  appCodeByToken = new Map<string, string>()
   admins = new Set<string>()
   userByToken = new Map<
     string,
@@ -186,7 +188,7 @@ export class FakeBitrixPortal {
         throw new BitrixApiError(method, 'invalid_token', 'invalid')
       switch (method) {
         case 'app.info':
-          return { CODE: clientId } as T
+          return { CODE: this.appCodeByToken.get(accessToken) ?? clientId } as T
         case 'profile':
           return { ID: '1', ADMIN: this.admins.has(accessToken) } as T
         case 'user.current':

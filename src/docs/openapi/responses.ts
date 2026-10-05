@@ -244,6 +244,7 @@ export const appSchema = z.strictObject({
   logoUrl: z.string().nullable(),
   installTheme: installThemeSchema.nullable(),
   bitrixClientId: z.string(),
+  bitrixAppCode: z.string().nullable(),
   scopes: z.array(z.string()),
   installerUrl: z.string().nullable(),
   webhookUrl: z.string().nullable(),

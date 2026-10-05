@@ -71,6 +71,12 @@ export const ERROR_CATALOG = {
     action: 'Usar PATCH para alterar a existente.',
     origin: 'registry/app-registry.ts',
   },
+  BITRIX_CLIENT_ID_IN_USE: {
+    status: 409,
+    meaning: 'O client_id do Bitrix já pertence a outra aplicação cadastrada.',
+    action: 'Usar o client_id do app certo ou remover o cadastro antigo.',
+    origin: 'registry/app-registry.ts',
+  },
   TRIAL_CONFIG_INVALID: {
     status: 400,
     meaning: '`trialOnInstall` sem `trialDays` > 0 ou sem `trialPlanId`.',
@@ -88,8 +94,9 @@ export const ERROR_CATALOG = {
   TOKEN_APP_MISMATCH: {
     status: 403,
     meaning:
-      'O access token pertence a outro app Bitrix (client_id diferente).',
-    action: 'Abrir pelo app Bitrix correto do ambiente.',
+      'O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).',
+    action:
+      'Abrir pelo app Bitrix correto do ambiente; em app de parceiro (client_id `app.…`), cadastrar o `CODE` em `bitrixAppCode`.',
     origin: 'installations/application/bitrix-auth-verifier.ts',
   },
   MEMBER_ID_MISMATCH: {

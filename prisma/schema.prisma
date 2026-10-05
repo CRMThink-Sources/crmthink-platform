@@ -17,6 +17,8 @@ model App {
   installTheme               Json?     @map("install_theme")
   bitrixClientId             String    @unique @map("bitrix_client_id") @db.VarChar(200)
   bitrixClientSecretEnc      String    @map("bitrix_client_secret_enc") @db.Text
+  /// `CODE` do app no `app.info` quando difere do client_id (app de parceiro: `crmthink.x` × `app.…`).
+  bitrixAppCode              String?   @map("bitrix_app_code") @db.VarChar(200)
   /// Escopos esperados do app Bitrix (ex.: ["crm","imbot","imopenlines"]).
   scopes                     Json
   installerUrl               String?   @map("installer_url") @db.VarChar(500)
