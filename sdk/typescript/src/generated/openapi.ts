@@ -2209,7 +2209,7 @@ export interface operations {
              *     - `MEMBER_ID_MISMATCH`: memberId informado não é o do portal dono do token.
              *     - `DOMAIN_MISMATCH`: Domínio informado não é o do portal dono do token.
              *     - `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.
-             *     - `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (client_id diferente).
+             *     - `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).
              */
             403: {
                 headers: {
@@ -2296,7 +2296,7 @@ export interface operations {
              * @description Proibido
              *     - `NOT_PORTAL_ADMIN`: Instalar ou refazer instalação exige administrador do portal.
              *     - `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.
-             *     - `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (client_id diferente).
+             *     - `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).
              *     - `INSTALLATION_MISMATCH`: Retry de instalação para portal diferente do registrado.
              */
             403: {
@@ -2949,7 +2949,7 @@ export interface operations {
              *     - `APP_INACTIVE`: Aplicação desativada ou inexistente.
              *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).
              *     - `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.
-             *     - `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (client_id diferente).
+             *     - `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).
              *     - `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.
              */
             403: {

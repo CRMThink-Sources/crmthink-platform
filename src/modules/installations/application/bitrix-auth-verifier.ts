@@ -64,7 +64,9 @@ export type VerifiedUser = {
 /**
  * Nada que venha do navegador é aceito como identidade: tudo é conferido no Bitrix.
  *
- * - `app.info` com o token ⇒ o token é do app Bitrix cadastrado (`CODE`/`CLIENT_ID`).
+ * - `app.info` com o token ⇒ o token é do app Bitrix cadastrado. O Bitrix devolve só o
+ *   `CODE`: em app local é o próprio client_id; em app de parceiro (client_id `app.…`) é
+ *   o código do app (`crmthink.x`), cadastrado em `bitrixAppCode`.
  * - `profile` ⇒ quem instala é admin do portal.
  * - troca do refresh token no `oauth.bitrix.info` com o `client_secret` do app ⇒ prova
  *   definitiva de que o token é deste `client_id` (só nós temos o segredo) e devolve o
@@ -91,7 +93,7 @@ export class BitrixAuthVerifier {
       translate(error)
     }
     const code = info.CLIENT_ID ?? info.client_id ?? info.CODE
-    if (code && code !== app.bitrixClientId) {
+    if (code && code !== app.bitrixClientId && code !== app.bitrixAppCode) {
       throw forbidden(
         'TOKEN_APP_MISMATCH',
         'O token pertence a outro aplicativo Bitrix',

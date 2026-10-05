@@ -37,6 +37,7 @@ export const createAppSchema = z.object({
   installTheme: installThemeSchema.nullish(),
   bitrixClientId: z.string().min(1),
   bitrixClientSecret: z.string().min(1),
+  bitrixAppCode: z.string().min(1).max(200).nullish(),
   scopes: z.array(z.string().min(1)).default([]),
   installerUrl: z.string().url().nullish(),
   webhookUrl: z.string().url().nullish(),
@@ -65,6 +66,7 @@ function toRegisteredApp(row: AppRow): RegisteredApp {
     logoUrl: row.logoUrl,
     installTheme: row.installTheme && theme.success ? theme.data : null,
     bitrixClientId: row.bitrixClientId,
+    bitrixAppCode: row.bitrixAppCode,
     scopes: Array.isArray(row.scopes) ? (row.scopes as string[]) : [],
     installerUrl: row.installerUrl,
     webhookUrl: row.webhookUrl,
@@ -164,6 +166,7 @@ export class AppRegistry {
       where: { appCode: input.appCode },
     })
     if (existing) throw conflict('APP_ALREADY_EXISTS')
+    await this.assertClientIdFree(input.bitrixClientId, input.appCode)
 
     const apiKey = generateApiKey()
     const webhookSecret = generateWebhookSecret()
@@ -176,6 +179,7 @@ export class AppRegistry {
         installTheme: input.installTheme ?? undefined,
         bitrixClientId: input.bitrixClientId,
         bitrixClientSecretEnc: this.cipher.encrypt(input.bitrixClientSecret),
+        bitrixAppCode: input.bitrixAppCode ?? null,
         scopes: input.scopes,
         installerUrl: input.installerUrl ?? null,
         webhookUrl: input.webhookUrl ?? null,
@@ -197,6 +201,9 @@ export class AppRegistry {
 
   async update(appCode: string, input: UpdateAppInput): Promise<RegisteredApp> {
     const current = await this.getOrThrow(appCode)
+    if (input.bitrixClientId) {
+      await this.assertClientIdFree(input.bitrixClientId, appCode)
+    }
     assertTrialConfig({
       trialOnInstall: input.trialOnInstall ?? current.trialOnInstall,
       trialDays: input.trialDays ?? current.trialDays,
@@ -229,6 +236,7 @@ export class AppRegistry {
           bitrixClientSecretEnc: input.bitrixClientSecret
             ? this.cipher.encrypt(input.bitrixClientSecret)
             : undefined,
+          bitrixAppCode: input.bitrixAppCode,
           scopes: input.scopes,
           installerUrl: input.installerUrl,
           webhookUrl: input.webhookUrl,
@@ -241,6 +249,20 @@ export class AppRegistry {
       })
     })
     return toRegisteredApp(row)
+  }
+
+  /** O client_id é único: um app Bitrix pertence a um só cadastro. */
+  private async assertClientIdFree(
+    bitrixClientId: string,
+    appCode: string,
+  ): Promise<void> {
+    const owner = await this.db.app.findUnique({ where: { bitrixClientId } })
+    if (owner && owner.appCode !== appCode) {
+      throw conflict(
+        'BITRIX_CLIENT_ID_IN_USE',
+        `client_id já cadastrado em ${owner.appCode}`,
+      )
+    }
   }
 
   /**

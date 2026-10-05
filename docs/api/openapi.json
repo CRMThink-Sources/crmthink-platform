@@ -837,7 +837,7 @@
             }
           },
           "403": {
-            "description": "Proibido\n- `NOT_PORTAL_ADMIN`: Instalar ou refazer instalação exige administrador do portal.\n- `MEMBER_ID_MISMATCH`: memberId informado não é o do portal dono do token.\n- `DOMAIN_MISMATCH`: Domínio informado não é o do portal dono do token.\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (client_id diferente).",
+            "description": "Proibido\n- `NOT_PORTAL_ADMIN`: Instalar ou refazer instalação exige administrador do portal.\n- `MEMBER_ID_MISMATCH`: memberId informado não é o do portal dono do token.\n- `DOMAIN_MISMATCH`: Domínio informado não é o do portal dono do token.\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).",
             "x-error-codes": [
               "NOT_PORTAL_ADMIN",
               "MEMBER_ID_MISMATCH",
@@ -887,7 +887,7 @@
                     "value": {
                       "error": {
                         "code": "TOKEN_APP_MISMATCH",
-                        "message": "O access token pertence a outro app Bitrix (client_id diferente)."
+                        "message": "O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`)."
                       }
                     }
                   }
@@ -1030,7 +1030,7 @@
             }
           },
           "403": {
-            "description": "Proibido\n- `NOT_PORTAL_ADMIN`: Instalar ou refazer instalação exige administrador do portal.\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (client_id diferente).\n- `INSTALLATION_MISMATCH`: Retry de instalação para portal diferente do registrado.",
+            "description": "Proibido\n- `NOT_PORTAL_ADMIN`: Instalar ou refazer instalação exige administrador do portal.\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).\n- `INSTALLATION_MISMATCH`: Retry de instalação para portal diferente do registrado.",
             "x-error-codes": [
               "NOT_PORTAL_ADMIN",
               "BITRIX_TOKEN_REJECTED",
@@ -1063,7 +1063,7 @@
                     "value": {
                       "error": {
                         "code": "TOKEN_APP_MISMATCH",
-                        "message": "O access token pertence a outro app Bitrix (client_id diferente)."
+                        "message": "O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`)."
                       }
                     }
                   },
@@ -2273,7 +2273,7 @@
             }
           },
           "403": {
-            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada para o appCode (`SESSION_CORS_ORIGINS`).\n- `APP_INACTIVE`: Aplicação desativada ou inexistente.\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (client_id diferente).\n- `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.",
+            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada para o appCode (`SESSION_CORS_ORIGINS`).\n- `APP_INACTIVE`: Aplicação desativada ou inexistente.\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).\n- `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.",
             "x-error-codes": [
               "ORIGIN_NOT_ALLOWED",
               "APP_INACTIVE",
@@ -2324,7 +2324,7 @@
                     "value": {
                       "error": {
                         "code": "TOKEN_APP_MISMATCH",
-                        "message": "O access token pertence a outro app Bitrix (client_id diferente)."
+                        "message": "O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`)."
                       }
                     }
                   },
