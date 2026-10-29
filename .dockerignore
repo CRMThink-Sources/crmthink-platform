@@ -7,3 +7,5 @@ prisma/generated
 openspec
 .claude
 .cursor
+**/node_modules
+web/backoffice/dist

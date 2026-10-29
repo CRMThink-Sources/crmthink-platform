@@ -288,9 +288,11 @@ function parametersOf(operation: Operation): Json[] {
       in: 'path',
       required: true,
       description,
-      schema: /id$/i.test(name)
-        ? { type: 'integer', minimum: 1 }
-        : { type: 'string' },
+      // `{eventId}` é o id do Stripe (`evt_...`), texto; os demais `*id` são numéricos.
+      schema:
+        /id$/i.test(name) && name !== 'eventId'
+          ? { type: 'integer', minimum: 1 }
+          : { type: 'string' },
     })
   }
   for (const query of operation.query ?? []) {

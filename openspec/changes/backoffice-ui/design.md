@@ -27,8 +27,10 @@ O pacote tem `package.json` e `yarn.lock` próprios e não usa workspaces. A ins
 - Vite + React 19 + TypeScript estrito.
 - Tailwind v4 + shadcn/ui. Os componentes são copiados para `src/components/ui`, sem dependência de runtime de terceiros.
 - React Router (data router, `basename: '/backoffice'`).
-- TanStack Query para todas as leituras. TanStack Table para as listas. `date-fns` + `date-fns-tz` para as datas.
-- Fontes e ícones (`lucide-react`) vão no bundle, porque a CSP proíbe outras origens.
+- TanStack Query para todas as leituras. Tabelas com o `Table` do shadcn: as listas são paginadas no servidor, então TanStack Table não acrescentava nada e saiu.
+- Datas com `Intl.DateTimeFormat` (`timeZone: 'America/Sao_Paulo'`) e `date-fns` só para o relativo ("há 3 horas"), sem `date-fns-tz`.
+- Filtros com `<select>` nativo estilizado: mais acessível e testável que o Select do Radix.
+- Fontes (`@fontsource-variable/geist`) e ícones (`lucide-react`) vão no bundle, porque a CSP proíbe outras origens. Uma dependência do pacote `shadcn` exige Node 22, então o estágio `web` da imagem e o job do CI usam Node 22. A API continua em Node 20.
 
 ### 3. Cliente tipado
 `openapi-typescript` gera `src/api/schema.d.ts` a partir de `../../docs/api/openapi-admin.json`, e `openapi-fetch` é o cliente (`credentials: 'same-origin'`). Um script `yarn gen:api` regera os tipos e o CI falha se o arquivo versionado divergir, no mesmo padrão do SDK. Um interceptador trata as respostas assim:
