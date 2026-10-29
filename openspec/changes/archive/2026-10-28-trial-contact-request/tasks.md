@@ -1,6 +1,6 @@
 ## 1. Pré-requisitos e configuração
 
-- [ ] 1.1 Criar o campo UF de cargo no SPA 1060 do portal CRMThink (homologação e produção) e anotar o código de leitura; verificar com `crm.item.fields` (entityTypeId 1060) que o campo aparece nos dois ambientes
+- [x] 1.1 Criar o campo UF de cargo no SPA 1060 do portal CRMThink (homologação e produção) e anotar o código de leitura; verificar com `crm.item.fields` (entityTypeId 1060) que o campo aparece nos dois ambientes
 - [x] 1.2 Adicionar `installation.role` ao schema e aos padrões de `src/config/spa-config.ts` e incluí-lo na conferência de campos (`validateSpaConfig`, exposta em `/health/ready`); verificar com teste que campo ausente ou criado como lista aparece nos problemas do SPA 1060
 - [x] 1.3 Ajustar o requisito "Trial" de `openspec/changes/crmthink-platform/specs/subscription-lifecycle/spec.md`: tirar "apenas como rota administrativa", apontar a rota de operador para `/admin/installations/{id}/trial` e citar a solicitação pelo app (`trial-request`); verificar com `openspec validate crmthink-platform` e `openspec validate trial-contact-request`
 
@@ -30,4 +30,4 @@
 
 ## 6. Integração
 
-- [ ] 6.1 Rodar `yarn lint`, `yarn check-types`, `yarn test` e `yarn sdk:build` limpos e `openspec validate trial-contact-request --strict`; em homologação, solicitar trial para uma instalação de teste e verificar o item no SPA 1060 com os cinco campos preenchidos e o checkout com o e-mail informado
+- [x] 6.1 Rodar `yarn lint`, `yarn check-types`, `yarn test` e `yarn sdk:build` limpos e `openspec validate trial-contact-request --strict`; em homologação, solicitar trial para uma instalação de teste e verificar o item no SPA 1060 com os cinco campos preenchidos e o checkout com o e-mail informado
