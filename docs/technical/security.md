@@ -114,7 +114,8 @@ emitem cabeçalhos CORS (são servidor-a-servidor).
 ## Backoffice: operadores, sessão e auditoria
 
 Cada pessoa que opera a plataforma (dev e suporte) tem conta própria em `admin_operator`.
-Não existe cadastro público: a primeira conta nasce por `yarn admin:create-operator`; as demais,
+Não existe cadastro público: a primeira conta nasce pelo comando `src/cli/create-operator.ts`
+(`node dist/src/cli/create-operator.js` no container; `yarn admin:create-operator` em dev); as demais,
 por um `operator` em `POST /admin/operators`. Senha provisória e URI `otpauth://` só aparecem
 na resposta da criação ou da redefinição de acesso.
 

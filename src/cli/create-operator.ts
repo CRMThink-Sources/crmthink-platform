@@ -2,8 +2,9 @@
  * Cria um operador do backoffice ou redefine o acesso de um existente. Única forma de
  * criar o primeiro operador (não há cadastro público).
  *
- * Uso: `yarn admin:create-operator --email <e-mail> --name "<nome>" --role <viewer|operator>`
- *      `yarn admin:create-operator --email <e-mail> --reset`
+ * Fica em `src/cli` para entrar no `dist` da imagem. Uso:
+ * - dev: `yarn admin:create-operator --email <e-mail> --name "<nome>" --role <viewer|operator>`
+ * - servidor: `docker exec -it <COMPOSE_PROJECT>-api node dist/src/cli/create-operator.js --email ... --reset`
  */
 import { env } from '@/config/env'
 import { systemClock } from '@/shared/clock'

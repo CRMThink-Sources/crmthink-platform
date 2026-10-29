@@ -3,7 +3,9 @@
  * Equivale a `POST /admin/signing-keys/rotate`, para quando a API ainda não sobe
  * (ex.: primeiro deploy sem `JWT_SIGNING_PRIVATE_KEY`).
  *
- * Uso: `yarn admin:rotate-signing-key [--lead=<minutos>]` (padrão 10; 0 = imediato).
+ * Fica em `src/cli` para entrar no `dist` da imagem. Uso:
+ * - dev: `yarn admin:rotate-signing-key [--lead=<minutos>]` (padrão 10; 0 = imediato)
+ * - servidor: `docker exec <COMPOSE_PROJECT>-api node dist/src/cli/rotate-signing-key.js --lead=10`
  */
 import { env } from '@/config/env'
 import { systemClock } from '@/shared/clock'

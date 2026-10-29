@@ -100,9 +100,7 @@ Uma vez por droplet, a partir da raiz do repositório:
    idempotente, então dá para rodar de novo para atualizar hosts e o Caddyfile.
 
 3. DNS: registro A dos dois hosts para o IP do droplet. O Caddy emite o TLS sozinho.
-4. Restringir `/admin/*`: `ADMIN_ALLOWED_IPS="<ip>/32 ..."` em `/opt/crmthink-infra/.env`
-   e `docker compose -f /opt/crmthink-infra/docker-compose.infra.yml up -d caddy`.
-5. Backups: ativar os Backups do droplet na DigitalOcean. Para restauração lógica:
+4. Backups: ativar os Backups do droplet na DigitalOcean. Para restauração lógica:
    `docker exec crmthink-mysql sh -c 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --single-transaction --databases crmthink_platform crmthink_platform_staging' > dump.sql`.
 
 ## Domínio e TLS (16.2)
@@ -110,12 +108,15 @@ Uma vez por droplet, a partir da raiz do repositório:
 Um host por ambiente (ex.: `platform-staging.crmthink.com.br`, `platform.crmthink.com.br`)
 com TLS válido — o Bitrix24 recusa handler sem HTTPS. Proxy reverso na VPS para a porta
 `API_PORT`. Precisam estar públicos: `/install/*`, `/v1/*`, `/.well-known/jwks.json`,
-`/bitrix/*`, `/webhooks/stripe`, `/health`. **Não** expor: `/metrics` (só a rede do
-Prometheus) e, de preferência, `/admin/*` (restringir por IP/VPN).
+`/bitrix/*`, `/webhooks/stripe`, `/health` e `/admin/*` (protegido pela própria API: sessão
+de operador com senha e TOTP, papéis, limite de tentativas e auditoria; ou token de
+`ADMIN_API_TOKENS`, que deve ser longo e aleatório). **Não** expor: `/metrics` (só a rede do
+Prometheus).
 
-No droplet, o Caddy (`ops/droplet/Caddyfile`) faz exatamente isso: `/metrics` → 404,
-`/admin/*` só de `ADMIN_ALLOWED_IPS`, e o resto vai para `<COMPOSE_PROJECT>-api:4100`
-na rede `crmthink`.
+No droplet, o Caddy (`ops/droplet/Caddyfile`) faz exatamente isso: `/metrics` → 404 e o
+resto vai para `<COMPOSE_PROJECT>-api:4100` na rede `crmthink`. A antiga allowlist de IP de
+`/admin/*` (`ADMIN_ALLOWED_IPS`) saiu: estava em `0.0.0.0/0 ::/0`, sem efeito. A linha que
+sobrar em `/opt/crmthink-infra/.env` pode ser apagada.
 
 `PUBLIC_BASE_URL` = `https://<host>` (entra no `iss` do JWT e nos handlers registrados no
 Bitrix: trocar depois exige reinstalação).
@@ -173,14 +174,22 @@ scripts que liam só `items` continuam funcionando, mas veem só a primeira pág
 
 Cada pessoa entra com a própria conta (e-mail, senha e TOTP). Não há cadastro público.
 
-- **Primeiro operador** (ou quando ninguém consegue entrar): no host da API,
-  `yarn admin:create-operator --email dev@connectthink.com.br --name "Dev" --role operator`.
-  A saída mostra a senha provisória e o URI `otpauth://` **uma única vez**: cadastre o
-  URI no app autenticador (Google Authenticator, 1Password, etc.) e entregue a senha por
-  canal privado. No primeiro login a troca de senha é obrigatória.
+- **Primeiro operador** (ou quando ninguém consegue entrar): no droplet, dentro do container
+  da API (os comandos ficam em `dist/src/cli`; em desenvolvimento, `yarn admin:create-operator`):
+
+  ```bash
+  docker exec -it <COMPOSE_PROJECT>-api node dist/src/cli/create-operator.js     --email dev@connectthink.com.br --name "Dev" --role operator
+  ```
+
+  Alternativa sem shell no droplet: `POST /admin/operators` com um token de
+  `ADMIN_API_TOKENS` (fica na auditoria como `token:<prefixo>`). A saída mostra a senha provisória e o URI `otpauth://` **uma única vez**: cadastre o
+  URI no app autenticador (Google Authenticator, 1Password, etc.; na entrada manual, só o
+  valor de `secret=`; para QR code, `qrencode -t ansiutf8 '<uri>'`, nunca um gerador online)
+  e entregue a senha por canal privado. No primeiro login a troca de senha é obrigatória.
 - **Demais contas**: um `operator` cria pela rota `POST /admin/operators` (ou pelo
   backoffice). Papéis: `viewer` (suporte, só leitura) e `operator` (dev, leitura e ações).
 - **Perdeu o celular ou a senha**: outro `operator` usa `POST /admin/operators/{id}/reset-access`.
-  Sem nenhum `operator` disponível: `yarn admin:create-operator --email <e-mail> --reset`.
+  Sem nenhum `operator` disponível:
+  `docker exec -it <COMPOSE_PROJECT>-api node dist/src/cli/create-operator.js --email <e-mail> --reset`.
   A redefinição derruba as sessões abertas da conta e desfaz o bloqueio.
 

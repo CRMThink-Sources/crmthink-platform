@@ -9,12 +9,8 @@
 	@metrics path /metrics /metrics/*
 	respond @metrics 404
 
-	# /admin/* só dos IPs em ADMIN_ALLOWED_IPS (além dos tokens de operador).
-	@admin {
-		path /admin/*
-		not remote_ip {$ADMIN_ALLOWED_IPS}
-	}
-	respond @admin 403
+	# /admin/* fica público: a API protege com sessão de operador (senha + TOTP), papéis,
+	# limite de tentativas e auditoria, ou token de ADMIN_API_TOKENS para scripts.
 
 	encode gzip
 	reverse_proxy {args[0]}

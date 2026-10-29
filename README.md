@@ -35,8 +35,8 @@ yarn dev:worker
 | `yarn docs:openapi` | regera `docs/api/*.json` e `docs/technical/error-codes.md` |
 | `yarn sdk:types` / `yarn sdk:build` | tipos do SDK a partir de `docs/api/openapi.json` / pacote em `sdk/typescript/dist` |
 | `yarn admin:generate-encryption-key` | chave AES-256 para `TOKEN_ENCRYPTION_KEY` |
-| `yarn admin:create-operator` | cria operador do backoffice ou redefine o acesso (`--reset`); ver `docs/operations/runbook.md` |
-| `yarn admin:rotate-signing-key` | nova chave do JWT (também por `POST /admin/signing-keys/rotate`) |
+| `yarn admin:create-operator` | cria operador do backoffice ou redefine o acesso (`--reset`). No servidor: `node dist/src/cli/create-operator.js` no container da API (ver `docs/operations/runbook.md`) |
+| `yarn admin:rotate-signing-key` | nova chave do JWT (também por `POST /admin/signing-keys/rotate`). No servidor: `node dist/src/cli/rotate-signing-key.js` |
 | `yarn tsx scripts/import-hub-core.ts` | importação de instalações do hub-core (dry-run por padrão) |
 
 ## Documentação

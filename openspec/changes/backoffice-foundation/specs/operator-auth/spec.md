@@ -8,7 +8,7 @@ Identificar cada pessoa que opera a plataforma (dev e suporte) com contas locais
 O sistema MUST manter contas de operador com e-mail único (comparado sem diferença de maiúsculas), nome, papel (`viewer` ou `operator`), estado ativo/inativo, senha guardada só como hash argon2id e segredo TOTP cifrado com `TOKEN_ENCRYPTION_KEY`. O sistema MUST NOT oferecer cadastro público. O primeiro operador MUST ser criado por script de linha de comando, que também serve para recuperar o acesso de um operador.
 
 #### Scenario: Criar o primeiro operador pelo script
-- **WHEN** alguém com acesso ao servidor roda `yarn admin:create-operator --email dev@connectthink.com.br --name "Dev" --role operator`
+- **WHEN** alguém com acesso ao servidor roda o comando de criação de operador (`node dist/src/cli/create-operator.js` no container da API, ou `yarn admin:create-operator` em desenvolvimento) com `--email dev@connectthink.com.br --name "Dev" --role operator`
 - **THEN** o sistema cria a conta ativa, mostra uma vez a senha provisória e o URI `otpauth://` para cadastrar o TOTP e grava só o hash da senha e o segredo cifrado
 
 #### Scenario: E-mail repetido
