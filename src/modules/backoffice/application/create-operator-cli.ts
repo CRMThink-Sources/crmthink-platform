@@ -2,7 +2,7 @@ import { parseArgs } from 'node:util'
 import { emailSchema, roleSchema } from '../domain/operator'
 import type { OperatorService } from './operators'
 
-const USAGE = `Uso:
+const USAGE = `Uso (no servidor: node dist/src/cli/create-operator.js no lugar de yarn admin:create-operator):
   yarn admin:create-operator --email <e-mail> --name "<nome>" --role <viewer|operator>
   yarn admin:create-operator --email <e-mail> --reset`
 

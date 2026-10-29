@@ -94,7 +94,6 @@ get_var() { grep "^$1=" "$ENV_FILE" | head -n1 | cut -d= -f2-; }
 set_var STAGING_HOST "$STAGING_HOST"
 set_var PRODUCTION_HOST "$PRODUCTION_HOST"
 set_var ACME_EMAIL "$ACME_EMAIL"
-grep -q '^ADMIN_ALLOWED_IPS=' "$ENV_FILE" || echo 'ADMIN_ALLOWED_IPS="0.0.0.0/0 ::/0"' >> "$ENV_FILE"
 ensure_secret MYSQL_ROOT_PASSWORD
 ensure_secret STAGING_DB_PASSWORD
 ensure_secret PRODUCTION_DB_PASSWORD

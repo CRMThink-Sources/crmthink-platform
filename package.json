@@ -22,8 +22,8 @@
     "docs:openapi": "tsx scripts/generate-openapi.ts",
     "sdk:types": "tsx sdk/typescript/scripts/generate-types.ts --write",
     "sdk:build": "node -e \"require('fs').rmSync('sdk/typescript/dist',{recursive:true,force:true})\" && tsc -p sdk/typescript/tsconfig.build.json",
-    "admin:rotate-signing-key": "tsx scripts/rotate-signing-key.ts",
-    "admin:create-operator": "tsx scripts/create-operator.ts",
+    "admin:rotate-signing-key": "tsx src/cli/rotate-signing-key.ts",
+    "admin:create-operator": "tsx src/cli/create-operator.ts",
     "admin:generate-encryption-key": "node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\""
   },
   "dependencies": {

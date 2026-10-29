@@ -92,9 +92,9 @@ Nova env `BACKOFFICE_ORIGINS` (lista separada por vírgula). Em produção, a or
 ## Migration Plan
 
 1. Deploy com a migração Prisma (tabelas `admin_operator`, `admin_session`, `admin_audit_log` e índices novos). A allowlist do Caddy continua. Os tokens continuam funcionando, agora auditados.
-2. Rodar `yarn admin:create-operator` em staging e produção para os primeiros `operator`, e cadastrar o TOTP.
+2. Rodar `node dist/src/cli/create-operator.js` no container da API (`docker exec`) em staging e produção para os primeiros `operator`, e cadastrar o TOTP.
 3. Validar login, papéis e auditoria em staging.
-4. Remover o bloco `@admin` do `Caddyfile` e `ADMIN_ALLOWED_IPS` do deploy, e recarregar o Caddy.
+4. Remover o bloco `@admin` do `Caddyfile` e `ADMIN_ALLOWED_IPS` do deploy, e recarregar o Caddy. Na prática a allowlist estava em `0.0.0.0/0 ::/0` (sem efeito), então a remoção não muda o acesso.
 5. Rollback: recolocar o bloco `@admin` no Caddy (só infra). Reverter o código não exige reverter a migração, porque as tabelas novas são aditivas e as colunas antigas não mudam.
 
 ## Open Questions

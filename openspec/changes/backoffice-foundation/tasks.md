@@ -45,5 +45,5 @@
 
 - [x] 7.1 Garantir que `trial-contact-request` foi arquivada antes desta mudança (o delta de `api-reference` parte do texto dela); verificar com `openspec validate backoffice-foundation --strict`
 - [x] 7.2 Rodar `yarn lint`, `yarn check-types` e `yarn test` limpos e conferir que os testes HTTP de `/admin/*` anteriores a esta mudança passam sem alteração além da paginação
-- [ ] 7.3 Deploy em staging com a allowlist ainda ativa, criar os primeiros operadores com `yarn admin:create-operator` e validar manualmente: login com TOTP, bloqueio após 5 falhas, `viewer` sem acesso a mutações, auditoria de uma rotação de chave e timeline de uma instalação real
-- [ ] 7.4 Remover o bloco `@admin` de `ops/droplet/Caddyfile` e `ADMIN_ALLOWED_IPS` do deploy, recarregar o Caddy em staging e depois em produção; verificar acessando `/admin/auth/me` de um IP fora da antiga allowlist (401 sem sessão, 200 com sessão)
+- [ ] 7.3 Deploy em staging com a allowlist ainda ativa, criar os primeiros operadores com `node dist/src/cli/create-operator.js` no container da API e validar manualmente: login com TOTP, bloqueio após 5 falhas, `viewer` sem acesso a mutações, auditoria de uma rotação de chave e timeline de uma instalação real
+- [x] 7.4 Remover o bloco `@admin` de `ops/droplet/Caddyfile` e `ADMIN_ALLOWED_IPS` do compose e do `bootstrap.sh` (a allowlist estava em `0.0.0.0/0 ::/0`, sem efeito, então a remoção não muda o acesso); verificar após rodar o `bootstrap.sh` no droplet que `/admin/auth/me` de qualquer IP responde 401 da API (corpo JSON) sem sessão
