@@ -27,9 +27,9 @@ export const ERROR_CATALOG = {
   UNAUTHORIZED: {
     status: 401,
     meaning:
-      'Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).',
+      'Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).',
     action: 'Conferir a credencial; após rotação, usar a nova.',
-    origin: 'registry/http/auth.ts, rotas de eventos',
+    origin: 'registry/http/auth.ts, backoffice/http/gate.ts, rotas de eventos',
   },
   NOT_FOUND: {
     status: 404,
@@ -45,9 +45,10 @@ export const ERROR_CATALOG = {
   },
   AUTH_MISSING: {
     status: 500,
-    meaning: 'Rota de app montada sem `appAuth` (defeito da plataforma).',
+    meaning:
+      'Rota montada sem `appAuth` ou `adminGate` (defeito da plataforma).',
     action: 'Reportar; não é causado pelo app.',
-    origin: 'registry/http/auth.ts',
+    origin: 'registry/http/auth.ts, backoffice/http/actor.ts',
   },
 
   // Aplicação e credenciais
@@ -158,9 +159,11 @@ export const ERROR_CATALOG = {
   ORIGIN_NOT_ALLOWED: {
     status: 403,
     meaning:
-      'Origem do navegador não autorizada para o appCode (`SESSION_CORS_ORIGINS`).',
-    action: 'Pedir ao operador o cadastro da origem do frontend.',
-    origin: 'installations/http/routes.ts',
+      'Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).',
+    action:
+      'App: pedir ao operador o cadastro da origem do frontend. Backoffice: usar a interface da própria plataforma; scripts usam token de `ADMIN_API_TOKENS`.',
+    origin:
+      'installations/http/routes.ts, backoffice/http/gate.ts, backoffice/http/routes.ts',
   },
   INSTALLATION_NOT_ACTIVE: {
     status: 403,
@@ -336,6 +339,67 @@ export const ERROR_CATALOG = {
     meaning: 'Assinatura `Stripe-Signature` inválida ou ausente.',
     action: 'Conferir `STRIPE_WEBHOOK_SECRET` do endpoint.',
     origin: 'billing/http/routes.ts',
+  },
+
+  // Backoffice (operadores)
+  INVALID_CREDENTIALS: {
+    status: 401,
+    meaning:
+      'Login do backoffice recusado: e-mail, senha ou código TOTP errados, conta inativa ou bloqueada. O motivo não é revelado.',
+    action:
+      'Conferir os dados. Após 5 falhas a conta fica 15 min bloqueada; outro `operator` pode redefinir o acesso.',
+    origin:
+      'backoffice/application/login.ts, backoffice/application/operators.ts',
+  },
+  TOO_MANY_REQUESTS: {
+    status: 429,
+    meaning: 'Limite de tentativas de login por IP excedido (20 em 15 min).',
+    action: 'Aguardar o tempo de `Retry-After` (segundos).',
+    origin: 'backoffice/application/login.ts',
+  },
+  FORBIDDEN_ROLE: {
+    status: 403,
+    meaning: 'O papel do operador não permite esta rota (`viewer` só lê).',
+    action: 'Pedir a um `operator`.',
+    origin: 'backoffice/http/gate.ts (papel em backoffice/http/policy.ts)',
+  },
+  PASSWORD_CHANGE_REQUIRED: {
+    status: 403,
+    meaning:
+      'A conta está com senha provisória: só a troca de senha é permitida.',
+    action: 'Trocar a senha em `POST /admin/auth/password`.',
+    origin: 'backoffice/http/gate.ts',
+  },
+  SESSION_REQUIRED: {
+    status: 400,
+    meaning:
+      'Rota exclusiva de sessão de operador chamada com token de script.',
+    action: 'Usar a sessão do backoffice.',
+    origin: 'backoffice/http/actor.ts',
+  },
+  OPERATOR_NOT_FOUND: {
+    status: 404,
+    meaning: 'Operador inexistente.',
+    action: 'Conferir o id em `GET /admin/operators`.',
+    origin: 'backoffice/application/operators.ts',
+  },
+  OPERATOR_EMAIL_TAKEN: {
+    status: 409,
+    meaning: 'Já existe operador com este e-mail (sem diferenciar maiúsculas).',
+    action: 'Usar a conta existente ou redefinir o acesso dela.',
+    origin: 'backoffice/application/operators.ts',
+  },
+  LAST_OPERATOR: {
+    status: 409,
+    meaning: 'A mudança deixaria a plataforma sem nenhum `operator` ativo.',
+    action: 'Promover outra conta a `operator` antes.',
+    origin: 'backoffice/application/operators.ts',
+  },
+  OPERATOR_SELF_CHANGE: {
+    status: 409,
+    meaning: 'Um operador não pode desativar nem rebaixar a própria conta.',
+    action: 'Pedir a outro `operator`.',
+    origin: 'backoffice/application/operators.ts',
   },
 } as const satisfies Record<string, ErrorInfo>
 

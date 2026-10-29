@@ -17,6 +17,7 @@ erDiagram
   Installation ||--o| ApplicationToken : "application_token"
   Installation ||--o{ InstallAttempt : "passos"
   OutboxEvent ||--o{ EventDelivery : "tentativas"
+  AdminOperator ||--o{ AdminSession : "sessões"
 
   App {
     string appCode PK
@@ -49,10 +50,26 @@ erDiagram
     string dedupeKey UK
     json payload
   }
+  AdminOperator {
+    int id PK
+    string email UK "minúsculas"
+    string role "viewer|operator"
+    string passwordHash "argon2id"
+    string totpSecretEnc "cifrado"
+    datetime lockedUntil
+  }
+  AdminSession {
+    int id PK
+    string idHash UK "SHA-256 do cookie"
+    datetime lastSeenAt
+    datetime expiresAt
+    datetime revokedAt
+  }
 ```
 
 Tabelas sem relação declarada: `SigningKey`, `StripeEvent`, `SubscriptionVersion`,
-`ItemVersion`, `SweepRun`, `PeriodNotice`, `Purchase`.
+`ItemVersion`, `SweepRun`, `PeriodNotice`, `Purchase`, `AdminAuditLog` (o alvo é texto:
+`installation:<id>`, `app:<appCode>`, ...).
 
 ## Tabelas
 
@@ -90,6 +107,18 @@ Tabelas sem relação declarada: `SigningKey`, `StripeEvent`, `SubscriptionVersi
 | --- | --- | --- |
 | `outbox_event` | Evento gravado na transação da decisão | `seq` define a ordem por instalação; `dedupe_key` impede evento duplicado para a mesma decisão; `next_attempt_at`, `attempts`, `window_started_at` controlam o reenvio. |
 | `event_delivery` | Cada tentativa de entrega | Status HTTP, erro, próximo horário. |
+
+### Backoffice
+
+| Tabela | Propósito | Notas |
+| --- | --- | --- |
+| `admin_operator` | Conta de cada pessoa que opera a plataforma | Senha só como hash argon2id; segredo TOTP cifrado (`v1:`); `last_totp_step` impede reuso do código; `failed_logins`/`locked_until` do bloqueio; `must_change_password` na senha provisória. |
+| `admin_session` | Sessão do backoffice | Só o SHA-256 do cookie (`id_hash`); `last_seen_at` (regravado a cada minuto) e `expires_at` definem a expiração; `revoked_at` no logout, expiração e revogação por conta. |
+| `admin_audit_log` | Trilha de auditoria | Só inserção; apagada só pela retenção (`ADMIN_AUDIT_RETENTION_DAYS`). Índices por alvo, ator e data para a consulta e a linha do tempo da instalação. Ver [security.md](security.md#trilha-de-auditoria). |
+
+A linha do tempo da instalação (`GET /admin/installations/{id}/timeline`) lê `install_attempt`,
+`outbox_event` + `event_delivery`, `purchase` e `admin_audit_log`; por isso `outbox_event` e
+`purchase` têm índice `(installation_id, created_at)`.
 
 ## SPAs do portal CRMThink
 

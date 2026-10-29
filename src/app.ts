@@ -6,6 +6,9 @@ import { runWithLogContext } from '@/shared/observability/log-context'
 import { logger } from '@/shared/observability/logger'
 import { registry as metricsRegistry } from '@/shared/observability/metrics'
 import { adminRoutes } from '@/modules/registry/http/admin-routes'
+import { adminGate } from '@/modules/backoffice/http/gate'
+import { backofficeRoutes } from '@/modules/backoffice/http/routes'
+import { backofficeReadRoutes } from '@/modules/backoffice/http/read-routes'
 import { appAuth } from '@/modules/registry/http/auth'
 import {
   appInstallationRoutes,
@@ -92,10 +95,39 @@ export function createApp(container: Container, health: HealthState): Express {
   app.use(billingWebhookRoutes(billingDeps))
   app.use(publicInstallRoutes(installationDeps))
   app.use(sessionRoutes(installationDeps))
-  app.use(
+  // Operador: sessão do backoffice ou token de script, papel por rota e auditoria
+  // das mutações (`adminGate`). O parser JSON vem antes para a auditoria ver o corpo.
+  const admin = Router()
+  admin.use(
+    '/admin',
+    express.json({ limit: '64kb' }),
+    adminGate({
+      tokens: container.env.adminApiTokens,
+      sessions: container.adminSessions,
+      audit: container.audit,
+      origins: container.env.backoffice.origins,
+    }),
+  )
+  admin.use(
+    backofficeRoutes({
+      login: container.login,
+      sessions: container.adminSessions,
+      operators: container.operators,
+      audit: container.audit,
+      cookieSecure: container.env.backoffice.cookieSecure,
+      origins: container.env.backoffice.origins,
+    }),
+  )
+  admin.use(
+    backofficeReadRoutes({
+      db: container.db,
+      installations: container.installationReads,
+      overview: container.overview,
+    }),
+  )
+  admin.use(
     adminRoutes({
       db: container.db,
-      adminTokens: container.env.adminApiTokens,
       registry: container.registry,
       delivery: container.delivery,
       signingKeys: container.signingKeys,
@@ -103,6 +135,7 @@ export function createApp(container: Container, health: HealthState): Express {
       sweeps: container.sweeps,
     }),
   )
+  app.use(admin)
   // Tudo daqui em diante é servidor-a-servidor: uma autenticação por chave de API.
   const appApi = Router()
   appApi.use(appAuth(container.registry))

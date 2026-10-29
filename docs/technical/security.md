@@ -1,6 +1,7 @@
 # Segurança
 
 Código: `src/shared/crypto/*`, `src/modules/registry/http/auth.ts`,
+`src/modules/backoffice/` (operadores, sessão, `http/gate.ts`, `http/policy.ts`, auditoria),
 `src/modules/registry/app-registry.ts`, `src/modules/installations/application/signing-keys.ts`,
 `src/modules/installations/application/bitrix-auth-verifier.ts`,
 `src/shared/observability/logger.ts`.
@@ -11,7 +12,10 @@ Código: `src/shared/crypto/*`, `src/modules/registry/http/auth.ts`,
 | --- | --- | --- | --- |
 | Chave de API do app | `cp_<32 bytes base64url>` | Só o hash SHA-256 (`app.api_key_hash`) | `Authorization: Bearer` nas rotas servidor-a-servidor |
 | Segredo de webhook | `whsec_<32 bytes base64url>` | Cifrado (`app.webhook_secret_enc`) | HMAC dos eventos e do instalador |
-| Token de operador | livre | Variável `ADMIN_API_TOKENS` (lista) | `/admin/*` (inclui o trial manual, `/admin/installations/{id}/trial`) |
+| Token de operador (scripts) | livre | Variável `ADMIN_API_TOKENS` (lista) | `/admin/*` como papel `operator`; na auditoria aparece como `token:<8 hex do SHA-256>`. Recomendado um token por script ou rotina |
+| Senha de operador | escolhida pela pessoa (≥ 12 caracteres) | Hash argon2id (`admin_operator.password_hash`, `m=19456,t=2,p=1`) | Login do backoffice |
+| Segredo TOTP do operador | 20 bytes, base32 | Cifrado (`admin_operator.totp_secret_enc`) | 2º fator do login do backoffice |
+| Sessão do backoffice | 32 bytes base64url | Só o SHA-256 (`admin_session.id_hash`) | Cookie `cp_admin_session` em `/admin/*` |
 
 Chave e segredo aparecem **uma única vez**, na resposta do cadastro ou da rotação. SHA-256
 simples é suficiente para a chave de API: ela tem 256 bits aleatórios, então hash lento não
@@ -106,6 +110,57 @@ app só com as suas: o preflight aceita qualquer origem configurada (o corpo ain
 conhecido), mas a resposta real só leva `Access-Control-Allow-Origin` se a origem pertence ao
 `appCode` pedido — senão 403 `ORIGIN_NOT_ALLOWED` e o navegador bloqueia. As demais rotas não
 emitem cabeçalhos CORS (são servidor-a-servidor).
+
+## Backoffice: operadores, sessão e auditoria
+
+Cada pessoa que opera a plataforma (dev e suporte) tem conta própria em `admin_operator`.
+Não existe cadastro público: a primeira conta nasce por `yarn admin:create-operator`; as demais,
+por um `operator` em `POST /admin/operators`. Senha provisória e URI `otpauth://` só aparecem
+na resposta da criação ou da redefinição de acesso.
+
+- **Login** (`POST /admin/auth/login`, `backoffice/application/login.ts`): e-mail, senha
+  (argon2id) e código TOTP (RFC 6238, 6 dígitos, 30 s, ±1 passo, `shared/crypto/totp.ts`). Um
+  código aceito não vale de novo (`last_totp_step`). Toda falha responde o mesmo
+  `INVALID_CREDENTIALS`; e-mail inexistente também roda uma verificação argon2 contra um hash
+  fixo, para o tempo de resposta não revelar quais contas existem.
+- **Limite de tentativas** (contadores no Redis): mais de 20 tentativas por IP em 15 min → 429
+  `TOO_MANY_REQUESTS` com `Retry-After`; 5 falhas seguidas na mesma conta em 15 min → conta
+  bloqueada por 15 min (`locked_until`), quando até credenciais corretas falham. Sucesso zera a
+  contagem; redefinir o acesso desbloqueia.
+- **Senha provisória**: com `must_change_password`, a sessão só acessa `/admin/auth/*`; o resto
+  responde 403 `PASSWORD_CHANGE_REQUIRED`.
+- **Sessão** (`backoffice/application/sessions.ts`): cookie `cp_admin_session` com `HttpOnly`,
+  `Secure` (fora só com `ADMIN_COOKIE_INSECURE=true`, aceito apenas em `NODE_ENV=development`),
+  `SameSite=Strict` e `Path=/admin`. Expira após `ADMIN_SESSION_IDLE_MINUTES` sem uso e após
+  `ADMIN_SESSION_MAX_HOURS` desde o login. Logout revoga; desativar a conta, trocar o papel ou
+  redefinir o acesso revogam todas as sessões dela; trocar a própria senha revoga as outras.
+- **Proteção contra requisição forjada**: mutação com sessão exige `Origin` de
+  `BACKOFFICE_ORIGINS` (403 `ORIGIN_NOT_ALLOWED`). Tokens de script não exigem `Origin`.
+- **Papéis** (`backoffice/http/policy.ts`, aplicados por `backoffice/http/gate.ts`): `viewer`
+  (suporte) só lê; `operator` (dev) lê e age; `self` são as rotas da própria sessão. Papel
+  insuficiente → 403 `FORBIDDEN_ROLE`. A política é a fonte do papel mostrado no contrato, e um
+  teste garante que toda operação de operador tem política.
+- **Ordem no `adminGate`**: casa a política → agenda a auditoria (mutações) → autentica (Bearer
+  inválido não cai para o cookie) → senha provisória → `Origin` → papel.
+
+### Trilha de auditoria
+
+`admin_audit_log` (`backoffice/application/audit.ts`) registra toda mutação em `/admin/*`,
+inclusive as negadas por papel ou origem, com ator (`operator:<id>` ou `token:<prefixo>`),
+papel, ação (método e rota sem valores, ex.: `POST /admin/apps/:appCode/rotate-api-key`), alvo,
+status, código de erro, IP, user-agent e request id. Também registra os eventos de acesso:
+`auth.login_succeeded`, `auth.login_failed` (com o e-mail tentado e, só internamente, se a conta
+existe e o motivo), `auth.account_locked`, `auth.logout`, `auth.password_changed`,
+`auth.password_change_failed` e `auth.session_expired`. Requisição sem credencial válida (401)
+não gera registro.
+
+A auditoria **nunca** guarda senha, código TOTP, segredo gerado, chave de API nem corpo cru: o
+resumo é o corpo com chaves sensíveis mascaradas (`secret`, `password`, `token`, `apiKey`,
+`totp`, `code`), textos cortados em 200 caracteres e no máximo 2 KB. Não há rota que altere ou
+apague registros; a rotina `purge-admin-audit` apaga só o que passou de
+`ADMIN_AUDIT_RETENTION_DAYS` (mínimo 365). Falha ao gravar não bloqueia a ação: vai para log
+`error` e para `admin_audit_write_failures_total`. Consulta: `GET /admin/audit` (filtros por
+ator, ação, alvo, resultado e período).
 
 ## O que nunca vai para o log
 

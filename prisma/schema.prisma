@@ -91,6 +91,7 @@ model Installation {
 
   @@unique([appCode, memberId])
   @@index([status])
+  @@index([installedAt, id])
   @@map("installation")
 }
 
@@ -163,6 +164,7 @@ model StripeEvent {
   payload     Json?
 
   @@index([status])
+  @@index([receivedAt, eventId])
   @@map("stripe_event")
 }
 
@@ -227,7 +229,7 @@ model Purchase {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  @@index([installationId])
+  @@index([installationId, createdAt])
   @@map("purchase")
 }
 
@@ -260,6 +262,8 @@ model OutboxEvent {
   @@index([status, nextAttemptAt])
   @@index([appCode, installationId, status, seq])
   @@index([appCode, createdAt])
+  /// Linha do tempo da instalação no backoffice.
+  @@index([installationId, createdAt])
   @@map("outbox_event")
 }
 
@@ -277,4 +281,77 @@ model EventDelivery {
 
   @@index([eventId, attempt])
   @@map("event_delivery")
+}
+
+// ─────────────── Backoffice (operadores, sessões, auditoria) ───────────────
+
+/// Pessoa que opera a plataforma pelo backoffice. Os scripts usam `ADMIN_API_TOKENS`.
+model AdminOperator {
+  id                 Int       @id @default(autoincrement())
+  /// Sempre em minúsculas: a unicidade não diferencia maiúsculas.
+  email              String    @unique @db.VarChar(255)
+  name               String    @db.VarChar(200)
+  /// viewer | operator
+  role               String    @db.VarChar(20)
+  active             Boolean   @default(true)
+  /// argon2id (formato PHC, com os parâmetros).
+  passwordHash       String    @map("password_hash") @db.VarChar(255)
+  totpSecretEnc      String    @map("totp_secret_enc") @db.Text
+  /// Último passo TOTP aceito: um código não vale duas vezes.
+  lastTotpStep       Int       @default(0) @map("last_totp_step")
+  /// Senha provisória (script ou redefinição): a sessão só permite trocar a senha.
+  mustChangePassword Boolean   @default(true) @map("must_change_password")
+  failedLogins       Int       @default(0) @map("failed_logins")
+  lockedUntil        DateTime? @map("locked_until")
+  lastLoginAt        DateTime? @map("last_login_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  sessions AdminSession[]
+
+  @@map("admin_operator")
+}
+
+model AdminSession {
+  id         Int       @id @default(autoincrement())
+  /// SHA-256 (hex) do valor do cookie. O valor em si nunca é gravado.
+  idHash     String    @unique @map("id_hash") @db.VarChar(64)
+  operatorId Int       @map("operator_id")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastSeenAt DateTime  @default(now()) @map("last_seen_at")
+  /// Limite absoluto (`ADMIN_SESSION_MAX_HOURS` desde o login).
+  expiresAt  DateTime  @map("expires_at")
+  revokedAt  DateTime? @map("revoked_at")
+  ip         String?   @db.VarChar(64)
+  userAgent  String?   @map("user_agent") @db.VarChar(500)
+
+  operator AdminOperator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@index([operatorId, revokedAt])
+  @@map("admin_session")
+}
+
+/// Trilha de auditoria: só inserção. Nunca guarda senha, código TOTP, segredo ou corpo cru.
+model AdminAuditLog {
+  id         Int      @id @default(autoincrement())
+  /// `operator:<id>`, `token:<prefixo>` ou `anonymous` (falha de login).
+  actor      String   @db.VarChar(100)
+  actorRole  String?  @map("actor_role") @db.VarChar(20)
+  /// `POST /admin/apps/:appCode/rotate-api-key` ou `auth.login_failed`.
+  action     String   @db.VarChar(200)
+  targetType String?  @map("target_type") @db.VarChar(50)
+  targetId   String?  @map("target_id") @db.VarChar(200)
+  statusCode Int?     @map("status_code")
+  errorCode  String?  @map("error_code") @db.VarChar(100)
+  /// Resumo com campos sensíveis mascarados (ex.: campos alterados, e-mail da tentativa).
+  summary    Json?
+  ip         String?  @db.VarChar(64)
+  userAgent  String?  @map("user_agent") @db.VarChar(500)
+  requestId  String?  @map("request_id") @db.VarChar(100)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([targetType, targetId, createdAt])
+  @@index([actor, createdAt])
+  @@index([createdAt])
+  @@map("admin_audit_log")
 }

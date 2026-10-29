@@ -31,6 +31,7 @@ uma só. `WORKER_DISABLE_SCHEDULES=true` desliga todos (útil em desenvolvimento
 | `sweep-stripe` | 1 h | Reconciliação Stripe → SPA 1142 |
 | `sweep-spa` | 15 min | Reconciliação dos SPAs 1142/1146 alterados |
 | `gauges` | 60 s | Atualiza as métricas de instalações pendentes/`AUTH_ERROR` e eventos pendentes/mortos |
+| `purge-admin-audit` | diário 03:30 `America/Sao_Paulo` | Apaga registros de auditoria do backoffice mais antigos que `ADMIN_AUDIT_RETENTION_DAYS` (mínimo 365). Idempotente (`deleteMany` por data) |
 
 Varredura que falha incrementa `platform_sweep_failures_total` e gera alerta `sweep.failed`.
 

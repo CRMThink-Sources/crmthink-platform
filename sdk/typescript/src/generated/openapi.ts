@@ -1735,7 +1735,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -1996,7 +1996,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2081,7 +2081,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2380,7 +2380,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2427,7 +2427,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2486,7 +2486,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2546,7 +2546,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2670,7 +2670,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2803,7 +2803,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2885,7 +2885,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2945,7 +2945,7 @@ export interface operations {
             };
             /**
              * @description Proibido
-             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada para o appCode (`SESSION_CORS_ORIGINS`).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
              *     - `APP_INACTIVE`: Aplicação desativada ou inexistente.
              *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).
              *     - `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.
@@ -3015,7 +3015,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -3090,7 +3090,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -3174,7 +3174,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -3271,7 +3271,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -3385,7 +3385,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {

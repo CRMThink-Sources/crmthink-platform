@@ -1,5 +1,4 @@
 import type { RequestHandler, Response } from 'express'
-import { safeEqual } from '@/shared/crypto/timing-safe'
 import {
   asyncHandler,
   forbidden,
@@ -36,16 +35,4 @@ export function currentApp(res: Response): RegisteredApp {
   const app = res.locals.app as RegisteredApp | undefined
   if (!app) throw new HttpError(500, 'AUTH_MISSING', 'appAuth não aplicado')
   return app
-}
-
-/** Credencial de operador, separada da chave dos apps. */
-export function adminAuth(tokens: string[]): RequestHandler {
-  return (req, _res, next) => {
-    const key = bearer(req.headers.authorization)
-    if (!key || !tokens.some(token => safeEqual(key, token))) {
-      next(unauthorized('Credencial de operador inválida'))
-      return
-    }
-    next()
-  }
 }
