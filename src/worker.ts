@@ -29,6 +29,7 @@ const SCHEDULES: Array<{
   { id: 'sweep-stripe', every: 60 * 60_000 },
   { id: 'sweep-spa', every: 15 * 60_000 },
   { id: 'gauges', every: 60_000 },
+  { id: 'purge-admin-audit', pattern: '30 3 * * *', tz: 'America/Sao_Paulo' },
 ]
 
 async function main(): Promise<void> {
@@ -80,6 +81,7 @@ async function main(): Promise<void> {
     'period-ending': () => container.periodEnding.run(),
     'sweep-stripe': () => container.sweeps.stripeSweep(),
     'sweep-spa': () => container.sweeps.spaSweep(),
+    'purge-admin-audit': () => container.audit.purgeExpired(),
     gauges: async () => {
       const [pending, authError] = await Promise.all([
         boot.db.installation.count({ where: { status: 'INSTALL_PENDING' } }),

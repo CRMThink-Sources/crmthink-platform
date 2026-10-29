@@ -81,7 +81,11 @@
           "Operador"
         ],
         "summary": "Listar aplicações cadastradas",
+        "description": "**Papel mínimo:** `viewer` (leitura).",
         "security": [
+          {
+            "adminSession": []
+          },
           {
             "adminToken": []
           }
@@ -98,7 +102,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -112,7 +116,30 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
                       }
                     }
                   }
@@ -128,8 +155,11 @@
           "Operador"
         ],
         "summary": "Cadastrar aplicação",
-        "description": "**`apiKey` e `webhookSecret` só aparecem nesta resposta.** A chave é guardada só como hash; o segredo e o `client_secret` ficam cifrados.",
+        "description": "**`apiKey` e `webhookSecret` só aparecem nesta resposta.** A chave é guardada só como hash; o segredo e o `client_secret` ficam cifrados.\n\n**Papel mínimo:** `operator`.",
         "security": [
+          {
+            "adminSession": []
+          },
           {
             "adminToken": []
           }
@@ -188,7 +218,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -202,7 +232,48 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
                       }
                     }
                   }
@@ -252,7 +323,11 @@
           "Operador"
         ],
         "summary": "Detalhes de uma aplicação",
+        "description": "**Papel mínimo:** `viewer` (leitura).",
         "security": [
+          {
+            "adminSession": []
+          },
           {
             "adminToken": []
           }
@@ -280,7 +355,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -294,7 +369,30 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
                       }
                     }
                   }
@@ -333,7 +431,11 @@
           "Operador"
         ],
         "summary": "Alterar aplicação",
+        "description": "**Papel mínimo:** `operator`.",
         "security": [
+          {
+            "adminSession": []
+          },
           {
             "adminToken": []
           }
@@ -403,7 +505,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -417,7 +519,48 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
                       }
                     }
                   }
@@ -481,8 +624,11 @@
           "Operador"
         ],
         "summary": "Rotacionar chave de API",
-        "description": "A chave anterior vale até `previousValidUntil` (`CREDENTIAL_ROTATION_GRACE_HOURS`). A nova só aparece nesta resposta.",
+        "description": "A chave anterior vale até `previousValidUntil` (`CREDENTIAL_ROTATION_GRACE_HOURS`). A nova só aparece nesta resposta.\n\n**Papel mínimo:** `operator`.",
         "security": [
+          {
+            "adminSession": []
+          },
           {
             "adminToken": []
           }
@@ -510,7 +656,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -524,7 +670,48 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
                       }
                     }
                   }
@@ -565,8 +752,11 @@
           "Operador"
         ],
         "summary": "Rotacionar segredo de webhook",
-        "description": "Durante a carência os webhooks levam duas assinaturas `v1=`. O novo segredo só aparece nesta resposta.",
+        "description": "Durante a carência os webhooks levam duas assinaturas `v1=`. O novo segredo só aparece nesta resposta.\n\n**Papel mínimo:** `operator`.",
         "security": [
+          {
+            "adminSession": []
+          },
           {
             "adminToken": []
           }
@@ -594,7 +784,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -608,7 +798,48 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
                       }
                     }
                   }
@@ -642,19 +873,624 @@
         }
       }
     },
+    "/admin/audit": {
+      "get": {
+        "operationId": "listAudit",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Trilha de auditoria do backoffice, paginada",
+        "description": "Do mais recente para o mais antigo. Registra toda mutação em `/admin/*` (inclusive as negadas) e os eventos de acesso (`auth.*`). Os registros não podem ser alterados nem apagados.\n\n**Papel mínimo:** `viewer` (leitura).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Itens por página (1 a 200, padrão 50)",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "`nextCursor` da página anterior",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "actor",
+            "in": "query",
+            "required": false,
+            "description": "`operator:<id>`, `token:<prefixo>` ou `anonymous`",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "description": "Ex.: `POST /admin/apps/:appCode/rotate-api-key` ou `auth.login_failed`",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "targetType",
+            "in": "query",
+            "required": false,
+            "description": "Ex.: `app`, `installation`, `operator`",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "targetId",
+            "in": "query",
+            "required": false,
+            "description": "Id do alvo",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "result",
+            "in": "query",
+            "required": false,
+            "description": "Só sucessos ou só falhas",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "success",
+                "failure"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Início (ISO 8601 ou `AAAA-MM-DD`)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Fim (ISO 8601, ou `AAAA-MM-DD` incluindo o dia inteiro)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Registros",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/auth/login": {
+      "post": {
+        "operationId": "operatorLogin",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Entrar no backoffice (e-mail, senha e TOTP)",
+        "description": "Define o cookie de sessão `cp_admin_session` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/admin`). Qualquer falha responde `INVALID_CREDENTIALS`, sem dizer qual fator falhou. Após 5 falhas em 15 min a conta fica bloqueada por 15 min; mais de 20 tentativas por IP em 15 min respondem 429 com `Retry-After`. Com `Origin`, ele precisa estar em `BACKOFFICE_ORIGINS`.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperatorLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operador e validade da sessão",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorLoginResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `INVALID_CREDENTIALS`: Login do backoffice recusado: e-mail, senha ou código TOTP errados, conta inativa ou bloqueada. O motivo não é revelado.",
+            "x-error-codes": [
+              "INVALID_CREDENTIALS"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INVALID_CREDENTIALS": {
+                    "value": {
+                      "error": {
+                        "code": "INVALID_CREDENTIALS",
+                        "message": "Login do backoffice recusado: e-mail, senha ou código TOTP errados, conta inativa ou bloqueada. O motivo não é revelado."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições\n- `TOO_MANY_REQUESTS`: Limite de tentativas de login por IP excedido (20 em 15 min).",
+            "x-error-codes": [
+              "TOO_MANY_REQUESTS"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "TOO_MANY_REQUESTS": {
+                    "value": {
+                      "error": {
+                        "code": "TOO_MANY_REQUESTS",
+                        "message": "Limite de tentativas de login por IP excedido (20 em 15 min)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/auth/logout": {
+      "post": {
+        "operationId": "operatorLogout",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Sair (revoga a sessão)",
+        "description": "**Papel mínimo:** qualquer sessão de operador.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Sessão revogada e cookie apagado"
+          },
+          "400": {
+            "description": "Requisição inválida\n- `SESSION_REQUIRED`: Rota exclusiva de sessão de operador chamada com token de script.",
+            "x-error-codes": [
+              "SESSION_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "SESSION_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "SESSION_REQUIRED",
+                        "message": "Rota exclusiva de sessão de operador chamada com token de script."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/auth/me": {
+      "get": {
+        "operationId": "whoAmI",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Quem está autenticado (operador da sessão ou token de script)",
+        "description": "**Papel mínimo:** qualquer sessão de operador.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ator",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhoAmI"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/auth/password": {
+      "post": {
+        "operationId": "changeOwnPassword",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Trocar a própria senha",
+        "description": "Exige a senha atual; a nova tem ao menos 12 caracteres. Libera a conta com senha provisória e derruba as outras sessões dela.\n\n**Papel mínimo:** qualquer sessão de operador.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operador atualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasswordChanged"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.\n- `SESSION_REQUIRED`: Rota exclusiva de sessão de operador chamada com token de script.",
+            "x-error-codes": [
+              "VALIDATION_ERROR",
+              "SESSION_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  },
+                  "SESSION_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "SESSION_REQUIRED",
+                        "message": "Rota exclusiva de sessão de operador chamada com token de script."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).\n- `INVALID_CREDENTIALS`: Login do backoffice recusado: e-mail, senha ou código TOTP errados, conta inativa ou bloqueada. O motivo não é revelado.",
+            "x-error-codes": [
+              "UNAUTHORIZED",
+              "INVALID_CREDENTIALS"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  },
+                  "INVALID_CREDENTIALS": {
+                    "value": {
+                      "error": {
+                        "code": "INVALID_CREDENTIALS",
+                        "message": "Login do backoffice recusado: e-mail, senha ou código TOTP errados, conta inativa ou bloqueada. O motivo não é revelado."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/events": {
       "get": {
         "operationId": "listOutboxEvents",
         "tags": [
           "Operador"
         ],
-        "summary": "Eventos do outbox (100 mais recentes)",
+        "summary": "Eventos enviados aos apps (outbox), paginados",
+        "description": "Do mais recente para o mais antigo, com as 3 tentativas de entrega mais recentes de cada evento.\n\n**Papel mínimo:** `viewer` (leitura).",
         "security": [
+          {
+            "adminSession": []
+          },
           {
             "adminToken": []
           }
         ],
         "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Itens por página (1 a 200, padrão 50)",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "`nextCursor` da página anterior",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "status",
             "in": "query",
@@ -677,6 +1513,42 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Tipo do evento (ex.: `subscription.renewed`)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "installationId",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por instalação",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Início (ISO 8601 ou `AAAA-MM-DD`)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Fim (ISO 8601, ou `AAAA-MM-DD` incluindo o dia inteiro)",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -690,8 +1562,31 @@
               }
             }
           },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -705,7 +1600,30 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
                       }
                     }
                   }
@@ -723,8 +1641,11 @@
           "Operador"
         ],
         "summary": "Reenviar eventos (um `eventId` ou uma janela por app)",
-        "description": "Reabre a janela de reenvio de 24 h dos eventos selecionados.",
+        "description": "Reabre a janela de reenvio de 24 h dos eventos selecionados.\n\n**Papel mínimo:** `operator`.",
         "security": [
+          {
+            "adminSession": []
+          },
           {
             "adminToken": []
           }
@@ -774,7 +1695,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -788,7 +1709,305 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/installations": {
+      "get": {
+        "operationId": "listAdminInstallations",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Instalações de todos os apps, paginadas",
+        "description": "**Papel mínimo:** `viewer` (leitura).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Itens por página (1 a 200, padrão 50)",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "`nextCursor` da página anterior",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "appCode",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por app",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por status da instalação",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Trecho do domínio ou `memberId` exato; só dígitos busca id da instalação ou `memberId`",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Instalações",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminInstallationPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/installations/{id}": {
+      "get": {
+        "operationId": "getAdminInstallation",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Detalhe da instalação (contato, saúde do token, eventos e assinatura)",
+        "description": "Nunca devolve tokens. A assinatura vem do portal CRMThink: se ele falhar ou passar de 3 s, `subscription` vem com `available: false` e o motivo, e o resto sai normalmente.\n\n**Papel mínimo:** `viewer` (leitura).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da instalação (`installationId`)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Instalação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminInstallation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `INSTALLATION_NOT_FOUND`: Instalação inexistente, de outro app ou desvinculada do SPA 1060.",
+            "x-error-codes": [
+              "INSTALLATION_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INSTALLATION_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "INSTALLATION_NOT_FOUND",
+                        "message": "Instalação inexistente, de outro app ou desvinculada do SPA 1060."
                       }
                     }
                   }
@@ -806,7 +2025,11 @@
           "Operador"
         ],
         "summary": "Passos registrados da instalação (50 mais recentes)",
+        "description": "**Papel mínimo:** `viewer` (leitura).",
         "security": [
+          {
+            "adminSession": []
+          },
           {
             "adminToken": []
           }
@@ -835,7 +2058,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -849,7 +2072,30 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
                       }
                     }
                   }
@@ -883,6 +2129,185 @@
         }
       }
     },
+    "/admin/installations/{id}/timeline": {
+      "get": {
+        "operationId": "getInstallationTimeline",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Linha do tempo da instalação, paginada",
+        "description": "Junta, do mais recente para o mais antigo: tentativas de instalação, eventos enviados ao app (com as 5 últimas entregas), compras avulsas e ações de operador sobre a instalação. Sem payload completo dos eventos.\n\n**Papel mínimo:** `viewer` (leitura).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da instalação (`installationId`)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Itens por página (1 a 200, padrão 50)",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "`nextCursor` da página anterior",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "description": "Tipos separados por vírgula: `install_attempt`, `event`, `purchase`, `admin_action`",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Início (ISO 8601 ou `AAAA-MM-DD`)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Fim (ISO 8601, ou `AAAA-MM-DD` incluindo o dia inteiro)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Itens",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallationTimeline"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `INSTALLATION_NOT_FOUND`: Instalação inexistente, de outro app ou desvinculada do SPA 1060.",
+            "x-error-codes": [
+              "INSTALLATION_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INSTALLATION_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "INSTALLATION_NOT_FOUND",
+                        "message": "Instalação inexistente, de outro app ou desvinculada do SPA 1060."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/installations/{id}/trial": {
       "post": {
         "operationId": "startTrial",
@@ -890,8 +2315,11 @@
           "Operador"
         ],
         "summary": "Iniciar trial manualmente",
-        "description": "Casos excepcionais. Com trial vigente responde `TRIAL_ALREADY_USED`. O contato é opcional; quando enviado, é gravado como na solicitação do app.",
+        "description": "Casos excepcionais. Com trial vigente responde `TRIAL_ALREADY_USED`. O contato é opcional; quando enviado, é gravado como na solicitação do app.\n\n**Papel mínimo:** `operator`.",
         "security": [
+          {
+            "adminSession": []
+          },
           {
             "adminToken": []
           }
@@ -953,7 +2381,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -967,7 +2395,48 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
                       }
                     }
                   }
@@ -1074,6 +2543,638 @@
         }
       }
     },
+    "/admin/operators": {
+      "get": {
+        "operationId": "listOperators",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Listar operadores",
+        "description": "**Papel mínimo:** `operator`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operadores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOperator",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Criar operador",
+        "description": "**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** O operador troca a senha no primeiro login.\n\n**Papel mínimo:** `operator`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOperatorRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Operador e acesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuedOperatorAccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `OPERATOR_EMAIL_TAKEN`: Já existe operador com este e-mail (sem diferenciar maiúsculas).",
+            "x-error-codes": [
+              "OPERATOR_EMAIL_TAKEN"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "OPERATOR_EMAIL_TAKEN": {
+                    "value": {
+                      "error": {
+                        "code": "OPERATOR_EMAIL_TAKEN",
+                        "message": "Já existe operador com este e-mail (sem diferenciar maiúsculas)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/operators/{id}": {
+      "patch": {
+        "operationId": "updateOperator",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Trocar papel ou ativar/desativar operador",
+        "description": "Derruba as sessões da conta. Ninguém desativa nem rebaixa a própria conta, e sempre resta ao menos um `operator` ativo.\n\n**Papel mínimo:** `operator`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do operador",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOperatorRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operador atualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operator"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `OPERATOR_NOT_FOUND`: Operador inexistente.",
+            "x-error-codes": [
+              "OPERATOR_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "OPERATOR_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "OPERATOR_NOT_FOUND",
+                        "message": "Operador inexistente."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `LAST_OPERATOR`: A mudança deixaria a plataforma sem nenhum `operator` ativo.\n- `OPERATOR_SELF_CHANGE`: Um operador não pode desativar nem rebaixar a própria conta.",
+            "x-error-codes": [
+              "LAST_OPERATOR",
+              "OPERATOR_SELF_CHANGE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "LAST_OPERATOR": {
+                    "value": {
+                      "error": {
+                        "code": "LAST_OPERATOR",
+                        "message": "A mudança deixaria a plataforma sem nenhum `operator` ativo."
+                      }
+                    }
+                  },
+                  "OPERATOR_SELF_CHANGE": {
+                    "value": {
+                      "error": {
+                        "code": "OPERATOR_SELF_CHANGE",
+                        "message": "Um operador não pode desativar nem rebaixar a própria conta."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/operators/{id}/reset-access": {
+      "post": {
+        "operationId": "resetOperatorAccess",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Redefinir senha e TOTP de um operador",
+        "description": "**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** Desbloqueia a conta e derruba as sessões dela.\n\n**Papel mínimo:** `operator`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do operador",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operador e acesso novo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuedOperatorAccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `OPERATOR_NOT_FOUND`: Operador inexistente.",
+            "x-error-codes": [
+              "OPERATOR_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "OPERATOR_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "OPERATOR_NOT_FOUND",
+                        "message": "Operador inexistente."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/overview": {
+      "get": {
+        "operationId": "getOverview",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Contadores do painel do backoffice",
+        "description": "Calculado só com o banco, no máximo a cada 60 s (`computedAt`). Trials que terminam em 7 dias vêm dos eventos `subscription.trial_started` sem ativação ou fim posterior.\n\n**Papel mínimo:** `viewer` (leitura).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contadores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Overview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/signing-keys/rotate": {
       "post": {
         "operationId": "rotateSigningKey",
@@ -1081,8 +3182,11 @@
           "Operador"
         ],
         "summary": "Gerar nova chave de assinatura do JWT",
-        "description": "A chave entra no JWKS já, mas só passa a assinar após `leadMinutes` — tempo para os apps atualizarem o cache do JWKS.",
+        "description": "A chave entra no JWKS já, mas só passa a assinar após `leadMinutes` — tempo para os apps atualizarem o cache do JWKS.\n\n**Papel mínimo:** `operator`.",
         "security": [
+          {
+            "adminSession": []
+          },
           {
             "adminToken": []
           }
@@ -1132,7 +3236,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -1146,7 +3250,48 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
                       }
                     }
                   }
@@ -1163,18 +3308,76 @@
         "tags": [
           "Operador"
         ],
-        "summary": "Eventos Stripe recebidos (100 mais recentes, sem payload)",
+        "summary": "Eventos Stripe recebidos, paginados (sem payload)",
+        "description": "**Papel mínimo:** `viewer` (leitura).",
         "security": [
+          {
+            "adminSession": []
+          },
           {
             "adminToken": []
           }
         ],
         "parameters": [
           {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Itens por página (1 a 200, padrão 50)",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "`nextCursor` da página anterior",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "status",
             "in": "query",
             "required": false,
             "description": "Filtra por status",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Tipo do evento Stripe",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "appCode",
+            "in": "query",
+            "required": false,
+            "description": "App roteado",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Início (ISO 8601 ou `AAAA-MM-DD`)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Fim (ISO 8601, ou `AAAA-MM-DD` incluindo o dia inteiro)",
             "schema": {
               "type": "string"
             }
@@ -1191,8 +3394,31 @@
               }
             }
           },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -1206,7 +3432,150 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/stripe-events/{eventId}": {
+      "get": {
+        "operationId": "getStripeEvent",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Evento Stripe com o payload cru",
+        "description": "**Papel mínimo:** `operator`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "description": "Id do evento no Stripe (`evt_...`)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evento",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StripeEventDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `NOT_FOUND`: Rota ou recurso inexistente.",
+            "x-error-codes": [
+              "NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "NOT_FOUND",
+                        "message": "Rota ou recurso inexistente."
                       }
                     }
                   }
@@ -1224,7 +3593,11 @@
           "Operador"
         ],
         "summary": "Rodar varredura de reconciliação agora",
+        "description": "**Papel mínimo:** `operator`.",
         "security": [
+          {
+            "adminSession": []
+          },
           {
             "adminToken": []
           }
@@ -1252,7 +3625,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -1266,7 +3639,48 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
                       }
                     }
                   }
@@ -1342,7 +3756,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -1356,7 +3770,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -1653,7 +4067,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -1667,7 +4081,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -1814,7 +4228,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -1828,7 +4242,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -2439,7 +4853,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -2453,7 +4867,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -2523,7 +4937,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -2537,7 +4951,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -2630,7 +5044,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -2644,7 +5058,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -2747,7 +5161,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -2761,7 +5175,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -2989,7 +5403,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -3003,7 +5417,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -3241,7 +5655,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -3255,7 +5669,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -3401,7 +5815,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -3415,7 +5829,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -3503,7 +5917,7 @@
             }
           },
           "403": {
-            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada para o appCode (`SESSION_CORS_ORIGINS`).\n- `APP_INACTIVE`: Aplicação desativada ou inexistente.\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).\n- `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.",
+            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).\n- `APP_INACTIVE`: Aplicação desativada ou inexistente.\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).\n- `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.",
             "x-error-codes": [
               "ORIGIN_NOT_ALLOWED",
               "APP_INACTIVE",
@@ -3522,7 +5936,7 @@
                     "value": {
                       "error": {
                         "code": "ORIGIN_NOT_ALLOWED",
-                        "message": "Origem do navegador não autorizada para o appCode (`SESSION_CORS_ORIGINS`)."
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
                       }
                     }
                   },
@@ -3684,7 +6098,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -3698,7 +6112,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -3850,7 +6264,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -3864,7 +6278,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -3999,7 +6413,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -4013,7 +6427,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -4218,7 +6632,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -4232,7 +6646,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -4411,7 +6825,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -4425,7 +6839,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -5638,10 +8052,16 @@
         "scheme": "bearer",
         "description": "Chave de API do app (`Authorization: Bearer <apiKey>`). Emitida no cadastro e na rotação; vale só para as instalações do próprio app."
       },
+      "adminSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "cp_admin_session",
+        "description": "Sessão de operador do backoffice, criada em `POST /admin/auth/login` (e-mail, senha e TOTP). Mutações exigem `Origin` de `BACKOFFICE_ORIGINS`."
+      },
       "adminToken": {
         "type": "http",
         "scheme": "bearer",
-        "description": "Credencial de operador (`ADMIN_API_TOKENS`). Nunca a chave de um app."
+        "description": "Credencial de script (`ADMIN_API_TOKENS`), vale como papel `operator` e aparece na auditoria como `token:<prefixo>`. Nunca a chave de um app."
       },
       "stripeSignature": {
         "type": "apiKey",
@@ -5651,6 +8071,371 @@
       }
     },
     "schemas": {
+      "AdminInstallation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "appCode": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "memberId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "INSTALLING",
+              "INSTALL_PENDING",
+              "ACTIVE",
+              "UNINSTALLED",
+              "AUTH_ERROR"
+            ]
+          },
+          "installedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "activatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "uninstalledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "trialUsed": {
+            "type": "boolean"
+          },
+          "tokenHealth": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "refresh_failing",
+              "missing"
+            ],
+            "description": "`missing`: sem credencial; `refresh_failing`: a última renovação falhou"
+          },
+          "app": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "appCode": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "appCode",
+                  "name",
+                  "active"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "spaItemId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "contact": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "everActivated": {
+            "type": "boolean"
+          },
+          "pendingReinstall": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "health": {
+                    "type": "string",
+                    "enum": [
+                      "ok",
+                      "refresh_failing",
+                      "missing"
+                    ],
+                    "description": "`missing`: sem credencial; `refresh_failing`: a última renovação falhou"
+                  },
+                  "expiresAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "refreshFailures": {
+                    "type": "integer"
+                  },
+                  "lastRefreshError": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "clientEndpoint": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "updatedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "health",
+                  "expiresAt",
+                  "refreshFailures",
+                  "lastRefreshError",
+                  "clientEndpoint",
+                  "updatedAt"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "health": {
+                    "type": "string",
+                    "const": "missing"
+                  }
+                },
+                "required": [
+                  "health"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "events": {
+            "type": "object",
+            "properties": {
+              "pending": {
+                "type": "integer"
+              },
+              "delivered": {
+                "type": "integer"
+              },
+              "dead": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "pending",
+              "delivered",
+              "dead"
+            ],
+            "additionalProperties": false
+          },
+          "subscription": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "available": {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  "current": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/CurrentSubscription"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "`null`: instalação sem assinatura vigente"
+                  }
+                },
+                "required": [
+                  "available",
+                  "current"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "available": {
+                    "type": "boolean",
+                    "const": false
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "available",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "appCode",
+          "domain",
+          "memberId",
+          "status",
+          "installedAt",
+          "activatedAt",
+          "uninstalledAt",
+          "trialUsed",
+          "tokenHealth",
+          "app",
+          "spaItemId",
+          "contact",
+          "everActivated",
+          "pendingReinstall",
+          "updatedAt",
+          "token",
+          "events",
+          "subscription"
+        ],
+        "additionalProperties": false
+      },
+      "AdminInstallationPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "appCode": {
+                  "type": "string"
+                },
+                "domain": {
+                  "type": "string"
+                },
+                "memberId": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "INSTALLING",
+                    "INSTALL_PENDING",
+                    "ACTIVE",
+                    "UNINSTALLED",
+                    "AUTH_ERROR"
+                  ]
+                },
+                "installedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "activatedAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "uninstalledAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "trialUsed": {
+                  "type": "boolean"
+                },
+                "tokenHealth": {
+                  "type": "string",
+                  "enum": [
+                    "ok",
+                    "refresh_failing",
+                    "missing"
+                  ],
+                  "description": "`missing`: sem credencial; `refresh_failing`: a última renovação falhou"
+                }
+              },
+              "required": [
+                "id",
+                "appCode",
+                "domain",
+                "memberId",
+                "status",
+                "installedAt",
+                "activatedAt",
+                "uninstalledAt",
+                "trialUsed",
+                "tokenHealth"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "description": "Envie em `cursor` para a próxima página; `null` na última",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
       "ApiKeyRotated": {
         "type": "object",
         "properties": {
@@ -5839,6 +8624,112 @@
         ],
         "additionalProperties": false
       },
+      "AuditPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "actor": {
+                  "type": "string",
+                  "description": "`operator:<id>`, `token:<prefixo>` ou `anonymous`"
+                },
+                "actorRole": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "action": {
+                  "type": "string"
+                },
+                "targetType": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "targetId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "statusCode": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "errorCode": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "summary": {
+                  "description": "Resumo com campos sensíveis mascarados"
+                },
+                "ip": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "userAgent": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "requestId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "actor",
+                "actorRole",
+                "action",
+                "targetType",
+                "targetId",
+                "statusCode",
+                "errorCode",
+                "summary",
+                "ip",
+                "userAgent",
+                "requestId",
+                "createdAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "description": "Envie em `cursor` para a próxima página; `null` na última",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
       "BillingPortalRequest": {
         "type": "object",
         "properties": {
@@ -5914,6 +8805,25 @@
           "handled"
         ],
         "additionalProperties": false
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
       },
       "ChangePlanRequest": {
         "type": "object",
@@ -6491,6 +9401,31 @@
         "required": [
           "externalRef",
           "title"
+        ]
+      },
+      "CreateOperatorRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "viewer",
+              "operator"
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "name",
+          "role"
         ]
       },
       "CurrentSubscription": {
@@ -7126,6 +10061,79 @@
         ],
         "additionalProperties": false
       },
+      "InstallationTimeline": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "install_attempt",
+                    "event",
+                    "purchase",
+                    "admin_action"
+                  ]
+                },
+                "occurredAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "summary": {
+                  "type": "string"
+                },
+                "ref": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id"
+                  ],
+                  "additionalProperties": false
+                },
+                "data": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {},
+                  "description": "Campos do tipo: etapa e erro, tipo e entregas do evento, compra, ação"
+                }
+              },
+              "required": [
+                "kind",
+                "occurredAt",
+                "summary",
+                "ref",
+                "data"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "description": "Envie em `cursor` para a próxima página; `null` na última",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
       "InstallerPayload": {
         "type": "object",
         "properties": {
@@ -7151,6 +10159,28 @@
           "domain",
           "appCode",
           "isReinstall"
+        ],
+        "additionalProperties": false
+      },
+      "IssuedOperatorAccess": {
+        "type": "object",
+        "properties": {
+          "operator": {
+            "$ref": "#/components/schemas/Operator"
+          },
+          "temporaryPassword": {
+            "type": "string",
+            "description": "Senha provisória. Só aparece nesta resposta."
+          },
+          "totpUri": {
+            "type": "string",
+            "description": "URI `otpauth://` para o app autenticador. Só aparece nesta resposta."
+          }
+        },
+        "required": [
+          "operator",
+          "temporaryPassword",
+          "totpUri"
         ],
         "additionalProperties": false
       },
@@ -7198,6 +10228,127 @@
         },
         "required": [
           "keys"
+        ],
+        "additionalProperties": false
+      },
+      "Operator": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "viewer",
+              "operator"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "mustChangePassword": {
+            "type": "boolean",
+            "description": "Senha provisória: só `POST /admin/auth/password` é permitido"
+          },
+          "lockedUntil": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastLoginAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "role",
+          "active",
+          "mustChangePassword",
+          "lockedUntil",
+          "lastLoginAt",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "OperatorList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Operator"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "OperatorLoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 10
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "code"
+        ]
+      },
+      "OperatorLoginResult": {
+        "type": "object",
+        "properties": {
+          "operator": {
+            "$ref": "#/components/schemas/Operator"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fim da validade máxima da sessão; antes disso ela expira após o tempo de inatividade"
+          }
+        },
+        "required": [
+          "operator",
+          "expiresAt"
         ],
         "additionalProperties": false
       },
@@ -7282,10 +10433,219 @@
               ],
               "additionalProperties": {}
             }
+          },
+          "nextCursor": {
+            "description": "Envie em `cursor` para a próxima página; `null` na última",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
-          "items"
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "Overview": {
+        "type": "object",
+        "properties": {
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "installations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "appCode": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "appCode",
+                "status",
+                "count"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "events": {
+            "type": "object",
+            "properties": {
+              "byApp": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "appCode": {
+                      "type": "string"
+                    },
+                    "pending": {
+                      "type": "integer"
+                    },
+                    "dead": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "appCode",
+                    "pending",
+                    "dead"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "oldestPendingAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "byApp",
+              "oldestPendingAt"
+            ],
+            "additionalProperties": false
+          },
+          "stripeEvents": {
+            "type": "object",
+            "properties": {
+              "failed": {
+                "type": "integer"
+              },
+              "dead": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "failed",
+              "dead"
+            ],
+            "additionalProperties": false
+          },
+          "credentialsRefreshFailing": {
+            "type": "integer"
+          },
+          "trialsEndingSoon": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "installationId": {
+                      "type": "integer"
+                    },
+                    "appCode": {
+                      "type": "string"
+                    },
+                    "subscriptionId": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "trialEndsAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": [
+                    "installationId",
+                    "appCode",
+                    "subscriptionId",
+                    "trialEndsAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "count",
+              "items"
+            ],
+            "additionalProperties": false
+          },
+          "sweeps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "startedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "finishedAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "fixed": {
+                  "type": "integer"
+                },
+                "errors": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "startedAt",
+                "finishedAt",
+                "fixed",
+                "errors"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "computedAt",
+          "installations",
+          "events",
+          "stripeEvents",
+          "credentialsRefreshFailing",
+          "trialsEndingSoon",
+          "sweeps"
+        ],
+        "additionalProperties": false
+      },
+      "PasswordChanged": {
+        "type": "object",
+        "properties": {
+          "operator": {
+            "$ref": "#/components/schemas/Operator"
+          }
+        },
+        "required": [
+          "operator"
         ],
         "additionalProperties": false
       },
@@ -7761,6 +11121,65 @@
         "additionalProperties": {},
         "description": "Evento Stripe, corpo cru assinado"
       },
+      "StripeEventDetail": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "appCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "processedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payload": {
+            "description": "Evento cru do Stripe"
+          }
+        },
+        "required": [
+          "eventId",
+          "type",
+          "appCode",
+          "status",
+          "attempts",
+          "error",
+          "receivedAt",
+          "processedAt",
+          "payload"
+        ],
+        "additionalProperties": false
+      },
       "StripeEventList": {
         "type": "object",
         "properties": {
@@ -7821,10 +11240,18 @@
               ],
               "additionalProperties": false
             }
+          },
+          "nextCursor": {
+            "description": "Envie em `cursor` para a próxima página; `null` na última",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
-          "items"
+          "items",
+          "nextCursor"
         ],
         "additionalProperties": false
       },
@@ -9380,6 +12807,21 @@
           }
         }
       },
+      "UpdateOperatorRequest": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "viewer",
+              "operator"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
       "WebhookSecretRotated": {
         "type": "object",
         "properties": {
@@ -9396,6 +12838,63 @@
           "previousValidUntil"
         ],
         "additionalProperties": false
+      },
+      "WhoAmI": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "operator"
+              },
+              "actor": {
+                "type": "string",
+                "description": "`operator:<id>`, como na auditoria"
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "viewer",
+                  "operator"
+                ]
+              },
+              "operator": {
+                "$ref": "#/components/schemas/Operator"
+              }
+            },
+            "required": [
+              "kind",
+              "actor",
+              "role",
+              "operator"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "token"
+              },
+              "actor": {
+                "type": "string",
+                "description": "`token:<prefixo>`, como na auditoria"
+              },
+              "role": {
+                "type": "string",
+                "const": "operator"
+              }
+            },
+            "required": [
+              "kind",
+              "actor",
+              "role"
+            ],
+            "additionalProperties": false
+          }
+        ]
       }
     }
   }

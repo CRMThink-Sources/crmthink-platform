@@ -45,6 +45,11 @@ Booleanos aceitam `true`/`false`; inteiros, dígitos. Vazio conta como ausente (
 | `JWT_TTL_SECONDS` | não | `900` | Validade do JWT de sessão; também define por quanto tempo uma chave aposentada fica no JWKS |
 | `ADMIN_API_TOKENS` | não | — | Tokens de operador separados por vírgula. Vazio: rotas `/admin/*` sempre 401 |
 | `SESSION_CORS_ORIGINS` | não | — | `appCode=https://a,https://b;outro=https://c`. Origens que podem chamar `POST /v1/sessions`, por app |
+| `BACKOFFICE_ORIGINS` | não | — | Origens do backoffice, separadas por vírgula (ex.: `https://platform.crmthink.com.br,http://localhost:5173`). Mutações em `/admin/*` com sessão de operador exigem `Origin` desta lista; vazio recusa todas (`ORIGIN_NOT_ALLOWED`) |
+| `ADMIN_SESSION_IDLE_MINUTES` | não | `30` | Sessão de operador expira após este tempo sem requisição |
+| `ADMIN_SESSION_MAX_HOURS` | não | `12` | Validade máxima da sessão de operador desde o login |
+| `ADMIN_COOKIE_INSECURE` | não | `false` | `true` tira o `Secure` do cookie de sessão (dev sem TLS). Recusado no boot fora de `NODE_ENV=development` |
+| `ADMIN_AUDIT_RETENTION_DAYS` | não | `365` | Registros de auditoria mais antigos que isto são apagados pela rotina diária. Mínimo `365` |
 | `CREDENTIAL_ROTATION_GRACE_HOURS` | não | `24` | Validade da chave de API e do segredo de webhook anteriores após a rotação |
 | `BITRIX_TLS_REJECT_UNAUTHORIZED` | não | `true` | `false` desliga a verificação TLS (só desenvolvimento; recusado com `NODE_ENV=production`) |
 

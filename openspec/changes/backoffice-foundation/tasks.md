@@ -1,0 +1,49 @@
+## 1. Dados e configuração
+
+- [x] 1.1 Adicionar ao `prisma/schema.prisma` os modelos `AdminOperator` (`email` único em minúsculas, `name`, `role`, `active`, `passwordHash`, `totpSecretEnc`, `lastTotpStep`, `mustChangePassword`, `failedLogins`, `lockedUntil`, datas), `AdminSession` (`idHash` único, `operatorId`, `createdAt`, `lastSeenAt`, `expiresAt`, `revokedAt`, `ip`, `userAgent`) e `AdminAuditLog` (`actor`, `actorRole`, `action`, `targetType`, `targetId`, `statusCode`, `errorCode`, `summary` JSON, `ip`, `userAgent`, `requestId`, `createdAt`, índices `(targetType, targetId, createdAt)`, `(actor, createdAt)` e `(createdAt)`), mais os índices `(installationId, createdAt)` em `outbox_event` e `purchase`; gerar a migração e verificar com `yarn prisma:migrate` num MySQL limpo e `yarn check-types`
+- [x] 1.2 Adicionar a `src/config/env.ts` as variáveis `BACKOFFICE_ORIGINS`, `ADMIN_SESSION_IDLE_MINUTES` (30), `ADMIN_SESSION_MAX_HOURS` (12), `ADMIN_COOKIE_INSECURE` (recusada fora de `development`) e `ADMIN_AUDIT_RETENTION_DAYS` (365, mínimo 365), e documentá-las em `docs/technical/configuration.md` e `.env.example`; verificar com teste de env que `ADMIN_COOKIE_INSECURE=true` em produção falha no boot e que retenção abaixo de 365 é recusada
+- [x] 1.3 Adicionar `@node-rs/argon2` e verificar que `docker build` passa e que `yarn test` roda o hash dentro da imagem
+
+## 2. Credenciais de operador
+
+- [x] 2.1 Implementar TOTP RFC 6238 em `src/shared/crypto/totp.ts` (gerar segredo, URI `otpauth://`, verificar com ±1 passo, devolver o passo aceito); verificar com os vetores de teste da RFC 6238 (SHA-1) e com testes de borda de passo
+- [x] 2.2 Implementar o serviço de operadores em `src/modules/backoffice/operators/` (criar com senha provisória e TOTP, hash argon2id, verificar senha com hash fixo para e-mail inexistente, rehash no login quando os parâmetros mudarem, trocar senha com mínimo de 12 caracteres, trocar papel, ativar e desativar, redefinir acesso, regras `LAST_OPERATOR` e de não alterar a si mesmo); verificar com testes unitários para cada cenário de "Contas de operador" e "Gestão de operadores" em `specs/operator-auth/spec.md`
+- [x] 2.3 Criar `scripts/create-operator.ts` e o script `yarn admin:create-operator` (`--email`, `--name`, `--role` e `--reset` para recuperar acesso), mostrando a senha provisória e o URI só no terminal; verificar com teste do script contra o fake de Prisma e documentar no `README.md` e em `docs/operations/runbook.md`
+
+## 3. Sessão, login e autorização
+
+- [x] 3.1 Implementar sessões em `src/modules/backoffice/sessions/` (gerar 32 bytes, guardar o SHA-256, expirar por inatividade e por tempo máximo, atualizar `lastSeenAt` no máximo a cada 60 s, revogar uma ou todas da conta); verificar com testes usando relógio controlado para inatividade, tempo máximo e revogação por desativação, troca de papel e redefinição
+- [x] 3.2 Implementar o limite de tentativas no Redis (por IP e por e-mail) e o bloqueio da conta (`lockedUntil`); verificar com testes do cenário de 5 falhas → bloqueio, 21ª tentativa por IP → 429 com `Retry-After`, e sucesso zerando a contagem
+- [x] 3.3 Criar as rotas `POST /admin/auth/login`, `POST /admin/auth/logout`, `GET /admin/auth/me` e `POST /admin/auth/password`, com cookie `httpOnly`/`Secure`/`SameSite=Strict`/`Path=/admin`, TOTP sem replay e sessão restrita quando `mustChangePassword`; verificar com testes HTTP (supertest) de todos os cenários de "Login com senha e TOTP", "Sessão de operador" e de senha provisória
+- [x] 3.4 Substituir `adminAuth` por `resolveActor` (cookie ou Bearer, ator `token:<prefixo>`), checagem de `Origin` só para sessão em mutações e `requireRole` a partir do mapa de papéis por operação em `src/docs/openapi/operations.ts`; verificar com testes HTTP: `viewer` em mutação recebe 403 `FORBIDDEN_ROLE`, `viewer` em `GET` recebe 200, cookie sem `Origin` válido em mutação recebe 403 `ORIGIN_NOT_ALLOWED`, token sem cookie funciona como `operator`, e as rotas `/admin/*` existentes continuam passando com token
+- [x] 3.5 Adicionar a `src/docs/errors.ts` os códigos `INVALID_CREDENTIALS`, `TOO_MANY_REQUESTS`, `FORBIDDEN_ROLE`, `ORIGIN_NOT_ALLOWED`, `PASSWORD_CHANGE_REQUIRED`, `OPERATOR_EMAIL_TAKEN` e `LAST_OPERATOR`; verificar que o teste do catálogo de erros passa e regenerar `docs/technical/error-codes.md`
+- [x] 3.6 Criar a gestão de operadores (`GET/POST /admin/operators`, `PATCH /admin/operators/:id` para papel e ativo, `POST /admin/operators/:id/reset-access`); verificar com testes HTTP que a resposta nunca contém hash nem segredo cifrado e que senha e URI aparecem só na criação e na redefinição
+
+## 4. Auditoria
+
+- [x] 4.1 Implementar o gravador de auditoria e o middleware no `finish` da resposta (padrão da rota, extrator de alvo por rota, resumo com campos sensíveis mascarados, métrica `admin_audit_write_failures_total` e log `error` em falha sem afetar a resposta); verificar com testes: rotação de chave registrada sem a chave, 403 por papel registrado, falha de gravação não muda o status da resposta
+- [x] 4.2 Registrar os eventos de acesso (`auth.login_succeeded`, `auth.login_failed` com indicação interna de conta existente, `auth.account_locked`, `auth.logout`, `auth.password_changed`, `auth.session_expired`); verificar com testes do fluxo de login que cada evento gera exatamente um registro sem senha nem código
+- [x] 4.3 Criar `GET /admin/audit` com filtros (ator, ação, alvo, resultado e período) e cursor; verificar com teste HTTP do cenário "Ações sobre um app" e que não existe rota de alteração em `/admin/audit`
+- [x] 4.4 Adicionar a varredura de retenção da auditoria ao worker (diária, apaga só registros mais antigos que `ADMIN_AUDIT_RETENTION_DAYS`); verificar com teste usando relógio controlado e documentar em `docs/technical/async-processing.md`
+
+## 5. API de leitura
+
+- [x] 5.1 Criar o utilitário de cursor (`base64url` + zod por listagem, `limit` de 1 a 200 com padrão 50) e aplicá-lo a `GET /admin/events` (filtros `appCode`, `status`, `type`, `installationId`, `from`, `to`) e `GET /admin/stripe-events` (filtros `status`, `type`, `appCode`, `from`, `to`); verificar com testes HTTP do cenário "Navegar sem repetir itens", cursor inválido → 400 e o filtro por janela
+- [x] 5.2 Criar `GET /admin/stripe-events/:eventId` com payload, só para `operator`; verificar com teste HTTP de 200 para `operator` e 403 para `viewer`
+- [x] 5.3 Criar `GET /admin/installations` (filtros `appCode`, `status` e `q` por domínio, `memberId` ou id) com indicador de saúde dos tokens; verificar com testes HTTP de busca por trecho do domínio, por `memberId` e por id, e de cada valor de saúde (`ok`, `refresh_failing`, `missing`)
+- [x] 5.4 Criar `GET /admin/installations/:id` com contato, app, item do SPA, saúde dos tokens sem tokens, contagem de eventos por status, reinstalação pendente e assinatura por `subscriptions.current` com timeout de 3 s e fallback `{ available: false, reason }`; verificar com testes dos cenários "Instalação com renovação de token falhando", "Portal indisponível" (Bitrix falso que não responde) e 404 `INSTALLATION_NOT_FOUND`
+- [x] 5.5 Criar `GET /admin/installations/:id/timeline` com merge de `install_attempt`, `outbox_event` com as últimas 5 entregas, `purchase` e `admin_audit_log` (alvo `installation:<id>`), cursor `(occurredAt, kind, id)` e filtros `kind`, `from` e `to`, sem payload completo nem segredos; verificar com testes de ordenação entre fontes, paginação sem repetir itens entre páginas com timestamps iguais, filtro `kind=admin_action` e o cenário do evento `dead`
+- [x] 5.6 Criar `GET /admin/overview` com os contadores do spec, cache de 60 s via `src/shared/infra/cache.ts` e `computedAt`, e trials que terminam em 7 dias calculados pelo outbox conforme a decisão 9 do design; verificar com teste que monta os dados no fake, confere cada contador e que a segunda chamada em 60 s não consulta o banco
+
+## 6. Contrato e documentação
+
+- [x] 6.1 Declarar o esquema `adminSession` e o papel por operação no gerador OpenAPI, e registrar todas as rotas novas em `src/docs/openapi/operations.ts` com schemas de resposta; rodar `yarn docs:openapi` e verificar que `yarn test src/docs` passa (paridade rotas × contrato, schemas de resposta e `openapi.json` sem rotas `/admin/*`)
+- [x] 6.2 Atualizar `docs/technical/security.md` (contas, hash, TOTP, sessão, `Origin`, limite de tentativas, papéis, tokens como ator, auditoria e o que ela nunca guarda) e `docs/technical/data-model.md` (modelos novos no diagrama ER); verificar lendo o diff contra o requisito "Segurança e dados" do delta de `technical-documentation`
+- [x] 6.3 Atualizar `docs/operations/runbook.md` (criar operador, recuperar TOTP, desbloquear conta, consultar auditoria, paginação nova de `/admin/events`) e adicionar o alerta de muitas falhas de login em `ops/prometheus-alerts.yml`; verificar com `promtool check rules ops/prometheus-alerts.yml` ou lendo o diff, se o `promtool` não estiver disponível
+
+## 7. Integração e implantação
+
+- [x] 7.1 Garantir que `trial-contact-request` foi arquivada antes desta mudança (o delta de `api-reference` parte do texto dela); verificar com `openspec validate backoffice-foundation --strict`
+- [x] 7.2 Rodar `yarn lint`, `yarn check-types` e `yarn test` limpos e conferir que os testes HTTP de `/admin/*` anteriores a esta mudança passam sem alteração além da paginação
+- [ ] 7.3 Deploy em staging com a allowlist ainda ativa, criar os primeiros operadores com `yarn admin:create-operator` e validar manualmente: login com TOTP, bloqueio após 5 falhas, `viewer` sem acesso a mutações, auditoria de uma rotação de chave e timeline de uma instalação real
+- [ ] 7.4 Remover o bloco `@admin` de `ops/droplet/Caddyfile` e `ADMIN_ALLOWED_IPS` do deploy, recarregar o Caddy em staging e depois em produção; verificar acessando `/admin/auth/me` de um IP fora da antiga allowlist (401 sem sessão, 200 com sessão)

@@ -112,7 +112,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -126,7 +126,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -423,7 +423,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -437,7 +437,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -584,7 +584,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -598,7 +598,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -1209,7 +1209,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -1223,7 +1223,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -1293,7 +1293,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -1307,7 +1307,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -1400,7 +1400,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -1414,7 +1414,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -1517,7 +1517,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -1531,7 +1531,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -1759,7 +1759,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -1773,7 +1773,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -2011,7 +2011,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -2025,7 +2025,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -2171,7 +2171,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -2185,7 +2185,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -2273,7 +2273,7 @@
             }
           },
           "403": {
-            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada para o appCode (`SESSION_CORS_ORIGINS`).\n- `APP_INACTIVE`: Aplicação desativada ou inexistente.\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).\n- `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.",
+            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).\n- `APP_INACTIVE`: Aplicação desativada ou inexistente.\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).\n- `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.",
             "x-error-codes": [
               "ORIGIN_NOT_ALLOWED",
               "APP_INACTIVE",
@@ -2292,7 +2292,7 @@
                     "value": {
                       "error": {
                         "code": "ORIGIN_NOT_ALLOWED",
-                        "message": "Origem do navegador não autorizada para o appCode (`SESSION_CORS_ORIGINS`)."
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
                       }
                     }
                   },
@@ -2454,7 +2454,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -2468,7 +2468,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -2620,7 +2620,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -2634,7 +2634,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -2769,7 +2769,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -2783,7 +2783,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -2988,7 +2988,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -3002,7 +3002,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }
@@ -3181,7 +3181,7 @@
             }
           },
           "401": {
-            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).",
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
             "x-error-codes": [
               "UNAUTHORIZED"
             ],
@@ -3195,7 +3195,7 @@
                     "value": {
                       "error": {
                         "code": "UNAUTHORIZED",
-                        "message": "Credencial ausente ou inválida (chave de API, token de operador ou auth do evento)."
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
                       }
                     }
                   }

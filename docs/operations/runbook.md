@@ -157,4 +157,30 @@ Ambiente (item sem Ambiente = produção).
 | Rotação da chave do JWT | `POST /admin/signing-keys/rotate {"leadMinutes":10}` — publicada já, assina após 10 min |
 | Rotação de credencial de app | `POST /admin/apps/{appCode}/rotate-api-key` ou `/rotate-webhook-secret` (24h de transição) |
 | SPA divergente | `POST /admin/sweeps/spa` e `/admin/sweeps/stripe` |
+| Investigar um cliente | `GET /admin/installations?q=<trecho do domínio>` → `GET /admin/installations/{id}` (saúde do token, eventos, assinatura) → `GET /admin/installations/{id}/timeline` |
+| Quem fez uma ação | `GET /admin/audit?targetType=app&targetId=<appCode>` (ou `targetType=installation`, `actor=operator:<id>`, `result=failure`) |
+| Conta de operador bloqueada | Espera 15 min, ou outro `operator` redefine o acesso (`POST /admin/operators/{id}/reset-access`), o que também desbloqueia |
+| Alerta `AdminLoginFailuresHigh` | `GET /admin/audit?action=auth.login_failed`: IPs e e-mails tentados. Se for ataque, bloquear o IP no Caddy/firewall |
 | Rollback | redeploy da imagem anterior (`PLATFORM_IMAGE=…:<sha>`); outbox e tokens permanecem no banco |
+
+## Operadores do backoffice
+
+As listagens `/admin/events`, `/admin/stripe-events`, `/admin/installations`,
+`/admin/installations/{id}/timeline` e `/admin/audit` são paginadas: 50 itens por padrão
+(`limit` até 200) e `nextCursor` na resposta, que vai em `cursor` na próxima chamada. Antes
+desta mudança `/admin/events` e `/admin/stripe-events` devolviam até 100 itens de uma vez:
+scripts que liam só `items` continuam funcionando, mas veem só a primeira página.
+
+Cada pessoa entra com a própria conta (e-mail, senha e TOTP). Não há cadastro público.
+
+- **Primeiro operador** (ou quando ninguém consegue entrar): no host da API,
+  `yarn admin:create-operator --email dev@connectthink.com.br --name "Dev" --role operator`.
+  A saída mostra a senha provisória e o URI `otpauth://` **uma única vez**: cadastre o
+  URI no app autenticador (Google Authenticator, 1Password, etc.) e entregue a senha por
+  canal privado. No primeiro login a troca de senha é obrigatória.
+- **Demais contas**: um `operator` cria pela rota `POST /admin/operators` (ou pelo
+  backoffice). Papéis: `viewer` (suporte, só leitura) e `operator` (dev, leitura e ações).
+- **Perdeu o celular ou a senha**: outro `operator` usa `POST /admin/operators/{id}/reset-access`.
+  Sem nenhum `operator` disponível: `yarn admin:create-operator --email <e-mail> --reset`.
+  A redefinição derruba as sessões abertas da conta e desfaz o bloqueio.
+

@@ -25,6 +25,12 @@ import {
   resendSchema,
   rotateSigningKeySchema,
 } from '@/modules/registry/http/admin-routes'
+import { loginSchema } from '@/modules/backoffice/application/login'
+import {
+  changePasswordSchema,
+  createOperatorSchema,
+  updateOperatorSchema,
+} from '@/modules/backoffice/application/operators'
 import type { ErrorCode } from '../errors'
 import * as r from './responses'
 
@@ -44,7 +50,8 @@ export type Tag =
   | 'Infraestrutura'
   | 'Operador'
 
-export type Security = 'appApiKey' | 'adminToken' | 'stripeSignature' | 'none'
+/** `admin`: sessão do backoffice (`adminSession`) ou token de script (`adminToken`). */
+export type Security = 'appApiKey' | 'admin' | 'stripeSignature' | 'none'
 
 /** Schema com nome de componente (`#/components/schemas/<id>`). */
 export type Named = { id: string; schema: z.ZodType }
@@ -117,6 +124,10 @@ const req = {
   updateApp: named('UpdateAppRequest', updateAppSchema),
   resend: named('ResendEventsRequest', resendSchema),
   rotateSigningKey: named('RotateSigningKeyRequest', rotateSigningKeySchema),
+  login: named('OperatorLoginRequest', loginSchema),
+  changePassword: named('ChangePasswordRequest', changePasswordSchema),
+  createOperator: named('CreateOperatorRequest', createOperatorSchema),
+  updateOperator: named('UpdateOperatorRequest', updateOperatorSchema),
 }
 
 // Schemas de resposta com nome de componente.
@@ -154,6 +165,24 @@ const res = {
   resend: named('ResendResult', r.resendResultSchema),
   signingKey: named('SigningKeyRotated', r.signingKeyRotatedSchema),
   sweep: named('SweepResult', r.sweepResultSchema),
+  operator: named('Operator', r.operatorSchema),
+  operatorList: named('OperatorList', r.operatorListSchema),
+  issuedAccess: named('IssuedOperatorAccess', r.issuedAccessSchema),
+  loginResult: named('OperatorLoginResult', r.loginResultSchema),
+  whoAmI: named('WhoAmI', r.whoAmISchema),
+  passwordChanged: named('PasswordChanged', r.passwordChangedSchema),
+  stripeEvent: named('StripeEventDetail', r.stripeEventDetailSchema),
+  auditPage: named('AuditPage', r.auditPageSchema),
+  overview: named('Overview', r.overviewSchema),
+  adminInstallations: named(
+    'AdminInstallationPage',
+    r.adminInstallationPageSchema,
+  ),
+  adminInstallation: named(
+    'AdminInstallation',
+    r.adminInstallationDetailSchema,
+  ),
+  timeline: named('InstallationTimeline', r.timelinePageSchema),
 }
 
 const json = (description: string, schema: Named): ResponseDoc => ({
@@ -168,6 +197,22 @@ const BITRIX_TOKEN_ERRORS: ErrorCode[] = [
 ]
 
 const installationId = { id: 'Id da instalação (`installationId`)' }
+
+const PAGE_QUERY: QueryParam[] = [
+  {
+    name: 'limit',
+    description: 'Itens por página (1 a 200, padrão 50)',
+    type: 'integer',
+  },
+  { name: 'cursor', description: '`nextCursor` da página anterior' },
+]
+const PERIOD_QUERY: QueryParam[] = [
+  { name: 'from', description: 'Início (ISO 8601 ou `AAAA-MM-DD`)' },
+  {
+    name: 'to',
+    description: 'Fim (ISO 8601, ou `AAAA-MM-DD` incluindo o dia inteiro)',
+  },
+]
 const subscriptionId = { id: 'Id da assinatura (`subscriptionId`)' }
 
 export const OPERATIONS: Operation[] = [
@@ -653,6 +698,102 @@ export const OPERATIONS: Operation[] = [
     },
   },
 
+  // Operador: acesso ao backoffice
+  {
+    method: 'post',
+    path: '/admin/auth/login',
+    operationId: 'operatorLogin',
+    tag: 'Operador',
+    summary: 'Entrar no backoffice (e-mail, senha e TOTP)',
+    description:
+      'Define o cookie de sessão `cp_admin_session` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/admin`). Qualquer falha responde `INVALID_CREDENTIALS`, sem dizer qual fator falhou. Após 5 falhas em 15 min a conta fica bloqueada por 15 min; mais de 20 tentativas por IP em 15 min respondem 429 com `Retry-After`. Com `Origin`, ele precisa estar em `BACKOFFICE_ORIGINS`.',
+    security: 'none',
+    body: { schema: req.login },
+    responses: { 200: json('Operador e validade da sessão', res.loginResult) },
+    errors: ['INVALID_CREDENTIALS', 'TOO_MANY_REQUESTS', 'ORIGIN_NOT_ALLOWED'],
+  },
+  {
+    method: 'post',
+    path: '/admin/auth/logout',
+    operationId: 'operatorLogout',
+    tag: 'Operador',
+    summary: 'Sair (revoga a sessão)',
+    security: 'admin',
+    responses: { 204: { description: 'Sessão revogada e cookie apagado' } },
+    errors: ['SESSION_REQUIRED'],
+  },
+  {
+    method: 'get',
+    path: '/admin/auth/me',
+    operationId: 'whoAmI',
+    tag: 'Operador',
+    summary: 'Quem está autenticado (operador da sessão ou token de script)',
+    security: 'admin',
+    responses: { 200: json('Ator', res.whoAmI) },
+  },
+  {
+    method: 'post',
+    path: '/admin/auth/password',
+    operationId: 'changeOwnPassword',
+    tag: 'Operador',
+    summary: 'Trocar a própria senha',
+    description:
+      'Exige a senha atual; a nova tem ao menos 12 caracteres. Libera a conta com senha provisória e derruba as outras sessões dela.',
+    security: 'admin',
+    body: { schema: req.changePassword },
+    responses: { 200: json('Operador atualizado', res.passwordChanged) },
+    errors: ['INVALID_CREDENTIALS', 'SESSION_REQUIRED'],
+  },
+  {
+    method: 'get',
+    path: '/admin/operators',
+    operationId: 'listOperators',
+    tag: 'Operador',
+    summary: 'Listar operadores',
+    security: 'admin',
+    responses: { 200: json('Operadores', res.operatorList) },
+  },
+  {
+    method: 'post',
+    path: '/admin/operators',
+    operationId: 'createOperator',
+    tag: 'Operador',
+    summary: 'Criar operador',
+    description:
+      '**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** O operador troca a senha no primeiro login.',
+    security: 'admin',
+    body: { schema: req.createOperator },
+    responses: { 201: json('Operador e acesso', res.issuedAccess) },
+    errors: ['OPERATOR_EMAIL_TAKEN'],
+  },
+  {
+    method: 'patch',
+    path: '/admin/operators/{id}',
+    operationId: 'updateOperator',
+    tag: 'Operador',
+    summary: 'Trocar papel ou ativar/desativar operador',
+    description:
+      'Derruba as sessões da conta. Ninguém desativa nem rebaixa a própria conta, e sempre resta ao menos um `operator` ativo.',
+    security: 'admin',
+    pathParams: { id: 'Id do operador' },
+    body: { schema: req.updateOperator },
+    responses: { 200: json('Operador atualizado', res.operator) },
+    errors: ['OPERATOR_NOT_FOUND', 'LAST_OPERATOR', 'OPERATOR_SELF_CHANGE'],
+  },
+  {
+    method: 'post',
+    path: '/admin/operators/{id}/reset-access',
+    operationId: 'resetOperatorAccess',
+    tag: 'Operador',
+    summary: 'Redefinir senha e TOTP de um operador',
+    description:
+      '**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** Desbloqueia a conta e derruba as sessões dela.',
+    security: 'admin',
+    pathParams: { id: 'Id do operador' },
+    responses: { 200: json('Operador e acesso novo', res.issuedAccess) },
+    errors: ['OPERATOR_NOT_FOUND'],
+  },
+
   // Operador
   {
     method: 'get',
@@ -660,7 +801,7 @@ export const OPERATIONS: Operation[] = [
     operationId: 'listApps',
     tag: 'Operador',
     summary: 'Listar aplicações cadastradas',
-    security: 'adminToken',
+    security: 'admin',
     responses: { 200: json('Aplicações', res.appList) },
   },
   {
@@ -671,7 +812,7 @@ export const OPERATIONS: Operation[] = [
     summary: 'Cadastrar aplicação',
     description:
       '**`apiKey` e `webhookSecret` só aparecem nesta resposta.** A chave é guardada só como hash; o segredo e o `client_secret` ficam cifrados.',
-    security: 'adminToken',
+    security: 'admin',
     body: { schema: req.createApp },
     responses: { 201: json('Aplicação e credenciais', res.appCreated) },
     errors: [
@@ -686,7 +827,7 @@ export const OPERATIONS: Operation[] = [
     operationId: 'getApp',
     tag: 'Operador',
     summary: 'Detalhes de uma aplicação',
-    security: 'adminToken',
+    security: 'admin',
     pathParams: { appCode: 'Código do app' },
     responses: { 200: json('Aplicação', res.app) },
     errors: ['APP_NOT_FOUND'],
@@ -697,7 +838,7 @@ export const OPERATIONS: Operation[] = [
     operationId: 'updateApp',
     tag: 'Operador',
     summary: 'Alterar aplicação',
-    security: 'adminToken',
+    security: 'admin',
     pathParams: { appCode: 'Código do app' },
     body: { schema: req.updateApp },
     responses: { 200: json('Aplicação atualizada', res.app) },
@@ -715,7 +856,7 @@ export const OPERATIONS: Operation[] = [
     summary: 'Rotacionar chave de API',
     description:
       'A chave anterior vale até `previousValidUntil` (`CREDENTIAL_ROTATION_GRACE_HOURS`). A nova só aparece nesta resposta.',
-    security: 'adminToken',
+    security: 'admin',
     pathParams: { appCode: 'Código do app' },
     responses: { 200: json('Nova chave', res.apiKeyRotated) },
     errors: ['APP_NOT_FOUND'],
@@ -728,7 +869,7 @@ export const OPERATIONS: Operation[] = [
     summary: 'Rotacionar segredo de webhook',
     description:
       'Durante a carência os webhooks levam duas assinaturas `v1=`. O novo segredo só aparece nesta resposta.',
-    security: 'adminToken',
+    security: 'admin',
     pathParams: { appCode: 'Código do app' },
     responses: { 200: json('Novo segredo', res.webhookSecretRotated) },
     errors: ['APP_NOT_FOUND'],
@@ -741,7 +882,7 @@ export const OPERATIONS: Operation[] = [
     summary: 'Iniciar trial manualmente',
     description:
       'Casos excepcionais. Com trial vigente responde `TRIAL_ALREADY_USED`. O contato é opcional; quando enviado, é gravado como na solicitação do app.',
-    security: 'adminToken',
+    security: 'admin',
     pathParams: installationId,
     body: { schema: req.trialRequest, required: false },
     responses: { 201: json('Trial iniciado', res.trialStarted) },
@@ -760,7 +901,7 @@ export const OPERATIONS: Operation[] = [
     operationId: 'listInstallAttempts',
     tag: 'Operador',
     summary: 'Passos registrados da instalação (50 mais recentes)',
-    security: 'adminToken',
+    security: 'admin',
     pathParams: installationId,
     responses: { 200: json('Tentativas', res.attempts) },
     errors: ['NOT_FOUND'],
@@ -770,15 +911,28 @@ export const OPERATIONS: Operation[] = [
     path: '/admin/events',
     operationId: 'listOutboxEvents',
     tag: 'Operador',
-    summary: 'Eventos do outbox (100 mais recentes)',
-    security: 'adminToken',
+    summary: 'Eventos enviados aos apps (outbox), paginados',
+    description:
+      'Do mais recente para o mais antigo, com as 3 tentativas de entrega mais recentes de cada evento.',
+    security: 'admin',
     query: [
+      ...PAGE_QUERY,
       {
         name: 'status',
         description: 'Filtra por status',
         enum: ['pending', 'delivered', 'dead'],
       },
       { name: 'appCode', description: 'Filtra por app' },
+      {
+        name: 'type',
+        description: 'Tipo do evento (ex.: `subscription.renewed`)',
+      },
+      {
+        name: 'installationId',
+        description: 'Filtra por instalação',
+        type: 'integer',
+      },
+      ...PERIOD_QUERY,
     ],
     responses: {
       200: json('Eventos com as últimas tentativas', res.outboxEvents),
@@ -789,10 +943,127 @@ export const OPERATIONS: Operation[] = [
     path: '/admin/stripe-events',
     operationId: 'listStripeEvents',
     tag: 'Operador',
-    summary: 'Eventos Stripe recebidos (100 mais recentes, sem payload)',
-    security: 'adminToken',
-    query: [{ name: 'status', description: 'Filtra por status' }],
+    summary: 'Eventos Stripe recebidos, paginados (sem payload)',
+    security: 'admin',
+    query: [
+      ...PAGE_QUERY,
+      { name: 'status', description: 'Filtra por status' },
+      { name: 'type', description: 'Tipo do evento Stripe' },
+      { name: 'appCode', description: 'App roteado' },
+      ...PERIOD_QUERY,
+    ],
     responses: { 200: json('Eventos', res.stripeEvents) },
+  },
+  {
+    method: 'get',
+    path: '/admin/stripe-events/{eventId}',
+    operationId: 'getStripeEvent',
+    tag: 'Operador',
+    summary: 'Evento Stripe com o payload cru',
+    security: 'admin',
+    pathParams: { eventId: 'Id do evento no Stripe (`evt_...`)' },
+    responses: { 200: json('Evento', res.stripeEvent) },
+    errors: ['NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/admin/audit',
+    operationId: 'listAudit',
+    tag: 'Operador',
+    summary: 'Trilha de auditoria do backoffice, paginada',
+    description:
+      'Do mais recente para o mais antigo. Registra toda mutação em `/admin/*` (inclusive as negadas) e os eventos de acesso (`auth.*`). Os registros não podem ser alterados nem apagados.',
+    security: 'admin',
+    query: [
+      ...PAGE_QUERY,
+      {
+        name: 'actor',
+        description: '`operator:<id>`, `token:<prefixo>` ou `anonymous`',
+      },
+      {
+        name: 'action',
+        description:
+          'Ex.: `POST /admin/apps/:appCode/rotate-api-key` ou `auth.login_failed`',
+      },
+      {
+        name: 'targetType',
+        description: 'Ex.: `app`, `installation`, `operator`',
+      },
+      { name: 'targetId', description: 'Id do alvo' },
+      {
+        name: 'result',
+        description: 'Só sucessos ou só falhas',
+        enum: ['success', 'failure'],
+      },
+      ...PERIOD_QUERY,
+    ],
+    responses: { 200: json('Registros', res.auditPage) },
+  },
+  {
+    method: 'get',
+    path: '/admin/overview',
+    operationId: 'getOverview',
+    tag: 'Operador',
+    summary: 'Contadores do painel do backoffice',
+    description:
+      'Calculado só com o banco, no máximo a cada 60 s (`computedAt`). Trials que terminam em 7 dias vêm dos eventos `subscription.trial_started` sem ativação ou fim posterior.',
+    security: 'admin',
+    responses: { 200: json('Contadores', res.overview) },
+  },
+  {
+    method: 'get',
+    path: '/admin/installations',
+    operationId: 'listAdminInstallations',
+    tag: 'Operador',
+    summary: 'Instalações de todos os apps, paginadas',
+    security: 'admin',
+    query: [
+      ...PAGE_QUERY,
+      { name: 'appCode', description: 'Filtra por app' },
+      { name: 'status', description: 'Filtra por status da instalação' },
+      {
+        name: 'q',
+        description:
+          'Trecho do domínio ou `memberId` exato; só dígitos busca id da instalação ou `memberId`',
+      },
+    ],
+    responses: { 200: json('Instalações', res.adminInstallations) },
+  },
+  {
+    method: 'get',
+    path: '/admin/installations/{id}',
+    operationId: 'getAdminInstallation',
+    tag: 'Operador',
+    summary:
+      'Detalhe da instalação (contato, saúde do token, eventos e assinatura)',
+    description:
+      'Nunca devolve tokens. A assinatura vem do portal CRMThink: se ele falhar ou passar de 3 s, `subscription` vem com `available: false` e o motivo, e o resto sai normalmente.',
+    security: 'admin',
+    pathParams: installationId,
+    responses: { 200: json('Instalação', res.adminInstallation) },
+    errors: ['INSTALLATION_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/admin/installations/{id}/timeline',
+    operationId: 'getInstallationTimeline',
+    tag: 'Operador',
+    summary: 'Linha do tempo da instalação, paginada',
+    description:
+      'Junta, do mais recente para o mais antigo: tentativas de instalação, eventos enviados ao app (com as 5 últimas entregas), compras avulsas e ações de operador sobre a instalação. Sem payload completo dos eventos.',
+    security: 'admin',
+    pathParams: installationId,
+    query: [
+      ...PAGE_QUERY,
+      {
+        name: 'kind',
+        description:
+          'Tipos separados por vírgula: `install_attempt`, `event`, `purchase`, `admin_action`',
+      },
+      ...PERIOD_QUERY,
+    ],
+    responses: { 200: json('Itens', res.timeline) },
+    errors: ['INSTALLATION_NOT_FOUND'],
   },
   {
     method: 'post',
@@ -801,7 +1072,7 @@ export const OPERATIONS: Operation[] = [
     tag: 'Operador',
     summary: 'Reenviar eventos (um `eventId` ou uma janela por app)',
     description: 'Reabre a janela de reenvio de 24 h dos eventos selecionados.',
-    security: 'adminToken',
+    security: 'admin',
     body: { schema: req.resend },
     responses: { 200: json('Quantidade reenfileirada', res.resend) },
   },
@@ -813,7 +1084,7 @@ export const OPERATIONS: Operation[] = [
     summary: 'Gerar nova chave de assinatura do JWT',
     description:
       'A chave entra no JWKS já, mas só passa a assinar após `leadMinutes` — tempo para os apps atualizarem o cache do JWKS.',
-    security: 'adminToken',
+    security: 'admin',
     body: { schema: req.rotateSigningKey, required: false },
     responses: { 201: json('Chave criada', res.signingKey) },
   },
@@ -823,7 +1094,7 @@ export const OPERATIONS: Operation[] = [
     operationId: 'runSweep',
     tag: 'Operador',
     summary: 'Rodar varredura de reconciliação agora',
-    security: 'adminToken',
+    security: 'admin',
     pathParams: { kind: '`stripe` ou `spa`' },
     responses: { 200: json('Resultado da varredura', res.sweep) },
     errors: ['NOT_FOUND'],

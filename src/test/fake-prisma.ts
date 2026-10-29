@@ -207,6 +207,57 @@ const MODELS: Record<string, ModelSpec> = {
       createdAt: now(),
     }),
   },
+  adminOperator: {
+    pk: ['id'],
+    autoincrement: 'id',
+    unique: [['email']],
+    defaults: () => ({
+      active: true,
+      lastTotpStep: 0,
+      mustChangePassword: true,
+      failedLogins: 0,
+      lockedUntil: null,
+      lastLoginAt: null,
+      createdAt: now(),
+      updatedAt: now(),
+    }),
+  },
+  adminSession: {
+    pk: ['id'],
+    autoincrement: 'id',
+    unique: [['idHash']],
+    defaults: () => ({
+      createdAt: now(),
+      lastSeenAt: now(),
+      revokedAt: null,
+      ip: null,
+      userAgent: null,
+    }),
+    relations: {
+      operator: {
+        model: 'adminOperator',
+        local: 'operatorId',
+        foreign: 'id',
+        many: false,
+      },
+    },
+  },
+  adminAuditLog: {
+    pk: ['id'],
+    autoincrement: 'id',
+    defaults: () => ({
+      actorRole: null,
+      targetType: null,
+      targetId: null,
+      statusCode: null,
+      errorCode: null,
+      summary: null,
+      ip: null,
+      userAgent: null,
+      requestId: null,
+      createdAt: now(),
+    }),
+  },
 }
 
 const uniqueError = (model: string, fields: string[]) =>
@@ -349,6 +400,15 @@ export class FakePrisma {
             case 'gte':
               if (value == null || cmp(value, operand) < 0) return false
               break
+            case 'contains':
+              if (
+                typeof value !== 'string' ||
+                !value.toLowerCase().includes(String(operand).toLowerCase())
+              )
+                return false
+              break
+            case 'mode':
+              break
             default:
               throw new Error(`FakePrisma: operador não suportado ${op}`)
           }
@@ -488,6 +548,18 @@ export class FakePrisma {
           this.withIncludes(model, r, args.include),
         ),
       count: async (args: Row = {}) => find(args.where).length,
+      groupBy: async (args: Row) => {
+        const groups = new Map<string, Row>()
+        for (const row of find(args.where)) {
+          const key = JSON.stringify((args.by as string[]).map(f => row[f]))
+          const group =
+            groups.get(key) ??
+            Object.fromEntries((args.by as string[]).map(f => [f, row[f]]))
+          group._count = { _all: (group._count?._all ?? 0) + 1 }
+          groups.set(key, group)
+        }
+        return [...groups.values()]
+      },
       create: async (args: Row) =>
         this.withIncludes(
           model,

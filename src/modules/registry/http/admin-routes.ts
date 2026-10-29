@@ -1,4 +1,4 @@
-import express, { Router } from 'express'
+import { Router } from 'express'
 import z from 'zod'
 import type { Db } from '@/shared/infra/prisma'
 import { asyncHandler, intParam } from '@/shared/http/errors'
@@ -14,11 +14,9 @@ import {
   updateAppSchema,
   type AppRegistry,
 } from '../app-registry'
-import { adminAuth } from './auth'
 
 export type AdminRoutesDeps = {
   db: Db
-  adminTokens: string[]
   registry: AppRegistry
   delivery: EventDelivery
   signingKeys: SigningKeys
@@ -42,16 +40,12 @@ export const rotateSigningKeySchema = z.object({
 })
 
 /**
- * Rotas de operador, com credencial própria (`ADMIN_API_TOKENS`), nunca a chave de um
- * app. Segredos gerados aparecem **só** na resposta da criação/rotação.
+ * Rotas de operador. Montadas atrás de `adminGate` (`backoffice/http/gate.ts`): sessão
+ * de operador ou token de `ADMIN_API_TOKENS`, nunca a chave de um app. Segredos
+ * gerados aparecem **só** na resposta da criação/rotação.
  */
 export function adminRoutes(deps: AdminRoutesDeps): Router {
   const router = Router()
-  router.use(
-    '/admin',
-    adminAuth(deps.adminTokens),
-    express.json({ limit: '64kb' }),
-  )
 
   router.get(
     '/admin/apps',
@@ -66,6 +60,7 @@ export function adminRoutes(deps: AdminRoutesDeps): Router {
       const { app, credentials } = await deps.registry.create(
         createAppSchema.parse(req.body),
       )
+      res.locals.auditTargetId = app.appCode
       res.status(201).json({
         app,
         credentials,
@@ -138,51 +133,6 @@ export function adminRoutes(deps: AdminRoutesDeps): Router {
         where: { installationId: intParam(req.params.id) },
         orderBy: { createdAt: 'desc' },
         take: 50,
-      })
-      res.json({ items })
-    }),
-  )
-
-  router.get(
-    '/admin/events',
-    asyncHandler(async (req, res) => {
-      const status =
-        typeof req.query.status === 'string' ? req.query.status : undefined
-      const appCode =
-        typeof req.query.appCode === 'string' ? req.query.appCode : undefined
-      const items = await deps.db.outboxEvent.findMany({
-        where: {
-          ...(status ? { status } : {}),
-          ...(appCode ? { appCode } : {}),
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 100,
-        include: { deliveries: { orderBy: { attempt: 'desc' }, take: 3 } },
-      })
-      res.json({ items })
-    }),
-  )
-
-  // Eventos Stripe recebidos (sem o payload): status, app roteado, tentativas e erro.
-  router.get(
-    '/admin/stripe-events',
-    asyncHandler(async (req, res) => {
-      const status =
-        typeof req.query.status === 'string' ? req.query.status : undefined
-      const items = await deps.db.stripeEvent.findMany({
-        where: status ? { status } : {},
-        orderBy: { receivedAt: 'desc' },
-        take: 100,
-        select: {
-          eventId: true,
-          type: true,
-          appCode: true,
-          status: true,
-          attempts: true,
-          error: true,
-          receivedAt: true,
-          processedAt: true,
-        },
       })
       res.json({ items })
     }),
