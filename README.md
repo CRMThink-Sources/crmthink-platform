@@ -26,6 +26,26 @@ yarn dev:api                    # :4100
 yarn dev:worker
 ```
 
+### Backoffice (`web/backoffice`)
+
+App React (Vite, Tailwind, shadcn/ui, React Router, TanStack Query) com `package.json` e
+`yarn.lock` próprios, fora das dependências da API. Em produção a API serve o build em
+`/backoffice`, na mesma origem de `/admin/*`.
+
+```bash
+# .env da API: BACKOFFICE_ORIGINS=http://localhost:5173 e ADMIN_COOKIE_INSECURE=true
+yarn admin:create-operator --email voce@connectthink.com.br --name "Você" --role operator
+cd web/backoffice
+yarn install
+yarn dev                        # :5173/backoffice/, proxy de /admin para :4100
+```
+
+| Script (em `web/backoffice`) | |
+| --- | --- |
+| `yarn test` / `yarn lint` / `yarn check-types` | testes (Vitest + Testing Library + MSW), lint e tipos |
+| `yarn build` | `dist/`, servido pela API em `/backoffice` |
+| `yarn gen:api` / `yarn check:api` | tipos do cliente a partir de `docs/api/openapi-admin.json` / conferência de deriva |
+
 | Script | |
 | --- | --- |
 | `yarn test` | testes (unitários e de fluxo com Prisma, Bitrix, Stripe e apps em memória) |

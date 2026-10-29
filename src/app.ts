@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import express, { Router, type Express } from 'express'
 import { docsRoutes } from '@/docs/docs-routes'
+import { backofficeWeb, defaultBackofficeDist } from './backoffice-web'
 import { errorMiddleware } from '@/shared/http/errors'
 import { runWithLogContext } from '@/shared/observability/log-context'
 import { logger } from '@/shared/observability/logger'
@@ -28,7 +29,11 @@ import type { HealthState } from './health'
  * form-urlencoded do Bitrix) vêm antes de qualquer `express.json()` global — não há
  * parser global de propósito.
  */
-export function createApp(container: Container, health: HealthState): Express {
+export function createApp(
+  container: Container,
+  health: HealthState,
+  options: { backofficeDist?: string } = {},
+): Express {
   const app = express()
   app.disable('x-powered-by')
   app.set('trust proxy', true)
@@ -70,6 +75,7 @@ export function createApp(container: Container, health: HealthState): Express {
   })
 
   app.use(docsRoutes(container.env.publicBaseUrl))
+  app.use(backofficeWeb(options.backofficeDist ?? defaultBackofficeDist()))
 
   const installationDeps: InstallationRoutesDeps = {
     registry: container.registry,
