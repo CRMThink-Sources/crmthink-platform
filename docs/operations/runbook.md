@@ -52,6 +52,7 @@ Por ambiente (`staging` a partir de `develop`, `production` a partir de `main`):
    | var `PLATFORM_ENVIRONMENT`\*                                | `homolog`                                                    | `production`                       |
    | var `QUEUE_PREFIX`\*                                        | `crmthink-platform-staging`                                  | `crmthink-platform-production`     |
    | var `SESSION_CORS_ORIGINS`                                  | `crmthink.gptmaker=https://gptmaker-staging.crmthink.com.br` | origem de produção do GPTMaker     |
+   | var `BACKOFFICE_ORIGINS`                                    | `https://platform-staging.crmthink.com.br`                   | `https://platform.crmthink.com.br` |
    | secret `DATABASE_URL`\*                                     | impressa pelo bootstrap                                      | impressa pelo bootstrap            |
    | secret `REDIS_URL`\*                                        | impressa pelo bootstrap (`/1`)                               | impressa pelo bootstrap (`/0`)     |
    | secret `TOKEN_ENCRYPTION_KEY`\*                             | `openssl rand -base64 32`                                    | outra, nunca a de staging          |
