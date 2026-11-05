@@ -91,6 +91,11 @@ export const ADMIN_POLICIES: Record<string, AdminPolicy> = {
     target: app,
     highImpact: true,
   },
+  'POST /admin/apps/:appCode/reveal-webhook-secret': {
+    role: 'operator',
+    target: app,
+    highImpact: true,
+  },
 
   'GET /admin/installations': { role: 'viewer' },
   'GET /admin/installations/:id': { role: 'viewer', target: installation },

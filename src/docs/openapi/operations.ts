@@ -154,6 +154,10 @@ const res = {
   appList: named('AppList', r.appListSchema),
   appCreated: named('AppCreated', r.appCreatedSchema),
   apiKeyRotated: named('ApiKeyRotated', r.apiKeyRotatedSchema),
+  webhookSecretRevealed: named(
+    'WebhookSecretRevealed',
+    r.webhookSecretRevealedSchema,
+  ),
   webhookSecretRotated: named(
     'WebhookSecretRotated',
     r.webhookSecretRotatedSchema,
@@ -860,6 +864,19 @@ export const OPERATIONS: Operation[] = [
     security: 'admin',
     pathParams: { appCode: 'Código do app' },
     responses: { 200: json('Nova chave', res.apiKeyRotated) },
+    errors: ['APP_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/admin/apps/{appCode}/reveal-webhook-secret',
+    operationId: 'revealWebhookSecret',
+    tag: 'Operador',
+    summary: 'Consultar o segredo de webhook atual',
+    description:
+      'Devolve o segredo de webhook em uso, para quem o perdeu. Fica na auditoria com o motivo e a resposta não é guardada em cache. A chave de API não tem consulta: só existe o hash, e quem a perde rotaciona.',
+    security: 'admin',
+    pathParams: { appCode: 'Código do app' },
+    responses: { 200: json('Segredo atual', res.webhookSecretRevealed) },
     errors: ['APP_NOT_FOUND'],
   },
   {

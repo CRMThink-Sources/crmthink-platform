@@ -326,7 +326,7 @@ describe('apps e auditoria', () => {
     )
   })
 
-  it('detalhe do app não mostra chave nem segredo', async () => {
+  it('detalhe do app não mostra chave nem segredo (só o marcador do webhook)', async () => {
     server.use(
       meHandler(operator()),
       http.get('*/admin/apps/crmthink.gptmaker', () =>
@@ -336,7 +336,7 @@ describe('apps e auditoria', () => {
     renderApp('/apps/crmthink.gptmaker')
     expect(await screen.findByText('local.gptmaker')).toBeInTheDocument()
     expect(document.body.textContent).not.toMatch(
-      /apiKey|webhookSecret|clientSecret|whsec_|cp_/i,
+      /apiKey|webhookSecret|clientSecret|whsec_[A-Za-z0-9_-]{8,}|cp_[A-Za-z0-9_-]{8,}/i,
     )
   })
 

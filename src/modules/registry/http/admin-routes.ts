@@ -115,6 +115,20 @@ export function adminRoutes(deps: AdminRoutesDeps): Router {
     }),
   )
 
+  // Consulta do segredo de webhook já cadastrado (o operador perdeu o valor). É POST de
+  // propósito: entra na auditoria como qualquer mutação e exige o motivo (alto impacto),
+  // e a resposta nunca fica em cache. A chave de API não tem equivalente: só existe o hash.
+  router.post(
+    '/admin/apps/:appCode/reveal-webhook-secret',
+    asyncHandler(async (req, res) => {
+      const webhookSecret = await deps.registry.revealWebhookSecret(
+        req.params.appCode ?? '',
+      )
+      res.setHeader('Cache-Control', 'no-store')
+      res.json({ webhookSecret })
+    }),
+  )
+
   // Trial manual por instalação (casos excepcionais); o contato é opcional.
   router.post(
     '/admin/installations/:id/trial',

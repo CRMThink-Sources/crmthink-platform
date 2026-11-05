@@ -6,7 +6,9 @@ import { JsonBlock, PageHeader } from '@/components/filters'
 import { ErrorState, LoadingState } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { RoleGate } from '@/components/role-gate'
 import { AppActions } from './actions'
+import { WebhookSecretField } from './webhook-secret'
 
 function Field(props: { label: string; children: ReactNode }) {
   return (
@@ -95,6 +97,11 @@ export function AppDetailPage() {
                 <Field label="URL de webhook">
                   {app.data.webhookUrl ?? '—'}
                 </Field>
+                <RoleGate role="operator">
+                  <Field label="Segredo de webhook">
+                    <WebhookSecretField appCode={app.data.appCode} />
+                  </Field>
+                </RoleGate>
                 <Field label="Trial">
                   {app.data.trialDays
                     ? `${app.data.trialDays} dias, plano ${app.data.trialPlanId ?? '—'}`

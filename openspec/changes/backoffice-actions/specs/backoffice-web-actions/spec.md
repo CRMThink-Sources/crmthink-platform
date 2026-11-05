@@ -19,7 +19,7 @@ Rotação de chave de API, rotação de segredo de webhook, desativação de app
 - **THEN** o botão de confirmar só fica ativo depois de digitar `crmthink.gptmaker` e preencher o motivo
 
 ### Requirement: Exibição única de segredos
-Chave de API, segredo de webhook, senha provisória e QR code do TOTP devolvidos pela API MUST ser mostrados uma única vez num diálogo com botão de copiar, um aviso de que não serão exibidos de novo e uma confirmação "Guardei" para fechar. Eles MUST NOT ser gravados em cache de consultas, armazenamento do navegador, URL ou logs do console. O QR code MUST ser gerado no navegador, sem enviar o URI `otpauth://` a outro serviço.
+Chave de API, segredo de webhook (no cadastro e na rotação), senha provisória e QR code do TOTP devolvidos pela API MUST ser mostrados uma única vez num diálogo com botão de copiar, um aviso de que não serão exibidos de novo e uma confirmação "Guardei" para fechar. Eles MUST NOT ser gravados em cache de consultas, armazenamento do navegador, URL ou logs do console. O QR code MUST ser gerado no navegador, sem enviar o URI `otpauth://` a outro serviço.
 
 #### Scenario: Cadastro de app
 - **WHEN** um `operator` cadastra um app
@@ -56,3 +56,15 @@ A tela "Operadores" MUST listar contas com nome, e-mail, papel, estado e bloquei
 #### Scenario: Tentar rebaixar a si mesmo
 - **WHEN** um `operator` abre a própria linha na lista de operadores
 - **THEN** as opções "Desativar" e "Trocar papel" não estão disponíveis
+
+### Requirement: Consulta do segredo de webhook
+O detalhe do app MUST mostrar, só para `operator`, um marcador fixo do segredo de webhook (sem nenhum trecho do valor real) e o botão "Mostrar e copiar". O botão MUST abrir um diálogo que exige o motivo e, depois de confirmado, mostrar o valor completo com botão de copiar. Esse diálogo MUST dizer que a consulta fica na auditoria (e não "exibido uma única vez"), MUST fechar com `Esc` e MUST NOT gravar o valor em cache, armazenamento do navegador, URL ou console. O detalhe do app MUST NOT oferecer consulta da chave de API.
+
+#### Scenario: Copiar o segredo de webhook
+- **WHEN** um `operator` clica em "Mostrar e copiar", informa o motivo e confirma
+- **THEN** a interface mostra o segredo com o botão de copiar, e o valor some da tela ao fechar o diálogo
+
+#### Scenario: Suporte não consulta
+- **WHEN** um `viewer` abre o detalhe do app
+- **THEN** a tela não mostra o campo "Segredo de webhook" nem o botão "Mostrar e copiar"
+
