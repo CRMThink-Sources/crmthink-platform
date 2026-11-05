@@ -164,6 +164,19 @@
             "adminToken": []
           }
         ],
+        "parameters": [
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Opcional.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -186,8 +199,9 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.\n- `TRIAL_CONFIG_INVALID`: `trialOnInstall` sem `trialDays` > 0 ou sem `trialPlanId`.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.\n- `TRIAL_CONFIG_INVALID`: `trialOnInstall` sem `trialDays` > 0 ou sem `trialPlanId`.",
             "x-error-codes": [
+              "REASON_INVALID",
               "VALIDATION_ERROR",
               "TRIAL_CONFIG_INVALID"
             ],
@@ -197,6 +211,14 @@
                   "$ref": "#/components/schemas/Error"
                 },
                 "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
                   "VALIDATION_ERROR": {
                     "value": {
                       "error": {
@@ -431,7 +453,7 @@
           "Operador"
         ],
         "summary": "Alterar aplicação",
-        "description": "**Papel mínimo:** `operator`.",
+        "description": "**Papel mínimo:** `operator`.\n\n**Alto impacto conforme o corpo:** exige `X-Admin-Reason` quando a chamada tem esse efeito (descrito acima).",
         "security": [
           {
             "adminSession": []
@@ -448,6 +470,17 @@
             "description": "Código do app",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório quando a chamada tem efeito de alto impacto.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
             }
           }
         ],
@@ -473,8 +506,10 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.\n- `TRIAL_CONFIG_INVALID`: `trialOnInstall` sem `trialDays` > 0 ou sem `trialPlanId`.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.\n- `TRIAL_CONFIG_INVALID`: `trialOnInstall` sem `trialDays` > 0 ou sem `trialPlanId`.",
             "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED",
               "VALIDATION_ERROR",
               "TRIAL_CONFIG_INVALID"
             ],
@@ -484,6 +519,22 @@
                   "$ref": "#/components/schemas/Error"
                 },
                 "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  },
                   "VALIDATION_ERROR": {
                     "value": {
                       "error": {
@@ -624,7 +675,7 @@
           "Operador"
         ],
         "summary": "Rotacionar chave de API",
-        "description": "A chave anterior vale até `previousValidUntil` (`CREDENTIAL_ROTATION_GRACE_HOURS`). A nova só aparece nesta resposta.\n\n**Papel mínimo:** `operator`.",
+        "description": "A chave anterior vale até `previousValidUntil` (`CREDENTIAL_ROTATION_GRACE_HOURS`). A nova só aparece nesta resposta.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
         "security": [
           {
             "adminSession": []
@@ -642,6 +693,17 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": true,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
           }
         ],
         "responses": {
@@ -651,6 +713,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiKeyRotated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -752,7 +846,7 @@
           "Operador"
         ],
         "summary": "Rotacionar segredo de webhook",
-        "description": "Durante a carência os webhooks levam duas assinaturas `v1=`. O novo segredo só aparece nesta resposta.\n\n**Papel mínimo:** `operator`.",
+        "description": "Durante a carência os webhooks levam duas assinaturas `v1=`. O novo segredo só aparece nesta resposta.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
         "security": [
           {
             "adminSession": []
@@ -770,6 +864,17 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": true,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
           }
         ],
         "responses": {
@@ -779,6 +884,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WebhookSecretRotated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1640,14 +1777,27 @@
         "tags": [
           "Operador"
         ],
-        "summary": "Reenviar eventos (um `eventId` ou uma janela por app)",
-        "description": "Reabre a janela de reenvio de 24 h dos eventos selecionados.\n\n**Papel mínimo:** `operator`.",
+        "summary": "Reenviar eventos (um `eventId` ou uma janela por app e/ou instalação)",
+        "description": "Reabre a janela de reenvio de 24 h dos eventos selecionados. O seletor por filtro aceita `appCode` e/ou `installationId` (pelo menos um). Com `dryRun: true` só responde `{ matched, sample }` (quantidade e até 5 `eventId`), sem alterar nada e sem exigir motivo. O reenvio em lote (por filtro, sem `dryRun`) exige `X-Admin-Reason` e é recusado com `RESEND_TOO_LARGE` acima de 5000 eventos.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto conforme o corpo:** exige `X-Admin-Reason` quando a chamada tem esse efeito (descrito acima).",
         "security": [
           {
             "adminSession": []
           },
           {
             "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório quando a chamada tem efeito de alto impacto.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
           }
         ],
         "requestBody": {
@@ -1662,7 +1812,7 @@
         },
         "responses": {
           "200": {
-            "description": "Quantidade reenfileirada",
+            "description": "Quantidade reenfileirada, ou a prévia do `dryRun`",
             "content": {
               "application/json": {
                 "schema": {
@@ -1672,8 +1822,10 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
             "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED",
               "VALIDATION_ERROR"
             ],
             "content": {
@@ -1682,6 +1834,22 @@
                   "$ref": "#/components/schemas/Error"
                 },
                 "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  },
                   "VALIDATION_ERROR": {
                     "value": {
                       "error": {
@@ -1751,6 +1919,29 @@
                       "error": {
                         "code": "ORIGIN_NOT_ALLOWED",
                         "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Não processável\n- `RESEND_TOO_LARGE`: O filtro do reenvio em lote encontrou mais de 5000 eventos (`details.matched` e `details.limit`); nada foi reenviado.",
+            "x-error-codes": [
+              "RESEND_TOO_LARGE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "RESEND_TOO_LARGE": {
+                    "value": {
+                      "error": {
+                        "code": "RESEND_TOO_LARGE",
+                        "message": "O filtro do reenvio em lote encontrou mais de 5000 eventos (`details.matched` e `details.limit`); nada foi reenviado."
                       }
                     }
                   }
@@ -2308,6 +2499,256 @@
         }
       }
     },
+    "/admin/installations/{id}/token/refresh": {
+      "post": {
+        "operationId": "forceTokenRefresh",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Forçar a renovação do token do Bitrix",
+        "description": "Renova o token da instalação com a mesma trava e a mesma contagem de falhas da renovação agendada. A resposta traz só a nova validade e a saúde, nunca o token. Se o Bitrix recusar, `TOKEN_REFRESH_FAILED` traz o motivo em `details.reason`.\n\n**Papel mínimo:** `operator`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da instalação (`installationId`)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Opcional.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token renovado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallationTokenRefreshed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.",
+            "x-error-codes": [
+              "REASON_INVALID"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `INSTALLATION_NOT_FOUND`: Instalação inexistente, de outro app ou desvinculada do SPA 1060.",
+            "x-error-codes": [
+              "INSTALLATION_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INSTALLATION_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "INSTALLATION_NOT_FOUND",
+                        "message": "Instalação inexistente, de outro app ou desvinculada do SPA 1060."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).\n- `AUTH_ERROR`: Credencial do Bitrix inválida; é preciso reinstalar o app.",
+            "x-error-codes": [
+              "INSTALLATION_NOT_ACTIVE",
+              "AUTH_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INSTALLATION_NOT_ACTIVE": {
+                    "value": {
+                      "error": {
+                        "code": "INSTALLATION_NOT_ACTIVE",
+                        "message": "Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409)."
+                      }
+                    }
+                  },
+                  "AUTH_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "AUTH_ERROR",
+                        "message": "Credencial do Bitrix inválida; é preciso reinstalar o app."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Falha em serviço externo\n- `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial.",
+            "x-error-codes": [
+              "TOKEN_REFRESH_FAILED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "TOKEN_REFRESH_FAILED": {
+                    "value": {
+                      "error": {
+                        "code": "TOKEN_REFRESH_FAILED",
+                        "message": "O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Indisponível\n- `BITRIX_UNAVAILABLE`: O portal Bitrix24 não respondeu a tempo.\n- `TOKEN_REFRESH_BUSY`: Outra renovação do mesmo token está em andamento.",
+            "x-error-codes": [
+              "BITRIX_UNAVAILABLE",
+              "TOKEN_REFRESH_BUSY"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "BITRIX_UNAVAILABLE": {
+                    "value": {
+                      "error": {
+                        "code": "BITRIX_UNAVAILABLE",
+                        "message": "O portal Bitrix24 não respondeu a tempo."
+                      }
+                    }
+                  },
+                  "TOKEN_REFRESH_BUSY": {
+                    "value": {
+                      "error": {
+                        "code": "TOKEN_REFRESH_BUSY",
+                        "message": "Outra renovação do mesmo token está em andamento."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/installations/{id}/trial": {
       "post": {
         "operationId": "startTrial",
@@ -2334,6 +2775,17 @@
               "type": "integer",
               "minimum": 1
             }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Opcional.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
           }
         ],
         "requestBody": {
@@ -2358,8 +2810,9 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
             "x-error-codes": [
+              "REASON_INVALID",
               "VALIDATION_ERROR"
             ],
             "content": {
@@ -2368,6 +2821,14 @@
                   "$ref": "#/components/schemas/Error"
                 },
                 "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
                   "VALIDATION_ERROR": {
                     "value": {
                       "error": {
@@ -2642,6 +3103,19 @@
             "adminToken": []
           }
         ],
+        "parameters": [
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Opcional.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -2664,8 +3138,9 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
             "x-error-codes": [
+              "REASON_INVALID",
               "VALIDATION_ERROR"
             ],
             "content": {
@@ -2674,6 +3149,14 @@
                   "$ref": "#/components/schemas/Error"
                 },
                 "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
                   "VALIDATION_ERROR": {
                     "value": {
                       "error": {
@@ -2802,6 +3285,17 @@
               "type": "integer",
               "minimum": 1
             }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Opcional.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
           }
         ],
         "requestBody": {
@@ -2826,8 +3320,9 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
             "x-error-codes": [
+              "REASON_INVALID",
               "VALIDATION_ERROR"
             ],
             "content": {
@@ -2836,6 +3331,14 @@
                   "$ref": "#/components/schemas/Error"
                 },
                 "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
                   "VALIDATION_ERROR": {
                     "value": {
                       "error": {
@@ -2977,7 +3480,7 @@
           "Operador"
         ],
         "summary": "Redefinir senha e TOTP de um operador",
-        "description": "**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** Desbloqueia a conta e derruba as sessões dela.\n\n**Papel mínimo:** `operator`.",
+        "description": "**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** Desbloqueia a conta e derruba as sessões dela.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
         "security": [
           {
             "adminSession": []
@@ -2996,6 +3499,17 @@
               "type": "integer",
               "minimum": 1
             }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": true,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
           }
         ],
         "responses": {
@@ -3005,6 +3519,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/IssuedOperatorAccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -3182,13 +3728,26 @@
           "Operador"
         ],
         "summary": "Gerar nova chave de assinatura do JWT",
-        "description": "A chave entra no JWKS já, mas só passa a assinar após `leadMinutes` — tempo para os apps atualizarem o cache do JWKS.\n\n**Papel mínimo:** `operator`.",
+        "description": "A chave entra no JWKS já, mas só passa a assinar após `leadMinutes` — tempo para os apps atualizarem o cache do JWKS.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
         "security": [
           {
             "adminSession": []
           },
           {
             "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": true,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
           }
         ],
         "requestBody": {
@@ -3213,8 +3772,10 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
             "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED",
               "VALIDATION_ERROR"
             ],
             "content": {
@@ -3223,6 +3784,22 @@
                   "$ref": "#/components/schemas/Error"
                 },
                 "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  },
                   "VALIDATION_ERROR": {
                     "value": {
                       "error": {
@@ -3610,6 +4187,17 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Opcional.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
           }
         ],
         "responses": {
@@ -3619,6 +4207,29 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SweepResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.",
+            "x-error-codes": [
+              "REASON_INVALID"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -4305,7 +4916,7 @@
             }
           },
           "409": {
-            "description": "Conflito\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.",
+            "description": "Conflito\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.",
             "x-error-codes": [
               "INSTALLATION_NOT_ACTIVE",
               "SUBSCRIPTION_ALREADY_EXISTS"
@@ -4320,7 +4931,7 @@
                     "value": {
                       "error": {
                         "code": "INSTALLATION_NOT_ACTIVE",
-                        "message": "Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409)."
+                        "message": "Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409)."
                       }
                     }
                   },
@@ -5275,7 +5886,7 @@
             }
           },
           "502": {
-            "description": "Falha em serviço externo\n- `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token.",
+            "description": "Falha em serviço externo\n- `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial.",
             "x-error-codes": [
               "TOKEN_REFRESH_FAILED"
             ],
@@ -5289,7 +5900,7 @@
                     "value": {
                       "error": {
                         "code": "TOKEN_REFRESH_FAILED",
-                        "message": "O OAuth do Bitrix falhou ao renovar o token."
+                        "message": "O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial."
                       }
                     }
                   }
@@ -5517,7 +6128,7 @@
             }
           },
           "502": {
-            "description": "Falha em serviço externo\n- `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token.",
+            "description": "Falha em serviço externo\n- `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial.",
             "x-error-codes": [
               "TOKEN_REFRESH_FAILED"
             ],
@@ -5531,7 +6142,7 @@
                     "value": {
                       "error": {
                         "code": "TOKEN_REFRESH_FAILED",
-                        "message": "O OAuth do Bitrix falhou ao renovar o token."
+                        "message": "O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial."
                       }
                     }
                   }
@@ -5916,7 +6527,7 @@
             }
           },
           "403": {
-            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).\n- `APP_INACTIVE`: Aplicação desativada ou inexistente.\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).\n- `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.",
+            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).\n- `APP_INACTIVE`: Aplicação desativada ou inexistente.\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).\n- `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.",
             "x-error-codes": [
               "ORIGIN_NOT_ALLOWED",
               "APP_INACTIVE",
@@ -5951,7 +6562,7 @@
                     "value": {
                       "error": {
                         "code": "INSTALLATION_NOT_ACTIVE",
-                        "message": "Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409)."
+                        "message": "Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409)."
                       }
                     }
                   },
@@ -10133,6 +10744,29 @@
         ],
         "additionalProperties": false
       },
+      "InstallationTokenRefreshed": {
+        "type": "object",
+        "properties": {
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Validade do novo token"
+          },
+          "health": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "refresh_failing"
+            ],
+            "description": "Saúde da credencial após a renovação"
+          }
+        },
+        "required": [
+          "expiresAt",
+          "health"
+        ],
+        "additionalProperties": false
+      },
       "InstallerPayload": {
         "type": "object",
         "properties": {
@@ -10915,6 +11549,9 @@
               "eventId": {
                 "type": "string",
                 "format": "uuid"
+              },
+              "dryRun": {
+                "type": "boolean"
               }
             },
             "required": [
@@ -10927,6 +11564,10 @@
               "appCode": {
                 "type": "string",
                 "minLength": 1
+              },
+              "installationId": {
+                "type": "integer",
+                "exclusiveMinimum": 0
               },
               "from": {
                 "type": "string",
@@ -10941,10 +11582,12 @@
               },
               "type": {
                 "type": "string"
+              },
+              "dryRun": {
+                "type": "boolean"
               }
             },
             "required": [
-              "appCode",
               "from",
               "to"
             ]
@@ -10952,17 +11595,44 @@
         ]
       },
       "ResendResult": {
-        "type": "object",
-        "properties": {
-          "requeued": {
-            "type": "integer",
-            "description": "Eventos recolocados na fila"
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "requeued": {
+                "type": "integer",
+                "description": "Eventos recolocados na fila"
+              }
+            },
+            "required": [
+              "requeued"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "matched": {
+                "type": "integer",
+                "description": "Eventos que o filtro selecionaria"
+              },
+              "sample": {
+                "maxItems": 5,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Até 5 `eventId` de amostra"
+              }
+            },
+            "required": [
+              "matched",
+              "sample"
+            ],
+            "additionalProperties": false,
+            "description": "Resposta do `dryRun`: nada foi alterado"
           }
-        },
-        "required": [
-          "requeued"
-        ],
-        "additionalProperties": false
+        ]
       },
       "RotateSigningKeyRequest": {
         "type": "object",
@@ -12714,7 +13384,6 @@
             ]
           },
           "scopes": {
-            "default": [],
             "type": "array",
             "items": {
               "type": "string",
@@ -12744,7 +13413,6 @@
             ]
           },
           "productSpaIds": {
-            "default": [],
             "type": "array",
             "items": {
               "type": "integer",
@@ -12752,13 +13420,11 @@
             }
           },
           "trialDays": {
-            "default": 0,
             "type": "integer",
             "minimum": 0,
             "maximum": 365
           },
           "trialOnInstall": {
-            "default": false,
             "type": "boolean"
           },
           "trialPlanId": {
@@ -12773,7 +13439,6 @@
             ]
           },
           "active": {
-            "default": true,
             "type": "boolean"
           },
           "bitrixClientSecret": {

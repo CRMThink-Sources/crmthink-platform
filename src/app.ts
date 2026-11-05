@@ -139,6 +139,7 @@ export function createApp(
       signingKeys: container.signingKeys,
       trials: container.trials,
       sweeps: container.sweeps,
+      vault: container.vault,
     }),
   )
   app.use(admin)

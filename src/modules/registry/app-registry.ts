@@ -30,7 +30,8 @@ const appCodeSchema = z
     'appCode inválido (ex.: crmthink.gptmaker)',
   )
 
-export const createAppSchema = z.object({
+/** Campos do app sem valor padrão: o PATCH parcial só altera o que vier no corpo. */
+const appFields = {
   appCode: appCodeSchema,
   name: z.string().min(1).max(200),
   logoUrl: z.string().url().nullish(),
@@ -38,17 +39,31 @@ export const createAppSchema = z.object({
   bitrixClientId: z.string().min(1),
   bitrixClientSecret: z.string().min(1),
   bitrixAppCode: z.string().min(1).max(200).nullish(),
-  scopes: z.array(z.string().min(1)).default([]),
+  scopes: z.array(z.string().min(1)),
   installerUrl: z.string().url().nullish(),
   webhookUrl: z.string().url().nullish(),
-  productSpaIds: z.array(z.number().int().positive()).default([]),
-  trialDays: z.number().int().min(0).max(365).default(0),
-  trialOnInstall: z.boolean().default(false),
+  productSpaIds: z.array(z.number().int().positive()),
+  trialDays: z.number().int().min(0).max(365),
+  trialOnInstall: z.boolean(),
   trialPlanId: z.number().int().positive().nullish(),
-  active: z.boolean().default(true),
+  active: z.boolean(),
+}
+
+export const createAppSchema = z.object({
+  ...appFields,
+  scopes: appFields.scopes.default([]),
+  productSpaIds: appFields.productSpaIds.default([]),
+  trialDays: appFields.trialDays.default(0),
+  trialOnInstall: appFields.trialOnInstall.default(false),
+  active: appFields.active.default(true),
 })
 
-export const updateAppSchema = createAppSchema
+/**
+ * Edição parcial: campo ausente não muda. (Antes herdava os defaults do cadastro, e um
+ * `PATCH {name}` reativava o app e zerava trial, escopos e produtos.)
+ */
+export const updateAppSchema = z
+  .object(appFields)
   .omit({ appCode: true, bitrixClientSecret: true })
   .partial()
   .extend({ bitrixClientSecret: z.string().min(1).optional() })

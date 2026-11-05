@@ -3,6 +3,8 @@ import z from 'zod'
 import type { Db } from '@/shared/infra/prisma'
 import { asyncHandler, intParam } from '@/shared/http/errors'
 import type { EventDelivery } from '@/modules/events/event-delivery'
+import type { TokenVault } from '@/modules/installations/application/token-vault'
+import { tokenHealth } from '@/modules/backoffice/application/installation-reads'
 import type { SigningKeys } from '@/modules/installations/application/signing-keys'
 import {
   trialRequestSchema,
@@ -22,17 +24,25 @@ export type AdminRoutesDeps = {
   signingKeys: SigningKeys
   trials: TrialService
   sweeps: Sweeps
+  vault: TokenVault
 }
 
 export const resendSchema = z.union([
-  z.object({ eventId: z.string().uuid() }),
-  z.object({
-    appCode: z.string().min(1),
-    from: z.coerce.date(),
-    to: z.coerce.date(),
-    onlyDead: z.boolean().optional(),
-    type: z.string().optional(),
-  }),
+  z.object({ eventId: z.string().uuid(), dryRun: z.boolean().optional() }),
+  z
+    .object({
+      appCode: z.string().min(1).optional(),
+      installationId: z.number().int().positive().optional(),
+      from: z.coerce.date(),
+      to: z.coerce.date(),
+      onlyDead: z.boolean().optional(),
+      type: z.string().optional(),
+      dryRun: z.boolean().optional(),
+    })
+    .refine(body => body.appCode || body.installationId, {
+      message: 'Informe appCode e/ou installationId',
+      path: ['appCode'],
+    }),
 ])
 
 export const rotateSigningKeySchema = z.object({
@@ -126,6 +136,20 @@ export function adminRoutes(deps: AdminRoutesDeps): Router {
     }),
   )
 
+  // Renovação forçada do token do Bitrix. Nunca devolve o token, só expiração e saúde.
+  router.post(
+    '/admin/installations/:id/token/refresh',
+    asyncHandler(async (req, res) => {
+      const credential = await deps.vault.forceRefresh(
+        intParam(req.params.id, 'INSTALLATION_NOT_FOUND'),
+      )
+      res.json({
+        expiresAt: credential.expiresAt.toISOString(),
+        health: tokenHealth(credential),
+      })
+    }),
+  )
+
   router.get(
     '/admin/installations/:id/attempts',
     asyncHandler(async (req, res) => {
@@ -141,9 +165,10 @@ export function adminRoutes(deps: AdminRoutesDeps): Router {
   router.post(
     '/admin/events/resend',
     asyncHandler(async (req, res) => {
-      res.json({
-        requeued: await deps.delivery.resend(resendSchema.parse(req.body)),
-      })
+      const selector = resendSchema.parse(req.body)
+      const result = await deps.delivery.resend(selector)
+      // Com `dryRun` só a prévia (`{ matched, sample }`); sem ele, a contagem.
+      res.json(typeof result === 'number' ? { requeued: result } : result)
     }),
   )
 

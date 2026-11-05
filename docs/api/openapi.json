@@ -662,7 +662,7 @@
             }
           },
           "409": {
-            "description": "Conflito\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.",
+            "description": "Conflito\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.",
             "x-error-codes": [
               "INSTALLATION_NOT_ACTIVE",
               "SUBSCRIPTION_ALREADY_EXISTS"
@@ -677,7 +677,7 @@
                     "value": {
                       "error": {
                         "code": "INSTALLATION_NOT_ACTIVE",
-                        "message": "Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409)."
+                        "message": "Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409)."
                       }
                     }
                   },
@@ -1632,7 +1632,7 @@
             }
           },
           "502": {
-            "description": "Falha em serviço externo\n- `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token.",
+            "description": "Falha em serviço externo\n- `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial.",
             "x-error-codes": [
               "TOKEN_REFRESH_FAILED"
             ],
@@ -1646,7 +1646,7 @@
                     "value": {
                       "error": {
                         "code": "TOKEN_REFRESH_FAILED",
-                        "message": "O OAuth do Bitrix falhou ao renovar o token."
+                        "message": "O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial."
                       }
                     }
                   }
@@ -1874,7 +1874,7 @@
             }
           },
           "502": {
-            "description": "Falha em serviço externo\n- `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token.",
+            "description": "Falha em serviço externo\n- `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial.",
             "x-error-codes": [
               "TOKEN_REFRESH_FAILED"
             ],
@@ -1888,7 +1888,7 @@
                     "value": {
                       "error": {
                         "code": "TOKEN_REFRESH_FAILED",
-                        "message": "O OAuth do Bitrix falhou ao renovar o token."
+                        "message": "O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial."
                       }
                     }
                   }
@@ -2273,7 +2273,7 @@
             }
           },
           "403": {
-            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).\n- `APP_INACTIVE`: Aplicação desativada ou inexistente.\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).\n- `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.",
+            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).\n- `APP_INACTIVE`: Aplicação desativada ou inexistente.\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).\n- `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.\n- `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).\n- `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.",
             "x-error-codes": [
               "ORIGIN_NOT_ALLOWED",
               "APP_INACTIVE",
@@ -2308,7 +2308,7 @@
                     "value": {
                       "error": {
                         "code": "INSTALLATION_NOT_ACTIVE",
-                        "message": "Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409)."
+                        "message": "Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409)."
                       }
                     }
                   },

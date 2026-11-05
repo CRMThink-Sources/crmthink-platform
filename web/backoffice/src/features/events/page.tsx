@@ -34,6 +34,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useSearchState } from '@/lib/search-state'
+import { ResendAllButton, ResendOneButton } from './actions'
 
 export const EVENT_STATUSES = [
   { value: 'pending', label: 'Pendente' },
@@ -94,6 +95,7 @@ function EventSheet(props: { event: OutboxEvent | null; onClose: () => void }) {
                 <span className="text-muted-foreground">
                   {event.attempts} tentativa(s)
                 </span>
+                <ResendOneButton event={event} onDone={props.onClose} />
               </div>
               <section className="grid gap-2">
                 <h3 className="font-medium">Tentativas de entrega recentes</h3>
@@ -225,7 +227,9 @@ export function EventsPage() {
   const { cursor, ...filters } = state
   return (
     <>
-      <PageHeader title="Eventos enviados aos apps" />
+      <PageHeader title="Eventos enviados aos apps">
+        <ResendAllButton filters={filters} />
+      </PageHeader>
       <FilterBar>
         <AppFilter
           value={state.appCode}

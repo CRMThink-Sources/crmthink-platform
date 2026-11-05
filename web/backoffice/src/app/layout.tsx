@@ -10,7 +10,9 @@ import {
   Moon,
   ScrollText,
   Send,
+  Settings,
   Sun,
+  Users,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Fragment } from 'react'
@@ -36,16 +38,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useHasRole } from '@/components/role-gate'
 import { useMe } from '@/features/auth/session'
 import { cn } from '@/lib/utils'
 
-const NAV = [
+const NAV: Array<{
+  to: string
+  label: string
+  icon: typeof LayoutDashboard
+  end?: boolean
+  /** Item só para `operator`: o suporte não vê. */
+  operatorOnly?: boolean
+}> = [
   { to: '/', label: 'Painel', icon: LayoutDashboard, end: true },
   { to: '/installations', label: 'Instalações', icon: Boxes },
   { to: '/events', label: 'Eventos', icon: Send },
   { to: '/stripe-events', label: 'Eventos Stripe', icon: CreditCard },
   { to: '/apps', label: 'Apps', icon: Activity },
   { to: '/audit', label: 'Auditoria', icon: ScrollText },
+  { to: '/system', label: 'Sistema', icon: Settings, operatorOnly: true },
+  { to: '/operators', label: 'Operadores', icon: Users, operatorOnly: true },
 ]
 
 /** `handle.crumb` de cada rota: texto fixo ou função dos parâmetros. */
@@ -144,6 +156,8 @@ function UserMenu() {
 
 /** Moldura das telas autenticadas: barra lateral, cabeçalho e trilha. */
 export function AppLayout() {
+  const isOperator = useHasRole('operator')
+  const items = NAV.filter(item => !item.operatorOnly || isOperator)
   return (
     <div className="grid min-h-svh grid-cols-[220px_1fr]">
       <aside className="border-r bg-sidebar p-3 text-sidebar-foreground">
@@ -151,7 +165,7 @@ export function AppLayout() {
           Backoffice CRMThink
         </div>
         <nav className="grid gap-1" aria-label="Principal">
-          {NAV.map(item => (
+          {items.map(item => (
             <NavLink
               key={item.to}
               to={item.to}

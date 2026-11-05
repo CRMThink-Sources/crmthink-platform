@@ -8,14 +8,14 @@ Código: `src/shared/crypto/*`, `src/modules/registry/http/auth.ts`,
 
 ## Credenciais emitidas pela plataforma
 
-| Credencial | Formato | Como é guardada | Onde é usada |
-| --- | --- | --- | --- |
-| Chave de API do app | `cp_<32 bytes base64url>` | Só o hash SHA-256 (`app.api_key_hash`) | `Authorization: Bearer` nas rotas servidor-a-servidor |
-| Segredo de webhook | `whsec_<32 bytes base64url>` | Cifrado (`app.webhook_secret_enc`) | HMAC dos eventos e do instalador |
-| Token de operador (scripts) | livre | Variável `ADMIN_API_TOKENS` (lista) | `/admin/*` como papel `operator`; na auditoria aparece como `token:<8 hex do SHA-256>`. Recomendado um token por script ou rotina |
-| Senha de operador | escolhida pela pessoa (≥ 12 caracteres) | Hash argon2id (`admin_operator.password_hash`, `m=19456,t=2,p=1`) | Login do backoffice |
-| Segredo TOTP do operador | 20 bytes, base32 | Cifrado (`admin_operator.totp_secret_enc`) | 2º fator do login do backoffice |
-| Sessão do backoffice | 32 bytes base64url | Só o SHA-256 (`admin_session.id_hash`) | Cookie `cp_admin_session` em `/admin/*` |
+| Credencial                  | Formato                                 | Como é guardada                                                   | Onde é usada                                                                                                                      |
+| --------------------------- | --------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Chave de API do app         | `cp_<32 bytes base64url>`               | Só o hash SHA-256 (`app.api_key_hash`)                            | `Authorization: Bearer` nas rotas servidor-a-servidor                                                                             |
+| Segredo de webhook          | `whsec_<32 bytes base64url>`            | Cifrado (`app.webhook_secret_enc`)                                | HMAC dos eventos e do instalador                                                                                                  |
+| Token de operador (scripts) | livre                                   | Variável `ADMIN_API_TOKENS` (lista)                               | `/admin/*` como papel `operator`; na auditoria aparece como `token:<8 hex do SHA-256>`. Recomendado um token por script ou rotina |
+| Senha de operador           | escolhida pela pessoa (≥ 12 caracteres) | Hash argon2id (`admin_operator.password_hash`, `m=19456,t=2,p=1`) | Login do backoffice                                                                                                               |
+| Segredo TOTP do operador    | 20 bytes, base32                        | Cifrado (`admin_operator.totp_secret_enc`)                        | 2º fator do login do backoffice                                                                                                   |
+| Sessão do backoffice        | 32 bytes base64url                      | Só o SHA-256 (`admin_session.id_hash`)                            | Cookie `cp_admin_session` em `/admin/*`                                                                                           |
 
 Chave e segredo aparecem **uma única vez**, na resposta do cadastro ou da rotação. SHA-256
 simples é suficiente para a chave de API: ela tem 256 bits aleatórios, então hash lento não
@@ -39,12 +39,12 @@ padrão 24 h):
 
 Campos cifrados:
 
-| Tabela | Campo |
-| --- | --- |
-| `app` | `bitrix_client_secret_enc`, `webhook_secret_enc`, `previous_webhook_secret_enc` |
-| `credential` | `access_token_enc`, `refresh_token_enc` |
-| `application_token` | `token_enc` |
-| `signing_key` | `private_key_enc` |
+| Tabela              | Campo                                                                           |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `app`               | `bitrix_client_secret_enc`, `webhook_secret_enc`, `previous_webhook_secret_enc` |
+| `credential`        | `access_token_enc`, `refresh_token_enc`                                         |
+| `application_token` | `token_enc`                                                                     |
+| `signing_key`       | `private_key_enc`                                                               |
 
 Sem a chave (ou com tamanho errado) o processo **não sobe**: gravar tokens em texto puro e
 descobrir isso na primeira instalação seria tarde. Gerar: `yarn admin:generate-encryption-key`.
@@ -86,7 +86,7 @@ Bitrix (`bitrix-auth-verifier.ts`).
 (`stripe.webhooks.constructEvent`). Assinatura inválida: 400 e métrica
 `platform_stripe_webhook_failures_total`.
 
-A conta usada é deduzida do prefixo da chave (`sk_live_`/`rk_live_` → produção), e o *price id*
+A conta usada é deduzida do prefixo da chave (`sk_live_`/`rk_live_` → produção), e o _price id_
 lido do SPA é o do mesmo ambiente — nunca o do outro como fallback (seria cobrar na conta errada).
 
 ### Portal CRMThink (SPAs)
@@ -154,6 +154,15 @@ status, código de erro, IP, user-agent e request id. Também registra os evento
 existe e o motivo), `auth.account_locked`, `auth.logout`, `auth.password_changed`,
 `auth.password_change_failed` e `auth.session_expired`. Requisição sem credencial válida (401)
 não gera registro.
+
+**Motivo da ação**: toda mutação aceita o header `X-Admin-Reason` (1 a 500 caracteres, uma
+linha) e o registro guarda o texto em `summary.reason`, sem o mascaramento nem o corte de 200
+caracteres do resto do resumo. As ações de alto impacto (rotação de chave de API e de segredo
+de webhook, desativação de app, reenvio em lote, rotação da chave do JWT e redefinição de
+acesso de operador) são marcadas por `highImpact` em `backoffice/http/policy.ts` e o `adminGate`
+as recusa com 400 `REASON_REQUIRED` antes do handler, depois de autenticar e de checar o papel;
+a tentativa recusada também é auditada. Motivo fora do formato: 400 `REASON_INVALID`. O motivo é
+texto livre digitado por uma pessoa: não coloque segredos nele.
 
 A auditoria **nunca** guarda senha, código TOTP, segredo gerado, chave de API nem corpo cru: o
 resumo é o corpo com chaves sensíveis mascaradas (`secret`, `password`, `token`, `apiKey`,

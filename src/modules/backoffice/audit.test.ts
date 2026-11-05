@@ -59,6 +59,7 @@ describe('auditoria do backoffice', () => {
     const response = await http(h)
       .post('/admin/apps/crmthink.gptmaker/rotate-webhook-secret')
       .set('Authorization', 'Bearer admin-token')
+      .set('X-Admin-Reason', 'teste automatizado')
     expect(response.status).toBe(200)
     await new Promise(resolve => setTimeout(resolve, 0))
     const after = (await metrics.adminAuditWriteFailures.get()).values[0]?.value

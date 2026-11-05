@@ -2,13 +2,16 @@ import { Outlet, type RouteObject } from 'react-router'
 import { LoginPage } from '@/features/auth/login-page'
 import { PasswordPage } from '@/features/auth/password-page'
 import { AppDetailPage } from '@/features/app-detail/page'
+import { AppCreatePage, AppEditPage } from '@/features/apps/app-form-page'
 import { AppsPage } from '@/features/apps/page'
 import { AuditPage } from '@/features/audit/page'
 import { EventsPage } from '@/features/events/page'
 import { InstallationDetailPage } from '@/features/installation-detail/page'
 import { InstallationsPage } from '@/features/installations/page'
+import { OperatorsPage } from '@/features/operators/page'
 import { OverviewPage } from '@/features/overview/page'
 import { StripeEventsPage } from '@/features/stripe-events/page'
+import { SystemPage } from '@/features/system/page'
 import { AuthEventsBridge } from './auth-bridge'
 import { RequireSession, type RouteHandle } from './layout'
 
@@ -50,13 +53,31 @@ export const appRoutes: RouteObject[] = [
     children: [
       { index: true, element: <AppsPage /> },
       {
+        path: 'new',
+        element: <AppCreatePage />,
+        handle: handle('Cadastrar'),
+      },
+      {
         path: ':appCode',
-        element: <AppDetailPage />,
         handle: handle(match => match.params.appCode ?? ''),
+        children: [
+          { index: true, element: <AppDetailPage /> },
+          {
+            path: 'edit',
+            element: <AppEditPage />,
+            handle: handle('Editar'),
+          },
+        ],
       },
     ],
   },
   { path: 'audit', element: <AuditPage />, handle: handle('Auditoria') },
+  { path: 'system', element: <SystemPage />, handle: handle('Sistema') },
+  {
+    path: 'operators',
+    element: <OperatorsPage />,
+    handle: handle('Operadores'),
+  },
 ]
 
 /**

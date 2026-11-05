@@ -2118,7 +2118,7 @@ export interface operations {
             };
             /**
              * @description Conflito
-             *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).
+             *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).
              *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.
              */
             409: {
@@ -2606,7 +2606,7 @@ export interface operations {
             };
             /**
              * @description Falha em serviço externo
-             *     - `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token.
+             *     - `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial.
              */
             502: {
                 headers: {
@@ -2730,7 +2730,7 @@ export interface operations {
             };
             /**
              * @description Falha em serviço externo
-             *     - `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token.
+             *     - `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial.
              */
             502: {
                 headers: {
@@ -2947,7 +2947,7 @@ export interface operations {
              * @description Proibido
              *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
              *     - `APP_INACTIVE`: Aplicação desativada ou inexistente.
-             *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).
+             *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).
              *     - `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.
              *     - `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).
              *     - `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.

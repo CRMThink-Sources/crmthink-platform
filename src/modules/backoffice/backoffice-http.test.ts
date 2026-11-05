@@ -393,6 +393,7 @@ describe('papéis, origem e tokens', () => {
     const response = await http(h)
       .post('/admin/apps/crmthink.gptmaker/rotate-api-key')
       .set('Authorization', 'Bearer admin-token')
+      .set('X-Admin-Reason', 'teste automatizado')
     expect(response.status).toBe(200)
     const row = audit(h).find(
       r => r.action === 'POST /admin/apps/:appCode/rotate-api-key',
@@ -444,6 +445,7 @@ describe('gestão de operadores', () => {
         [method](path)
         .set('Cookie', cookie)
         .set('Origin', ORIGIN)
+        .set('X-Admin-Reason', 'teste automatizado')
         .send(body)
 
     const created = await send('post', '/admin/operators', {

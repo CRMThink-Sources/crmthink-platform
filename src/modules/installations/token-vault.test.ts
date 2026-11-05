@@ -255,3 +255,98 @@ describe('sessão do iframe', () => {
     expect(res.body.keys[0].d).toBeUndefined()
   })
 })
+
+describe('cofre de tokens: renovação forçada', () => {
+  let h: Harness
+  let installationId: number
+
+  beforeEach(async () => {
+    h = createHarness()
+    await seedGptMaker(h, { trialOnInstall: false })
+    const res = await http(h).post('/v1/install').send(installPayload(h))
+    installationId = res.body.installationId
+    h.oauth.calls = 0
+  })
+
+  const ADMIN = { Authorization: 'Bearer admin-token' }
+  const force = (id = installationId) =>
+    http(h).post(`/admin/installations/${id}/token/refresh`).set(ADMIN)
+
+  it('renova uma instalação com refresh_failing: zera as falhas, responde expiração e saúde ok e não devolve o token', async () => {
+    await h.db.asDb().credential.update({
+      where: { installationId },
+      data: { refreshFailures: 3, lastRefreshError: 'recusado antes' },
+    })
+    const res = await force()
+    expect(res.status).toBe(200)
+    expect(Object.keys(res.body).sort()).toEqual(['expiresAt', 'health'])
+    expect(res.body.health).toBe('ok')
+    expect(new Date(res.body.expiresAt).getTime()).toBeGreaterThan(
+      h.clock.now().getTime(),
+    )
+    expect(JSON.stringify(res.body)).not.toMatch(/access-|refresh-/)
+    const credential = h.db.rows('credential')[0]!
+    expect(credential.refreshFailures).toBe(0)
+    expect(credential.lastRefreshError).toBeNull()
+    expect(h.container.cipher.decrypt(credential.accessTokenEnc)).toBe(
+      'access-2',
+    )
+    expect(h.oauth.calls).toBe(1)
+  })
+
+  it('renova mesmo com o token ainda vigente (não depende de um token recusado)', async () => {
+    const res = await force()
+    expect(res.status).toBe(200)
+    expect(h.oauth.calls).toBe(1)
+  })
+
+  it('Bitrix recusa: 502 TOKEN_REFRESH_FAILED com o motivo e as falhas aumentam', async () => {
+    h.oauth.failWith = new BitrixOAuthRejectedError('invalid_grant', 'revoked')
+    const res = await force()
+    expect(res.status).toBe(502)
+    expect(res.body.error.code).toBe('TOKEN_REFRESH_FAILED')
+    expect(res.body.error.details).toEqual({ reason: 'invalid_grant' })
+    expect(h.db.rows('credential')[0]!.refreshFailures).toBe(1)
+    expect(h.db.rows('installation')[0]!.status).toBe('ACTIVE')
+  })
+
+  it('instalação que não está ativa: 409 INSTALLATION_NOT_ACTIVE, sem ir ao Bitrix', async () => {
+    await h.db.asDb().installation.update({
+      where: { id: installationId },
+      data: { status: 'UNINSTALLED' },
+    })
+    const res = await force()
+    expect(res.status).toBe(409)
+    expect(res.body.error.code).toBe('INSTALLATION_NOT_ACTIVE')
+    expect(h.oauth.calls).toBe(0)
+  })
+
+  it('instalação inexistente: 404 INSTALLATION_NOT_FOUND', async () => {
+    const res = await force(9999)
+    expect(res.status).toBe(404)
+    expect(res.body.error.code).toBe('INSTALLATION_NOT_FOUND')
+  })
+
+  it('Bitrix fora do ar: 503 e a falha não conta como recusa', async () => {
+    const { BitrixUnavailableError } =
+      await import('@/shared/bitrix/bitrix-errors')
+    h.oauth.failWith = new BitrixUnavailableError('oauth.refresh', 'timeout')
+    const res = await force()
+    expect(res.status).toBe(503)
+    expect(res.body.error.code).toBe('BITRIX_UNAVAILABLE')
+    expect(h.db.rows('credential')[0]!.refreshFailures).toBe(0)
+  })
+
+  it('fica na auditoria com o ator e a instalação como alvo', async () => {
+    await force()
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const row = h.db
+      .rows('adminAuditLog')
+      .find(r => r.action === 'POST /admin/installations/:id/token/refresh')
+    expect(row).toMatchObject({
+      targetType: 'installation',
+      targetId: String(installationId),
+      statusCode: 200,
+    })
+  })
+})

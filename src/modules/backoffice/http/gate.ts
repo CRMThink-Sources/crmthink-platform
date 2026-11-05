@@ -1,6 +1,11 @@
 import type { Request, RequestHandler, Response } from 'express'
 import { safeEqual } from '@/shared/crypto/timing-safe'
-import { asyncHandler, forbidden, unauthorized } from '@/shared/http/errors'
+import {
+  asyncHandler,
+  badRequest,
+  forbidden,
+  unauthorized,
+} from '@/shared/http/errors'
 import type { AdminAudit } from '../application/audit'
 import type { AdminSessions } from '../application/sessions'
 import type { OperatorRole } from '../domain/operator'
@@ -8,6 +13,7 @@ import { findActor, setActor, tokenActorId, type Actor } from './actor'
 import { readSessionCookie } from './cookies'
 import {
   fallbackPolicy,
+  isHighImpact,
   matchPolicy,
   type AdminPolicy,
   type RequiredRole,
@@ -23,6 +29,22 @@ export type AdminGateDeps = {
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 const RANK: Record<OperatorRole, number> = { viewer: 1, operator: 2 }
+const REASON_MAX = 500
+
+/** `X-Admin-Reason`: 1 a 500 caracteres, sem quebra de linha. `null` se ausente. */
+function readReason(req: Request): string | null {
+  const raw = req.headers['x-admin-reason']
+  if (raw === undefined) return null
+  const reason = (Array.isArray(raw) ? raw.join(',') : raw).trim()
+  if (!reason) return null
+  if (reason.length > REASON_MAX || /[\r\n]/.test(reason)) {
+    throw badRequest(
+      'REASON_INVALID',
+      `O motivo deve ter de 1 a ${REASON_MAX} caracteres, em uma linha`,
+    )
+  }
+  return reason
+}
 
 function bearer(header: string | undefined): string | null {
   const match = /^Bearer\s+(.+)$/i.exec(header ?? '')
@@ -83,6 +105,16 @@ export function adminGate(deps: AdminGateDeps): RequestHandler {
     }
     if (!allows(policy.role, actor)) {
       throw forbidden('FORBIDDEN_ROLE', 'Papel sem permissão para esta ação')
+    }
+    if (!SAFE_METHODS.has(method) && !policy.auditedByHandler) {
+      const reason = readReason(req)
+      if (reason) res.locals.auditReason = reason
+      else if (isHighImpact(policy, req.body)) {
+        throw badRequest(
+          'REASON_REQUIRED',
+          'Esta ação exige um motivo (header X-Admin-Reason)',
+        )
+      }
     }
     next()
   })
@@ -165,6 +197,7 @@ function auditOnFinish(
       targetId: target?.id || createdId || null,
       statusCode: res.statusCode,
       errorCode: (res.locals.errorCode as string | undefined) ?? null,
+      reason: (res.locals.auditReason as string | undefined) ?? null,
       summary:
         req.body &&
         typeof req.body === 'object' &&

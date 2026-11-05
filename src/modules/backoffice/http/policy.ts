@@ -20,7 +20,22 @@ export type AdminPolicy = {
   target?: (params: Record<string, string>) => { type: string; id: string }
   /** Mutações que registram a própria auditoria (login, logout, senha). */
   auditedByHandler?: boolean
+  /**
+   * Ação de alto impacto: exige `X-Admin-Reason` (400 `REASON_REQUIRED` sem ele). Pode
+   * depender do corpo, quando a mesma rota tem usos de impacto diferente (reenvio
+   * único × em lote, edição × desativação de app).
+   */
+  highImpact?: boolean | ((body: unknown) => boolean)
 }
+
+const bodyField = (body: unknown, key: string): unknown =>
+  typeof body === 'object' && body !== null
+    ? (body as Record<string, unknown>)[key]
+    : undefined
+
+/** Reenvio em lote (seletor por filtro) sem `dryRun`; o evento único não conta. */
+const isBatchResend = (body: unknown) =>
+  bodyField(body, 'eventId') === undefined && bodyField(body, 'dryRun') !== true
 
 const app = (p: Record<string, string>) => ({
   type: 'app',
@@ -48,6 +63,7 @@ export const ADMIN_POLICIES: Record<string, AdminPolicy> = {
   'POST /admin/operators/:id/reset-access': {
     role: 'operator',
     target: operator,
+    highImpact: true,
   },
 
   'GET /admin/audit': { role: 'viewer' },
@@ -59,11 +75,21 @@ export const ADMIN_POLICIES: Record<string, AdminPolicy> = {
     target: () => ({ type: 'app', id: '' }),
   },
   'GET /admin/apps/:appCode': { role: 'viewer', target: app },
-  'PATCH /admin/apps/:appCode': { role: 'operator', target: app },
-  'POST /admin/apps/:appCode/rotate-api-key': { role: 'operator', target: app },
+  'PATCH /admin/apps/:appCode': {
+    role: 'operator',
+    target: app,
+    // Desativar app é de alto impacto; as demais edições não.
+    highImpact: body => bodyField(body, 'active') === false,
+  },
+  'POST /admin/apps/:appCode/rotate-api-key': {
+    role: 'operator',
+    target: app,
+    highImpact: true,
+  },
   'POST /admin/apps/:appCode/rotate-webhook-secret': {
     role: 'operator',
     target: app,
+    highImpact: true,
   },
 
   'GET /admin/installations': { role: 'viewer' },
@@ -80,9 +106,13 @@ export const ADMIN_POLICIES: Record<string, AdminPolicy> = {
     role: 'operator',
     target: installation,
   },
+  'POST /admin/installations/:id/token/refresh': {
+    role: 'operator',
+    target: installation,
+  },
 
   'GET /admin/events': { role: 'viewer' },
-  'POST /admin/events/resend': { role: 'operator' },
+  'POST /admin/events/resend': { role: 'operator', highImpact: isBatchResend },
   'GET /admin/stripe-events': { role: 'viewer' },
   'GET /admin/stripe-events/:eventId': {
     role: 'operator',
@@ -91,6 +121,7 @@ export const ADMIN_POLICIES: Record<string, AdminPolicy> = {
   'POST /admin/signing-keys/rotate': {
     role: 'operator',
     target: () => ({ type: 'signing_key', id: '' }),
+    highImpact: true,
   },
   'POST /admin/sweeps/:kind': {
     role: 'operator',
@@ -174,6 +205,29 @@ export function fallbackPolicy(method: string): AdminPolicy {
       ? 'viewer'
       : 'operator',
   }
+}
+
+/** A política marca a ação como de alto impacto para este corpo? */
+export function isHighImpact(policy: AdminPolicy, body: unknown): boolean {
+  const { highImpact } = policy
+  return typeof highImpact === 'function' ? highImpact(body) : !!highImpact
+}
+
+/**
+ * Exigência de motivo da operação no contrato: `always` (toda chamada), `conditional`
+ * (depende do corpo), `optional` (aceita, não exige) ou `null` (sem auditoria por
+ * header: leituras e rotas que se auditam sozinhas).
+ */
+export function reasonOf(
+  method: string,
+  openApiPath: string,
+): 'always' | 'conditional' | 'optional' | null {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())) return null
+  const key = `${method.toUpperCase()} ${openApiPath.replace(/\{([^}]+)\}/g, ':$1')}`
+  const policy = ADMIN_POLICIES[key]
+  if (!policy || policy.auditedByHandler) return null
+  if (policy.highImpact === true) return 'always'
+  return policy.highImpact ? 'conditional' : 'optional'
 }
 
 /** Papel mínimo como texto, para a descrição das operações no contrato. */
