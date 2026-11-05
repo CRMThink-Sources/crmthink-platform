@@ -16,7 +16,10 @@ export type RevealedSecret = { label: string; value: string }
 
 export type SecretReveal = {
   title: string
+  /** Valores sigilosos: ganham botão de copiar. */
   secrets: RevealedSecret[]
+  /** Informação que acompanha os segredos (ex.: até quando o anterior vale): só texto. */
+  notes?: RevealedSecret[]
   /** URI `otpauth://` do TOTP: mostrado como QR code gerado aqui mesmo. */
   otpauthUri?: string
 }
@@ -107,6 +110,12 @@ export function SecretRevealDialog(props: {
                     <CopyButton value={secret.value} label={secret.label} />
                   </div>
                 </div>
+              ))}
+              {reveal.notes?.map(note => (
+                <p key={note.label} className="text-sm">
+                  <span className="text-muted-foreground">{note.label}: </span>
+                  {note.value}
+                </p>
               ))}
               {reveal.otpauthUri && (
                 <div className="grid gap-2">

@@ -1,7 +1,7 @@
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
-import { ThemeProvider } from 'next-themes'
 import type { ReactNode } from 'react'
 import { Toaster } from '@/components/ui/sonner'
+import { ThemeProvider } from './theme'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 /** Provedores do app: tema (claro/escuro, segue o sistema), cache, tooltips e avisos. */
@@ -10,7 +10,7 @@ export function Providers(props: {
   children: ReactNode
 }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider>
       <QueryClientProvider client={props.queryClient}>
         <TooltipProvider delayDuration={300}>
           {props.children}

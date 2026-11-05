@@ -14,7 +14,6 @@ import {
   Sun,
   Users,
 } from 'lucide-react'
-import { useTheme } from 'next-themes'
 import { Fragment } from 'react'
 import {
   Link,
@@ -39,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useHasRole } from '@/components/role-gate'
+import { useTheme } from './theme'
 import { useMe } from '@/features/auth/session'
 import { cn } from '@/lib/utils'
 
