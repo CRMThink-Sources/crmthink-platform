@@ -74,6 +74,30 @@ export interface paths {
         patch: operations["updateApp"];
         trace?: never;
     };
+    "/admin/apps/{appCode}/reveal-webhook-secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Consultar o segredo de webhook atual
+         * @description Devolve o segredo de webhook em uso, para quem o perdeu. Fica na auditoria com o motivo e a resposta não é guardada em cache. A chave de API não tem consulta: só existe o hash, e quem a perde rotaciona.
+         *
+         *     **Papel mínimo:** `operator`.
+         *
+         *     **Alto impacto:** exige o motivo em `X-Admin-Reason`.
+         */
+        post: operations["revealWebhookSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/apps/{appCode}/rotate-api-key": {
         parameters: {
             query?: never;
@@ -2676,6 +2700,10 @@ export interface components {
             role?: "viewer" | "operator";
             active?: boolean;
         };
+        WebhookSecretRevealed: {
+            /** @description Segredo de webhook atual */
+            webhookSecret: string;
+        };
         WebhookSecretRotated: {
             webhookSecret: string;
             /** Format: date-time */
@@ -2995,6 +3023,83 @@ export interface operations {
              *     - `BITRIX_CLIENT_ID_IN_USE`: O client_id do Bitrix já pertence a outra aplicação cadastrada.
              */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    revealWebhookSecret: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`. */
+                "X-Admin-Reason": string;
+            };
+            path: {
+                /** @description Código do app */
+                appCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Segredo atual */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookSecretRevealed"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             *     - `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `APP_NOT_FOUND`: appCode não cadastrado ou inativo.
+             */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

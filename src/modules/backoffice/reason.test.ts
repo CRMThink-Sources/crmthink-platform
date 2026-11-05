@@ -105,10 +105,11 @@ describe('mapa de alto impacto', () => {
     .map(([key]) => key)
     .sort()
 
-  it('as seis operações de alto impacto estão marcadas', () => {
+  it('as sete operações de alto impacto estão marcadas', () => {
     expect(marked).toEqual(
       [
         'PATCH /admin/apps/:appCode',
+        'POST /admin/apps/:appCode/reveal-webhook-secret',
         'POST /admin/apps/:appCode/rotate-api-key',
         'POST /admin/apps/:appCode/rotate-webhook-secret',
         'POST /admin/events/resend',
@@ -148,5 +149,64 @@ describe('mapa de alto impacto', () => {
       })
     expect(response.status).toBe(400)
     expect(response.body.error.code).toBe('REASON_REQUIRED')
+  })
+})
+
+describe('consulta do segredo de webhook', () => {
+  const reveal = (h: ReturnType<typeof createHarness>, appCode = GPTMAKER) =>
+    http(h).post(`/admin/apps/${appCode}/reveal-webhook-secret`).set(TOKEN)
+
+  it('sem motivo: 400 REASON_REQUIRED e nenhum segredo na resposta', async () => {
+    const h = createHarness()
+    await seedGptMaker(h)
+    const res = await reveal(h)
+    expect(res.status).toBe(400)
+    expect(res.body.error.code).toBe('REASON_REQUIRED')
+    expect(JSON.stringify(res.body)).not.toContain('whsec_')
+  })
+
+  it('com motivo: devolve o segredo cadastrado, sem cache, e audita só o motivo', async () => {
+    const h = createHarness()
+    const { credentials } = await seedGptMaker(h)
+    const res = await reveal(h).set('X-Admin-Reason', 'perdi o valor do cofre')
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ webhookSecret: credentials.webhookSecret })
+    expect(res.headers['cache-control']).toBe('no-store')
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const row = audit(h).find(
+      r => r.action === 'POST /admin/apps/:appCode/reveal-webhook-secret',
+    )!
+    expect(row).toMatchObject({
+      targetType: 'app',
+      targetId: GPTMAKER,
+      statusCode: 200,
+    })
+    expect(row.summary).toEqual({ reason: 'perdi o valor do cofre' })
+    expect(JSON.stringify(audit(h))).not.toContain(credentials.webhookSecret)
+  })
+
+  it('depois de rotacionar, devolve o segredo novo', async () => {
+    const h = createHarness()
+    await seedGptMaker(h)
+    const rotated = await http(h)
+      .post(`/admin/apps/${GPTMAKER}/rotate-webhook-secret`)
+      .set(TOKEN)
+      .set('X-Admin-Reason', 'rotina')
+    const res = await reveal(h).set('X-Admin-Reason', 'conferir')
+    expect(res.body.webhookSecret).toBe(rotated.body.webhookSecret)
+  })
+
+  it('app inexistente: 404 APP_NOT_FOUND', async () => {
+    const h = createHarness()
+    const res = await reveal(h, 'nao.existe').set('X-Admin-Reason', 'teste')
+    expect(res.status).toBe(404)
+    expect(res.body.error.code).toBe('APP_NOT_FOUND')
+  })
+
+  it('é só para operator (suporte não consulta segredo)', () => {
+    expect(
+      ADMIN_POLICIES['POST /admin/apps/:appCode/reveal-webhook-secret']!.role,
+    ).toBe('operator')
   })
 })

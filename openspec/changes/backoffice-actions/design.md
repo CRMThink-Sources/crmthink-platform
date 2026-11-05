@@ -57,6 +57,13 @@ Sistema (nova tela)    Rodar varredura Stripe/SPA · Rotacionar chave do JWT
 Operadores (nova tela) Criar · Trocar papel · Ativar/Desativar · Redefinir acesso
 ```
 
+### 8. Consulta do segredo de webhook (e não da chave de API)
+O segredo de webhook fica cifrado (`webhookSecretEnc`), então a plataforma consegue devolvê-lo; a chave de API só existe como hash e não. Por isso:
+- `POST /admin/apps/{appCode}/reveal-webhook-secret`, só `operator`, `highImpact` (motivo obrigatório), resposta com `Cache-Control: no-store`. É `POST` de propósito: entra na auditoria como qualquer mutação, sem mudar o gate para auditar leituras.
+- `AppRegistry.revealWebhookSecret` decifra só o segredo de webhook, nunca o `client_secret` do Bitrix.
+- O detalhe do app mostra um marcador fixo (sem trecho do valor real: a API nunca devolve parte do segredo) e "Mostrar e copiar", que abre o diálogo de motivo e depois o de segredo em modo `repeatable` (sem o aviso de "uma única vez", fecha com `Esc`).
+- Alternativa recusada: guardar a chave de API cifrada para também poder consultá-la. Um vazamento do banco junto com a chave de cifra exporia as chaves de todos os apps; quem perde a chave rotaciona (a anterior vale 24 h).
+
 ## Risks / Trade-offs
 
 - [Reenvio em lote dispara muitos webhooks para um app] → dry-run obrigatório na interface, limite de 5000 e confirmação com a quantidade. A entrega continua com o ritmo e as tentativas do worker.

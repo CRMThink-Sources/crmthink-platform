@@ -173,6 +173,20 @@ export class AppRegistry {
     }
   }
 
+  /**
+   * Segredo de webhook atual, decifrado, para a consulta do operador. Decifra só ele:
+   * o `client_secret` do Bitrix e a chave de API (que só existe como hash) não saem
+   * daqui. A rota que usa isto é auditada e exige motivo.
+   */
+  async revealWebhookSecret(appCode: string): Promise<string> {
+    const row = await this.db.app.findUnique({
+      where: { appCode },
+      select: { webhookSecretEnc: true },
+    })
+    if (!row) throw notFound('APP_NOT_FOUND')
+    return this.cipher.decrypt(row.webhookSecretEnc)
+  }
+
   async create(
     input: CreateAppInput,
   ): Promise<{ app: RegisteredApp; credentials: IssuedCredentials }> {

@@ -5,7 +5,7 @@ Ajustes na API de operador para que as ações do backoffice sejam seguras e ras
 ## ADDED Requirements
 
 ### Requirement: Motivo da ação
-Toda mutação em `/admin/*` MUST aceitar o header `X-Admin-Reason` (texto de 1 a 500 caracteres, sem quebra de linha), e o registro de auditoria da requisição MUST guardar esse motivo. As ações de alto impacto MUST exigir o motivo e MUST responder 400 `REASON_REQUIRED` sem ele, sem executar nada. As ações de alto impacto são: rotação de chave de API, rotação de segredo de webhook, desativação de app, reenvio em lote, rotação da chave do JWT e redefinição de acesso de operador.
+Toda mutação em `/admin/*` MUST aceitar o header `X-Admin-Reason` (texto de 1 a 500 caracteres, sem quebra de linha), e o registro de auditoria da requisição MUST guardar esse motivo. As ações de alto impacto MUST exigir o motivo e MUST responder 400 `REASON_REQUIRED` sem ele, sem executar nada. As ações de alto impacto são: rotação de chave de API, rotação de segredo de webhook, consulta do segredo de webhook, desativação de app, reenvio em lote, rotação da chave do JWT e redefinição de acesso de operador.
 
 #### Scenario: Rotação sem motivo
 - **WHEN** um `operator` chama `POST /admin/apps/crmthink.gptmaker/rotate-api-key` sem `X-Admin-Reason`
@@ -36,3 +36,15 @@ Toda mutação em `/admin/*` MUST aceitar o header `X-Admin-Reason` (texto de 1 
 #### Scenario: Bitrix recusa
 - **WHEN** o Bitrix responde `invalid_grant` na renovação forçada
 - **THEN** o sistema responde 502 `TOKEN_REFRESH_FAILED` com o motivo e incrementa as falhas da credencial
+
+### Requirement: Consulta do segredo de webhook
+`POST /admin/apps/{appCode}/reveal-webhook-secret` MUST devolver o segredo de webhook em uso do app, só para `operator`, exigindo `X-Admin-Reason` (alto impacto). A requisição MUST constar da auditoria com o ator e o motivo, o registro MUST NOT conter o segredo, e a resposta MUST NOT ser guardada em cache (`Cache-Control: no-store`). Não existe rota equivalente para a chave de API: ela só existe como hash e quem a perde a rotaciona.
+
+#### Scenario: Consulta com motivo
+- **WHEN** um `operator` chama a rota com `X-Admin-Reason: perdi o valor do cofre`
+- **THEN** o sistema responde `{ webhookSecret }` com o valor cadastrado, e o registro de auditoria guarda o motivo e não o segredo
+
+#### Scenario: Consulta sem motivo
+- **WHEN** um `operator` chama a rota sem `X-Admin-Reason`
+- **THEN** o sistema responde 400 `REASON_REQUIRED` e não devolve o segredo
+

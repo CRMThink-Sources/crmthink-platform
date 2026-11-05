@@ -363,3 +363,89 @@ describe('ações no detalhe do app', () => {
     expect(screen.queryByRole('link', { name: 'Editar' })).toBeNull()
   })
 })
+
+describe('consulta do segredo de webhook', () => {
+  const REVEALED = 'whsec_segredo_ja_cadastrado_789'
+
+  it('mostra só um trecho fixo e, com o motivo, libera o valor para copiar', async () => {
+    let reason: string | null = null
+    server.use(
+      meHandler(operator()),
+      getApp(),
+      http.post(
+        '*/admin/apps/crmthink.gptmaker/reveal-webhook-secret',
+        ({ request }) => {
+          reason = request.headers.get('X-Admin-Reason')
+          return HttpResponse.json({ webhookSecret: REVEALED })
+        },
+      ),
+    )
+    const { user } = renderApp('/apps/crmthink.gptmaker')
+    await user.click(
+      await screen.findByRole('button', { name: 'Mostrar e copiar' }),
+    )
+    // Antes de consultar, o valor não está na tela.
+    expect(document.body).not.toHaveTextContent(REVEALED)
+
+    const dialog = await screen.findByRole('dialog')
+    const confirm = within(dialog).getByRole('button', {
+      name: 'Mostrar segredo',
+    })
+    expect(confirm).toBeDisabled()
+    await user.type(
+      within(dialog).getByLabelText(/Motivo/),
+      'perdi o valor do cofre',
+    )
+    await user.click(confirm)
+
+    expect(await screen.findByText(REVEALED)).toBeInTheDocument()
+    expect(reason).toBe('perdi o valor do cofre')
+    expect(
+      screen.getByText('Consulta registrada na auditoria', {
+        selector: '[data-slot="alert-title"]',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Copiar Segredo de webhook/ }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Exibido uma única vez')).toBeNull()
+
+    // Pode ser consultado de novo: Esc fecha, e o valor sai da tela.
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByText(REVEALED)).toBeNull())
+    expect(document.body).not.toHaveTextContent(REVEALED)
+  })
+
+  it('erro da API mantém o diálogo aberto com o código', async () => {
+    server.use(
+      meHandler(operator()),
+      getApp(),
+      http.post('*/admin/apps/crmthink.gptmaker/reveal-webhook-secret', () =>
+        HttpResponse.json(
+          { error: { code: 'APP_NOT_FOUND', message: 'App inexistente' } },
+          { status: 404 },
+        ),
+      ),
+    )
+    const { user } = renderApp('/apps/crmthink.gptmaker')
+    await user.click(
+      await screen.findByRole('button', { name: 'Mostrar e copiar' }),
+    )
+    const dialog = await screen.findByRole('dialog')
+    await user.type(within(dialog).getByLabelText(/Motivo/), 'teste')
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Mostrar segredo' }),
+    )
+    expect(await within(dialog).findByText('APP_NOT_FOUND')).toBeInTheDocument()
+  })
+
+  it('suporte não vê o campo nem o botão', async () => {
+    server.use(meHandler(viewer()), getApp())
+    renderApp('/apps/crmthink.gptmaker')
+    await screen.findByText('Cadastro')
+    expect(screen.queryByText('Segredo de webhook')).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Mostrar e copiar' }),
+    ).toBeNull()
+  })
+})

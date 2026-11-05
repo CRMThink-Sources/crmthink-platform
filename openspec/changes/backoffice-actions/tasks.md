@@ -5,6 +5,7 @@
 - [x] 1.3 Criar `TokenVault.forceRefresh` e `POST /admin/installations/:id/token/refresh` (409 `INSTALLATION_NOT_ACTIVE`, 502 `TOKEN_REFRESH_FAILED` com motivo, sem token na resposta); verificar com testes usando o Bitrix falso dos cenários "Token renovado pelo suporte técnico" e "Bitrix recusa"
 - [x] 1.4 Atualizar `src/docs/openapi/operations.ts` (header `X-Admin-Reason`, `dryRun`, `installationId`, rota nova, papel e alto impacto na descrição), rodar `yarn docs:openapi` e regerar `docs/technical/error-codes.md`; verificar que `yarn test src/docs` passa
 - [x] 1.5 Atualizar `docs/operations/runbook.md` (`X-Admin-Reason` nos exemplos de `curl` das ações de alto impacto; tela correspondente em cada procedimento) e `docs/technical/security.md` (motivo na auditoria); verificar lendo o diff
+- [x] 1.6 Criar `AppRegistry.revealWebhookSecret` e `POST /admin/apps/:appCode/reveal-webhook-secret` (operator, alto impacto, `no-store`), com contrato, runbook e `security.md`; verificar com testes de motivo obrigatório, segredo igual ao cadastrado, auditoria sem o segredo e 404
 
 ## 2. Base de ações no web
 
@@ -18,6 +19,7 @@
 - [x] 3.3 Apps: formulário de cadastro com exibição única dos segredos, edição com diff dos campos, segredo do Bitrix só de escrita, erros da API por campo, pré-visualização do tema com teste de deriva do CSS, ativar ou desativar e rotacionar chave e segredo com confirmação por `appCode`; verificar com testes dos cenários "Cadastro de app", "Erro da API no campo" e "Rotação de chave de API"
 - [x] 3.4 Tela "Sistema": rodar varreduras Stripe e SPA com o resultado e rotacionar a chave do JWT (confirmação `ROTACIONAR`); verificar com testes MSW do resultado da varredura e da confirmação
 - [x] 3.5 Tela "Operadores": lista com bloqueio, criar, trocar papel, ativar ou desativar e redefinir acesso (senha e QR code uma vez), sem opções sobre a própria conta e com a mensagem de `LAST_OPERATOR`; verificar com testes dos cenários "Redefinir acesso de operador" e "Tentar rebaixar a si mesmo"
+- [x] 3.6 Detalhe do app: marcador do segredo de webhook e "Mostrar e copiar" (motivo obrigatório, diálogo `repeatable`), sem consulta da chave de API; verificar com testes do cenário "Copiar o segredo de webhook" e de que o suporte não vê o campo
 
 ## 4. Integração
 

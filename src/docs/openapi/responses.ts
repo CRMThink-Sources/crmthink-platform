@@ -284,6 +284,10 @@ export const apiKeyRotatedSchema = z.strictObject({
   previousValidUntil: isoDate,
 })
 
+export const webhookSecretRevealedSchema = z.strictObject({
+  webhookSecret: z.string().describe('Segredo de webhook atual'),
+})
+
 export const webhookSecretRotatedSchema = z.strictObject({
   webhookSecret: z.string(),
   previousValidUntil: isoDate,

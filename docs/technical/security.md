@@ -159,7 +159,7 @@ não gera registro.
 linha) e o registro guarda o texto em `summary.reason`, sem o mascaramento nem o corte de 200
 caracteres do resto do resumo. As ações de alto impacto (rotação de chave de API e de segredo
 de webhook, desativação de app, reenvio em lote, rotação da chave do JWT e redefinição de
-acesso de operador) são marcadas por `highImpact` em `backoffice/http/policy.ts` e o `adminGate`
+acesso de operador, e a consulta do segredo de webhook) são marcadas por `highImpact` em `backoffice/http/policy.ts` e o `adminGate`
 as recusa com 400 `REASON_REQUIRED` antes do handler, depois de autenticar e de checar o papel;
 a tentativa recusada também é auditada. Motivo fora do formato: 400 `REASON_INVALID`. O motivo é
 texto livre digitado por uma pessoa: não coloque segredos nele.

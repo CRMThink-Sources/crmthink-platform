@@ -22,6 +22,12 @@ export type SecretReveal = {
   notes?: RevealedSecret[]
   /** URI `otpauth://` do TOTP: mostrado como QR code gerado aqui mesmo. */
   otpauthUri?: string
+  /**
+   * Valor que dá para consultar de novo (segredo de webhook): sem o aviso de "uma única
+   * vez" e o diálogo fecha com `Esc`. Os demais só aparecem uma vez e não fecham sem
+   * "Guardei".
+   */
+  repeatable?: boolean
 }
 
 /**
@@ -73,28 +79,44 @@ export function SecretRevealDialog(props: {
 }) {
   const { reveal } = props
   return (
-    <Dialog open={!!reveal} onOpenChange={() => {}}>
+    <Dialog
+      open={!!reveal}
+      onOpenChange={open => {
+        if (!open && reveal?.repeatable) props.onDismiss()
+      }}
+    >
       <DialogContent
         showCloseButton={false}
         className="sm:max-w-lg"
-        onEscapeKeyDown={event => event.preventDefault()}
-        onPointerDownOutside={event => event.preventDefault()}
-        onInteractOutside={event => event.preventDefault()}
+        onEscapeKeyDown={event => !reveal?.repeatable && event.preventDefault()}
+        onPointerDownOutside={event =>
+          !reveal?.repeatable && event.preventDefault()
+        }
+        onInteractOutside={event =>
+          !reveal?.repeatable && event.preventDefault()
+        }
       >
         {reveal && (
           <>
             <DialogHeader>
               <DialogTitle>{reveal.title}</DialogTitle>
               <DialogDescription>
-                Copie e guarde agora num lugar seguro.
+                {reveal.repeatable
+                  ? 'Copie o valor e guarde num lugar seguro.'
+                  : 'Copie e guarde agora num lugar seguro.'}
               </DialogDescription>
             </DialogHeader>
             <Alert>
               <ShieldAlert />
-              <AlertTitle>Exibido uma única vez</AlertTitle>
+              <AlertTitle>
+                {reveal.repeatable
+                  ? 'Consulta registrada na auditoria'
+                  : 'Exibido uma única vez'}
+              </AlertTitle>
               <AlertDescription>
-                Estes valores não serão mostrados de novo. Se perder, será
-                preciso gerar outros.
+                {reveal.repeatable
+                  ? 'Um operator pode consultar este valor de novo, mas cada consulta fica na auditoria com o motivo.'
+                  : 'Estes valores não serão mostrados de novo. Se perder, será preciso gerar outros.'}
               </AlertDescription>
             </Alert>
             <div className="grid gap-3">
@@ -137,7 +159,7 @@ export function SecretRevealDialog(props: {
             </div>
             <DialogFooter>
               <Button type="button" onClick={props.onDismiss}>
-                Guardei
+                {reveal.repeatable ? 'Fechar' : 'Guardei'}
               </Button>
             </DialogFooter>
           </>
