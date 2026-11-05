@@ -35,6 +35,18 @@ export const unprocessable = (code: string, message?: string) =>
 export const upstream = (code: string, message?: string) =>
   new HttpError(502, code, message)
 
+/** 429 com `Retry-After` (segundos): limite de tentativas. */
+export class TooManyRequestsError extends HttpError {
+  constructor(readonly retryAfterSeconds: number) {
+    super(
+      429,
+      'TOO_MANY_REQUESTS',
+      'Muitas tentativas; aguarde para tentar de novo',
+    )
+    this.name = 'TooManyRequestsError'
+  }
+}
+
 /** Encaminha rejeições de handler assíncrono ao middleware de erro. */
 export function asyncHandler(
   handler: (
@@ -53,6 +65,9 @@ export function errorMiddleware() {
     if (error instanceof HttpError) {
       if (error.status >= 500) {
         logger().error({ err: error, path: req.path }, 'request failed')
+      }
+      if (error instanceof TooManyRequestsError) {
+        res.setHeader('Retry-After', String(error.retryAfterSeconds))
       }
       res.status(error.status).json({
         error: {

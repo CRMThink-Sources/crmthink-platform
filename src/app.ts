@@ -1,11 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import express, { Router, type Express } from 'express'
 import { docsRoutes } from '@/docs/docs-routes'
+import { backofficeWeb, defaultBackofficeDist } from './backoffice-web'
 import { errorMiddleware } from '@/shared/http/errors'
 import { runWithLogContext } from '@/shared/observability/log-context'
 import { logger } from '@/shared/observability/logger'
 import { registry as metricsRegistry } from '@/shared/observability/metrics'
 import { adminRoutes } from '@/modules/registry/http/admin-routes'
+import { adminGate } from '@/modules/backoffice/http/gate'
+import { backofficeRoutes } from '@/modules/backoffice/http/routes'
+import { backofficeReadRoutes } from '@/modules/backoffice/http/read-routes'
 import { appAuth } from '@/modules/registry/http/auth'
 import {
   appInstallationRoutes,
@@ -25,7 +29,11 @@ import type { HealthState } from './health'
  * form-urlencoded do Bitrix) vêm antes de qualquer `express.json()` global — não há
  * parser global de propósito.
  */
-export function createApp(container: Container, health: HealthState): Express {
+export function createApp(
+  container: Container,
+  health: HealthState,
+  options: { backofficeDist?: string } = {},
+): Express {
   const app = express()
   app.disable('x-powered-by')
   app.set('trust proxy', true)
@@ -67,6 +75,7 @@ export function createApp(container: Container, health: HealthState): Express {
   })
 
   app.use(docsRoutes(container.env.publicBaseUrl))
+  app.use(backofficeWeb(options.backofficeDist ?? defaultBackofficeDist()))
 
   const installationDeps: InstallationRoutesDeps = {
     registry: container.registry,
@@ -86,22 +95,54 @@ export function createApp(container: Container, health: HealthState): Express {
     items: container.items,
     stripeIngest: container.stripeIngest,
     spaIngest: container.spaIngest,
+    trials: container.trials,
   }
 
   app.use(billingWebhookRoutes(billingDeps))
   app.use(publicInstallRoutes(installationDeps))
   app.use(sessionRoutes(installationDeps))
-  app.use(
+  // Operador: sessão do backoffice ou token de script, papel por rota e auditoria
+  // das mutações (`adminGate`). O parser JSON vem antes para a auditoria ver o corpo.
+  const admin = Router()
+  admin.use(
+    '/admin',
+    express.json({ limit: '64kb' }),
+    adminGate({
+      tokens: container.env.adminApiTokens,
+      sessions: container.adminSessions,
+      audit: container.audit,
+      origins: container.env.backoffice.origins,
+    }),
+  )
+  admin.use(
+    backofficeRoutes({
+      login: container.login,
+      sessions: container.adminSessions,
+      operators: container.operators,
+      audit: container.audit,
+      cookieSecure: container.env.backoffice.cookieSecure,
+      origins: container.env.backoffice.origins,
+    }),
+  )
+  admin.use(
+    backofficeReadRoutes({
+      db: container.db,
+      installations: container.installationReads,
+      overview: container.overview,
+    }),
+  )
+  admin.use(
     adminRoutes({
       db: container.db,
-      adminTokens: container.env.adminApiTokens,
       registry: container.registry,
       delivery: container.delivery,
       signingKeys: container.signingKeys,
       trials: container.trials,
       sweeps: container.sweeps,
+      vault: container.vault,
     }),
   )
+  app.use(admin)
   // Tudo daqui em diante é servidor-a-servidor: uma autenticação por chave de API.
   const appApi = Router()
   appApi.use(appAuth(container.registry))

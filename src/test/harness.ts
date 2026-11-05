@@ -1,5 +1,6 @@
 import { DEFAULT_SPA_CONFIG, type SpaConfig } from '@/config/spa-config'
 import { MemoryJsonCache } from '@/shared/infra/cache'
+import { MemoryRateCounter } from '@/shared/infra/rate-counter'
 import { InMemoryJobQueue } from '@/shared/infra/queue'
 import { buildContainer } from '@/container'
 import { InMemoryPendingApplicationTokens } from '@/modules/installations/infra/pending-application-tokens'
@@ -54,6 +55,7 @@ export function createHarness(options: HarnessOptions = {}) {
   const locks = new FakeLocks()
   const queue = new InMemoryJobQueue()
   const cache = new MemoryJsonCache()
+  const counters = new MemoryRateCounter(clock)
   const http = fakeFetch(
     options.webhookHandler ?? (() => new Response('{}', { status: 200 })),
   )
@@ -64,6 +66,7 @@ export function createHarness(options: HarnessOptions = {}) {
     locks,
     queue,
     cache,
+    counters,
     pendingTokens: new InMemoryPendingApplicationTokens(),
     clock,
     fetch: http.impl,
@@ -85,6 +88,7 @@ export function createHarness(options: HarnessOptions = {}) {
     locks,
     queue,
     cache,
+    counters,
     http,
     container,
     config: TEST_SPA_CONFIG,

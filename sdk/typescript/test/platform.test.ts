@@ -99,6 +99,26 @@ describe('SDK: PlatformClient contra a plataforma', () => {
     })
   })
 
+  it('solicitação de trial: trial já vigente e TRIAL_ALREADY_USED', async () => {
+    const contact = {
+      name: 'Ana Souza',
+      email: 'ana@cliente.com',
+      phone: '+55 11 99999-0000',
+      company: 'Cliente Ltda',
+      role: 'Diretora comercial',
+    }
+    // O GPTMaker cria o trial na instalação: a solicitação só grava o contato.
+    const current = await platform.requestTrial(installationId, contact)
+    expect(current.created).toBe(false)
+    expect(current.trialEndsAt).toBeTruthy()
+
+    h.clock.advance(15 * 86_400_000)
+    await h.container.trials.expireDue()
+    await expect(
+      platform.requestTrial(installationId, contact),
+    ).rejects.toMatchObject({ status: 409, code: 'TRIAL_ALREADY_USED' })
+  })
+
   it('itens: cria, lista, altera e remove', async () => {
     const subscriptionId = await activate()
     const created = await platform.createItem(subscriptionId, {

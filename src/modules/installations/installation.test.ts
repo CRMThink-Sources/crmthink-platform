@@ -5,6 +5,7 @@ import {
   createHarness,
   DOMAIN,
   GPTMAKER,
+  GPTMAKER_CLIENT_ID,
   installPayload,
   MEMBER_ID,
   outbox,
@@ -122,12 +123,16 @@ describe('instalação', () => {
       'access-1',
     )
 
-    // event.bind do ONAPPUNINSTALL para o handler da plataforma.
-    const bind = h.portal.calls.find(call => call.method === 'event.bind')
-    expect(bind?.params).toEqual({
-      event: 'ONAPPUNINSTALL',
-      handler: `https://platform.test/bitrix/events/${GPTMAKER}`,
-    })
+    // event.bind do ONAPPINSTALL (traz o application_token) e do ONAPPUNINSTALL.
+    const handler = `https://platform.test/bitrix/events/${GPTMAKER}`
+    expect(
+      h.portal.calls
+        .filter(call => call.method === 'event.bind')
+        .map(call => call.params),
+    ).toEqual([
+      { event: 'ONAPPINSTALL', handler },
+      { event: 'ONAPPUNINSTALL', handler },
+    ])
 
     // Instalador síncrono, assinado com o segredo do webhook.
     expect(installerCalls).toHaveLength(1)
@@ -178,6 +183,42 @@ describe('instalação', () => {
     expect(res.status).toBe(403)
     expect(res.body.error.code).toBe('TOKEN_APP_MISMATCH')
     expect(h.db.rows('installation')).toHaveLength(0)
+  })
+
+  describe('app de parceiro: app.info devolve o código do app, não o client_id', () => {
+    const clientId = 'app.6ac3af62574421.41765879'
+    const partnerPayload = () => {
+      const payload = installPayload(h, { clientId })
+      h.portal.appCodeByToken.set(
+        payload.auth.accessToken,
+        'crmthink.thinkflow',
+      )
+      return { ...payload, appCode: 'crmthink.thinkflow' }
+    }
+
+    it('com bitrixAppCode cadastrado: instala', async () => {
+      await seedGptMaker(h, {
+        appCode: 'crmthink.thinkflow',
+        bitrixClientId: clientId,
+        bitrixAppCode: 'crmthink.thinkflow',
+        trialOnInstall: false,
+        installerUrl: null,
+      })
+      const res = await http(h).post('/v1/install').send(partnerPayload())
+      expect(res.body.status).toBe('ACTIVE')
+    })
+
+    it('sem bitrixAppCode: 403 TOKEN_APP_MISMATCH', async () => {
+      await seedGptMaker(h, {
+        appCode: 'crmthink.thinkflow',
+        bitrixClientId: clientId,
+        trialOnInstall: false,
+        installerUrl: null,
+      })
+      const res = await http(h).post('/v1/install').send(partnerPayload())
+      expect(res.status).toBe(403)
+      expect(res.body.error.code).toBe('TOKEN_APP_MISMATCH')
+    })
   })
 
   it('member_id divergente do Bitrix: 403 e nada gravado', async () => {
@@ -517,6 +558,7 @@ describe('autenticação dos apps', () => {
     const admin = await http(h)
       .post(`/admin/apps/${GPTMAKER}/rotate-api-key`)
       .set('Authorization', 'Bearer admin-token')
+      .set('X-Admin-Reason', 'teste automatizado')
     expect(admin.status).toBe(200)
     expect(
       (
@@ -569,5 +611,36 @@ describe('autenticação dos apps', () => {
     expect(row.apiKeyHash).not.toBe(res.body.credentials.apiKey)
     expect(row.bitrixClientSecretEnc.startsWith('v1:')).toBe(true)
     expect(row.webhookSecretEnc.startsWith('v1:')).toBe(true)
+  })
+
+  it('client_id já usado por outro app: 409 no cadastro e na alteração', async () => {
+    const admin = { Authorization: 'Bearer admin-token' }
+    const created = await http(h).post('/admin/apps').set(admin).send({
+      appCode: 'crmthink.novo',
+      name: 'Novo',
+      bitrixClientId: GPTMAKER_CLIENT_ID,
+      bitrixClientSecret: 'shh',
+    })
+    expect(created.status).toBe(409)
+    expect(created.body.error.code).toBe('BITRIX_CLIENT_ID_IN_USE')
+
+    await http(h).post('/admin/apps').set(admin).send({
+      appCode: 'crmthink.novo',
+      name: 'Novo',
+      bitrixClientId: 'local.novo',
+      bitrixClientSecret: 'shh',
+    })
+    const updated = await http(h)
+      .patch('/admin/apps/crmthink.novo')
+      .set(admin)
+      .send({ bitrixClientId: GPTMAKER_CLIENT_ID })
+    expect(updated.status).toBe(409)
+    expect(updated.body.error.code).toBe('BITRIX_CLIENT_ID_IN_USE')
+
+    const same = await http(h)
+      .patch(`/admin/apps/${GPTMAKER}`)
+      .set(admin)
+      .send({ bitrixClientId: GPTMAKER_CLIENT_ID })
+    expect(same.status).toBe(200)
   })
 })

@@ -222,7 +222,7 @@ export interface paths {
         put?: never;
         /**
          * Instalar o app no portal
-         * @description Chamado pela página de instalação. Verifica o token no Bitrix (administrador, app e portal corretos), registra a instalação no SPA 1060, guarda os tokens cifrados, registra `ONAPPUNINSTALL` e chama o instalador do app. Idempotente: repetir retoma sem duplicar. Se o instalador do app falhar, responde `INSTALL_PENDING` com `error`.
+         * @description Chamado pela página de instalação. Verifica o token no Bitrix (administrador, app e portal corretos), registra a instalação no SPA 1060, guarda os tokens cifrados, registra `ONAPPINSTALL` e `ONAPPUNINSTALL` e chama o instalador do app. Idempotente: repetir retoma sem duplicar. Se o instalador do app falhar, responde `INSTALL_PENDING` com `error`.
          */
         post: operations["install"];
         delete?: never;
@@ -336,6 +336,26 @@ export interface paths {
          * @description Envie o token recusado em `staleAccessToken`. Se outro processo já renovou, devolve o novo sem nova troca (single-flight).
          */
         post: operations["refreshInstallationToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/installations/{id}/trial": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Solicitar trial com dados de contato
+         * @description O contato (nome, e-mail, telefone, empresa e cargo) é gravado na instalação e no SPA 1060, e o e-mail passa a ser usado no checkout. Sem trial anterior, cria o trial (201, evento `subscription.trial_started`). Com trial vigente, como o criado por `trial_on_install`, só grava o contato e devolve o trial atual (200). Nos 409 o contato também fica gravado.
+         */
+        post: operations["requestTrial"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1638,6 +1658,19 @@ export interface components {
         TokenRefreshRequest: {
             staleAccessToken: string;
         };
+        TrialRequest: {
+            name: string;
+            /** Format: email */
+            email: string;
+            phone: string;
+            company: string;
+            role: string;
+        };
+        TrialStarted: {
+            subscriptionId: number;
+            /** Format: date-time */
+            trialEndsAt: string;
+        };
         UpdateItemRequest: {
             /** @enum {string} */
             status?: "active" | "cancelled";
@@ -1702,7 +1735,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -1963,7 +1996,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2048,7 +2081,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2085,8 +2118,8 @@ export interface operations {
             };
             /**
              * @description Conflito
-             *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).
-             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga (ou trial, no trial manual).
+             *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).
+             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.
              */
             409: {
                 headers: {
@@ -2176,7 +2209,7 @@ export interface operations {
              *     - `MEMBER_ID_MISMATCH`: memberId informado não é o do portal dono do token.
              *     - `DOMAIN_MISMATCH`: Domínio informado não é o do portal dono do token.
              *     - `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.
-             *     - `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (client_id diferente).
+             *     - `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).
              */
             403: {
                 headers: {
@@ -2200,7 +2233,7 @@ export interface operations {
             };
             /**
              * @description Falha em serviço externo
-             *     - `EVENT_BIND_FAILED`: Falha ao registrar `ONAPPUNINSTALL` no portal (503 se o portal não respondeu).
+             *     - `EVENT_BIND_FAILED`: Falha ao registrar `ONAPPINSTALL`/`ONAPPUNINSTALL` no portal (503 se o portal não respondeu).
              */
             502: {
                 headers: {
@@ -2263,7 +2296,7 @@ export interface operations {
              * @description Proibido
              *     - `NOT_PORTAL_ADMIN`: Instalar ou refazer instalação exige administrador do portal.
              *     - `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.
-             *     - `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (client_id diferente).
+             *     - `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).
              *     - `INSTALLATION_MISMATCH`: Retry de instalação para portal diferente do registrado.
              */
             403: {
@@ -2347,7 +2380,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2394,7 +2427,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2453,7 +2486,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2513,7 +2546,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2573,7 +2606,7 @@ export interface operations {
             };
             /**
              * @description Falha em serviço externo
-             *     - `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token.
+             *     - `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial.
              */
             502: {
                 headers: {
@@ -2637,7 +2670,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2697,7 +2730,7 @@ export interface operations {
             };
             /**
              * @description Falha em serviço externo
-             *     - `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token.
+             *     - `TOKEN_REFRESH_FAILED`: O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial.
              */
             502: {
                 headers: {
@@ -2713,6 +2746,116 @@ export interface operations {
              *     - `BITRIX_UNAVAILABLE`: O portal Bitrix24 não respondeu a tempo.
              */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    requestTrial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Id da instalação (`installationId`) */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrialRequest"];
+            };
+        };
+        responses: {
+            /** @description Trial já vigente; contato gravado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialStarted"];
+                };
+            };
+            /** @description Trial iniciado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialStarted"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `APP_INACTIVE`: Aplicação desativada ou inexistente.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `INSTALLATION_NOT_FOUND`: Instalação inexistente, de outro app ou desvinculada do SPA 1060.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Conflito
+             *     - `TRIAL_ALREADY_USED`: A instalação já usou o trial (na rota de operador, também quando o trial está vigente).
+             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.
+             *     - `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não processável
+             *     - `TRIAL_NOT_CONFIGURED`: O app não tem trial configurado.
+             */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2742,7 +2885,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2802,11 +2945,11 @@ export interface operations {
             };
             /**
              * @description Proibido
-             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada para o appCode (`SESSION_CORS_ORIGINS`).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
              *     - `APP_INACTIVE`: Aplicação desativada ou inexistente.
-             *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).
+             *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).
              *     - `BITRIX_TOKEN_REJECTED`: O Bitrix recusou o access token enviado.
-             *     - `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (client_id diferente).
+             *     - `TOKEN_APP_MISMATCH`: O access token pertence a outro app Bitrix (`CODE` do `app.info` diferente do `bitrixClientId` e do `bitrixAppCode`).
              *     - `BITRIX_USER_UNKNOWN`: O Bitrix não devolveu o usuário do token.
              */
             403: {
@@ -2872,7 +3015,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -2947,7 +3090,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -3031,7 +3174,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -3128,7 +3271,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {
@@ -3242,7 +3385,7 @@ export interface operations {
             };
             /**
              * @description Não autenticado
-             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador ou auth do evento).
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
              */
             401: {
                 headers: {

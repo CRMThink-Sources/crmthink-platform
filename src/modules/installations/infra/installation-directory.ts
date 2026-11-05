@@ -40,4 +40,14 @@ export class PrismaInstallationDirectory implements InstallationDirectory {
       data: { trialUsed: true },
     })
   }
+
+  async saveContact(
+    installationId: number,
+    contact: InstallationContact,
+  ): Promise<void> {
+    await this.db.installation.update({
+      where: { id: installationId },
+      data: { contact },
+    })
+  }
 }

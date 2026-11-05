@@ -1,11 +1,12 @@
 import type { SpaConfig } from '@/config/spa-config'
 import type { BitrixRestClient } from '@/shared/bitrix/bitrix-rest.client'
 import type { SpaEnvironment } from '@/shared/spa/environment'
+import type { InstallationContact } from '../ports'
 
 /**
  * Espelho da instalação no SPA 1060 (Instalações) do portal CRMThink.
  *
- * Só escreve identificação, contato, `appCode` e Ambiente. Os campos legados STATUS e
+ * Só escreve identificação, contato (da solicitação de trial), `appCode` e Ambiente. Os campos legados STATUS e
  * TRIAL_* não são lidos nem escritos (removidos do SPA); o status técnico da
  * instalação vive só no banco.
  *
@@ -60,6 +61,21 @@ export class InstallationSpa {
     await this.crm.updateItem(this.entityTypeId, itemId, {
       [this.config.installation.domain]: input.domain,
     })
+  }
+
+  /** Contato da solicitação de trial; campos vazios não são enviados. */
+  async updateContact(
+    itemId: number,
+    contact: InstallationContact,
+  ): Promise<void> {
+    const f = this.config.installation
+    const fields: Record<string, string> = {}
+    for (const key of ['name', 'email', 'phone', 'company', 'role'] as const) {
+      const value = contact[key]?.trim()
+      if (value) fields[f[key]] = value
+    }
+    if (Object.keys(fields).length === 0) return
+    await this.crm.updateItem(this.entityTypeId, itemId, fields)
   }
 
   async markTrialUsed(itemId: number): Promise<void> {

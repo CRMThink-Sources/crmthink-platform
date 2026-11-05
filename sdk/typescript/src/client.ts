@@ -54,6 +54,7 @@ export const OPERATIONS = {
     method: 'GET',
     path: '/v1/installations/{id}/subscription',
   },
+  requestTrial: { method: 'POST', path: '/v1/installations/{id}/trial' },
   listPlans: { method: 'GET', path: '/v1/plans' },
   createCheckoutSession: { method: 'POST', path: '/v1/checkout-sessions' },
   createBillingPortalSession: {
@@ -91,6 +92,17 @@ export type OperationResult<K extends OperationId> = JsonOf<
 export type OperationBody<K extends OperationId> = JsonOf<
   NonNullable<operations[K]['requestBody']>
 >
+
+export type TrialRequestResult = OperationResult<'requestTrial'> & {
+  /** `true` com 201 (trial criado agora); `false` com 200 (trial já vigente). */
+  created: boolean
+}
+
+type CallInput = {
+  path?: Record<string, string | number>
+  query?: Record<string, string>
+  body?: unknown
+}
 
 export type PlatformClientOptions = {
   platformUrl: string
@@ -184,6 +196,22 @@ export class PlatformClient {
     return this.call('getSubscription', { path: { id: installationId } })
   }
 
+  /**
+   * Solicita o trial com o contato do cliente. `created: false` quando já havia trial
+   * vigente (ex.: criado na instalação): o contato foi gravado e o trial é o atual. Em
+   * `TRIAL_ALREADY_USED`/`SUBSCRIPTION_ALREADY_EXISTS` o contato também fica gravado.
+   */
+  async requestTrial(
+    installationId: number,
+    contact: OperationBody<'requestTrial'>,
+  ): Promise<TrialRequestResult> {
+    const { status, body } = await this.send('requestTrial', {
+      path: { id: installationId },
+      body: contact,
+    })
+    return { ...body, created: status === 201 }
+  }
+
   createCheckoutSession(body: OperationBody<'createCheckoutSession'>) {
     return this.call('createCheckoutSession', { body })
   }
@@ -225,12 +253,15 @@ export class PlatformClient {
 
   private async call<K extends OperationId>(
     operationId: K,
-    input: {
-      path?: Record<string, string | number>
-      query?: Record<string, string>
-      body?: unknown
-    },
+    input: CallInput,
   ): Promise<OperationResult<K>> {
+    return (await this.send(operationId, input)).body
+  }
+
+  private async send<K extends OperationId>(
+    operationId: K,
+    input: CallInput,
+  ): Promise<{ status: number; body: OperationResult<K> }> {
     const { method, path } = OPERATIONS[operationId]
     const resolved = path.replace(/\{(\w+)\}/g, (_, name: string) => {
       const value = input.path?.[name]
@@ -267,7 +298,8 @@ export class PlatformClient {
       )
     }
 
-    if (response.status === 204) return undefined as OperationResult<K>
+    if (response.status === 204)
+      return { status: 204, body: undefined as OperationResult<K> }
     const text = await response.text()
     let body: unknown
     try {
@@ -284,7 +316,7 @@ export class PlatformClient {
         error?.details,
       )
     }
-    return body as OperationResult<K>
+    return { status: response.status, body: body as OperationResult<K> }
   }
 }
 

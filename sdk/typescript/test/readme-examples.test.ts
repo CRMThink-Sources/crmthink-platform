@@ -101,8 +101,28 @@ async function session(bearerToken: string) {
   return verifySession(bearerToken)
 }
 
+async function trial(installationId: number) {
+  try {
+    const { created, trialEndsAt } = await platform.requestTrial(
+      installationId,
+      {
+        name: 'Ana Souza',
+        email: 'ana@cliente.com',
+        phone: '+55 11 99999-0000',
+        company: 'Cliente Ltda',
+        role: 'Diretora comercial',
+      },
+    )
+    return { created, trialEndsAt }
+  } catch (error) {
+    if (error instanceof PlatformError && error.code === 'TRIAL_ALREADY_USED') {
+      return null
+    } else throw error
+  }
+}
+
 describe('SDK: exemplos da documentação', () => {
   it('compilam', () => {
-    expect([checkout, callBitrix, handle, session]).toHaveLength(4)
+    expect([checkout, trial, callBitrix, handle, session]).toHaveLength(5)
   })
 })

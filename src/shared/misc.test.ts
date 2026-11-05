@@ -54,6 +54,34 @@ describe('env', () => {
     expect([...(map.get('crmthink.thinkzap') ?? [])]).toEqual(['https://z.app'])
   })
 
+  it('backoffice: padrões, cookie inseguro só em dev e retenção mínima', () => {
+    const config = buildEnv({
+      ...base,
+      BACKOFFICE_ORIGINS: 'https://p.test/, http://localhost:5173',
+    })
+    expect(config.backoffice).toEqual({
+      origins: ['https://p.test', 'http://localhost:5173'],
+      sessionIdleMs: 30 * 60_000,
+      sessionMaxMs: 12 * 3600_000,
+      cookieSecure: true,
+      auditRetentionDays: 365,
+    })
+    expect(
+      buildEnv({ ...base, ADMIN_COOKIE_INSECURE: 'true' }).backoffice
+        .cookieSecure,
+    ).toBe(false)
+    expect(() =>
+      buildEnv({
+        ...base,
+        NODE_ENV: 'production',
+        ADMIN_COOKIE_INSECURE: 'true',
+      }),
+    ).toThrow(/ADMIN_COOKIE_INSECURE/)
+    expect(() =>
+      buildEnv({ ...base, ADMIN_AUDIT_RETENTION_DAYS: '90' }),
+    ).toThrow(/ADMIN_AUDIT_RETENTION_DAYS/)
+  })
+
   it('ambiente Stripe pelo prefixo da chave', () => {
     expect(resolveStripeEnvironment('sk_live_x')).toBe('production')
     expect(resolveStripeEnvironment('rk_live_x')).toBe('production')

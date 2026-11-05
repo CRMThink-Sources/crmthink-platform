@@ -19,6 +19,10 @@ import {
   portalRequestSchema,
   type SubscriptionQueries,
 } from '../application/subscription-queries'
+import {
+  trialRequestSchema,
+  type TrialService,
+} from '../application/trial-service'
 
 export type BillingRoutesDeps = {
   registry: AppRegistry
@@ -28,6 +32,7 @@ export type BillingRoutesDeps = {
   items: ItemsService
   stripeIngest: StripeWebhookIngest
   spaIngest: SpaEventsIngest
+  trials: TrialService
 }
 
 /** Webhook Stripe (corpo cru — a assinatura é HMAC sobre os bytes) e eventos dos SPAs. */
@@ -88,6 +93,21 @@ export function appBillingRoutes(deps: BillingRoutesDeps): Router {
           intParam(req.params.id, 'INSTALLATION_NOT_FOUND'),
         ),
       )
+    }),
+  )
+
+  router.post(
+    '/v1/installations/:id/trial',
+    asyncHandler(async (req, res) => {
+      const { created, subscription } = await deps.trials.request(
+        { kind: 'app', appCode: currentApp(res).appCode },
+        intParam(req.params.id, 'INSTALLATION_NOT_FOUND'),
+        trialRequestSchema.parse(req.body ?? {}),
+      )
+      res.status(created ? 201 : 200).json({
+        subscriptionId: subscription.id,
+        trialEndsAt: subscription.periodEnd.toISOString(),
+      })
     }),
   )
 

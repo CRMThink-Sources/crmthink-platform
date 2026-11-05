@@ -86,6 +86,25 @@ export const envSchema = z.object({
   /** `appCode=https://a,https://b;appCode2=https://c` */
   SESSION_CORS_ORIGINS: z.string().optional().default(''),
 
+  /** Origens do backoffice (separadas por vírgula): mutações com sessão exigem `Origin` daqui. */
+  BACKOFFICE_ORIGINS: z
+    .string()
+    .optional()
+    .default('')
+    .transform(value =>
+      value
+        .split(',')
+        .map(origin => origin.trim().replace(/\/+$/, ''))
+        .filter(Boolean),
+    ),
+  ADMIN_SESSION_IDLE_MINUTES: int(30),
+  ADMIN_SESSION_MAX_HOURS: int(12),
+  /** Cookie de sessão sem `Secure` (dev sem TLS). Só com `NODE_ENV=development`. */
+  ADMIN_COOKIE_INSECURE: bool(false),
+  ADMIN_AUDIT_RETENTION_DAYS: int(365).pipe(
+    z.number().min(365, 'ADMIN_AUDIT_RETENTION_DAYS mínimo é 365'),
+  ),
+
   STRIPE_SECRET_KEY: z.string().optional().default(''),
   STRIPE_WEBHOOK_SECRET: z.string().optional().default(''),
 
@@ -151,6 +170,11 @@ export function buildEnv(source: NodeJS.ProcessEnv = process.env) {
     throw new Error(`Configuração inválida: ${detail}`)
   }
   const raw = parsed.data
+  if (raw.ADMIN_COOKIE_INSECURE && raw.NODE_ENV !== 'development') {
+    throw new Error(
+      'Configuração inválida: ADMIN_COOKIE_INSECURE=true só é permitido com NODE_ENV=development',
+    )
+  }
 
   return {
     nodeEnv: raw.NODE_ENV,
@@ -170,6 +194,13 @@ export function buildEnv(source: NodeJS.ProcessEnv = process.env) {
     },
     adminApiTokens: raw.ADMIN_API_TOKENS,
     sessionCorsOrigins: parseSessionCorsOrigins(raw.SESSION_CORS_ORIGINS),
+    backoffice: {
+      origins: raw.BACKOFFICE_ORIGINS,
+      sessionIdleMs: raw.ADMIN_SESSION_IDLE_MINUTES * 60_000,
+      sessionMaxMs: raw.ADMIN_SESSION_MAX_HOURS * 3600_000,
+      cookieSecure: !raw.ADMIN_COOKIE_INSECURE,
+      auditRetentionDays: raw.ADMIN_AUDIT_RETENTION_DAYS,
+    },
     stripe: {
       secretKey: raw.STRIPE_SECRET_KEY,
       webhookSecret: raw.STRIPE_WEBHOOK_SECRET,

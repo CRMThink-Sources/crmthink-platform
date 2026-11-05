@@ -142,6 +142,7 @@ export async function validateSpaConfig(
       { field: i.name, kind: 'any' },
       { field: i.phone, kind: 'any' },
       { field: i.company, kind: 'any' },
+      { field: i.role, kind: 'text' },
       { field: i.trialUsed, kind: 'any' },
       envSpec(i.environment),
     ]),

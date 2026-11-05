@@ -12,7 +12,7 @@ flowchart TD
   WH -- sim --> RAW[parser próprio<br/>corpo cru ou form] --> SVC
   WH -- não --> PUB{instalação, eventos Bitrix,<br/>JWKS, /v1/sessions?}
   PUB -- sim --> PJ[parser da rota] --> SVC
-  PUB -- não --> ADM{/admin/* ou<br/>/v1/installations/:id/trial?}
+  PUB -- não --> ADM{/admin/*?}
   ADM -- sim --> AA[adminAuth] --> SVC
   ADM -- não --> APPAUTH[appAuth: chave de API<br/>401 / 403] --> SVC[serviço]
   SVC --> OK[resposta JSON]
@@ -36,7 +36,7 @@ A ordem em `createApp` é deliberada:
 2. `billingWebhookRoutes` — `/webhooks/stripe` e `/bitrix/spa-events`.
 3. `publicInstallRoutes` — página de instalação, `POST /v1/install[/retry]`, eventos do Bitrix, JWKS.
 4. `sessionRoutes` — `POST /v1/sessions` com CORS próprio.
-5. `adminRoutes` — `/admin/*` e `POST /v1/installations/:id/trial` com `adminAuth`.
+5. `adminRoutes` — `/admin/*` (inclui o trial manual) com `adminAuth`.
 6. Um `Router` com `appAuth` e, dentro dele, as rotas servidor-a-servidor de instalações/tokens
    e de cobrança.
 7. Fallback 404 e `errorMiddleware`.

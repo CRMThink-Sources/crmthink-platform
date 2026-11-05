@@ -71,6 +71,17 @@ export const metrics = {
     labelNames: ['reason'],
     registers: [registry],
   }),
+  adminLoginFailures: new client.Counter({
+    name: 'platform_admin_login_failures_total',
+    help: 'Falhas de login no backoffice (inclui bloqueios e limite por IP)',
+    labelNames: ['reason'],
+    registers: [registry],
+  }),
+  adminAuditWriteFailures: new client.Counter({
+    name: 'admin_audit_write_failures_total',
+    help: 'Registros de auditoria do backoffice que não foram gravados',
+    registers: [registry],
+  }),
   operationalAlerts: new client.Counter({
     name: 'platform_operational_alerts_total',
     help: 'Alertas operacionais registrados',

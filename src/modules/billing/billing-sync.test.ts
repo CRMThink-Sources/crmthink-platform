@@ -404,6 +404,23 @@ describe('validação da configuração dos SPAs (health)', () => {
     ).toBe(true)
   })
 
+  it('cargo do contato no SPA 1060 é conferido', async () => {
+    const h = createHarness()
+    h.crm.fields.set(1060, { ufCrm55Role: { type: 'enumeration' } })
+    expect(
+      (await validateSpaConfig(h.crm.asClient(), h.config)).find(
+        p => p.entityTypeId === 1060 && p.field === 'ufCrm55Role',
+      )!.problem,
+    ).toContain('lista')
+
+    h.crm.fields.set(1060, {})
+    expect(await validateSpaConfig(h.crm.asClient(), h.config)).toContainEqual({
+      entityTypeId: 1060,
+      field: 'ufCrm55Role',
+      problem: 'campo não existe',
+    })
+  })
+
   it('campo de texto criado como lista é reprovado', async () => {
     const h = createHarness()
     h.crm.fields.set(1142, { ufCrm91Modality: { type: 'enumeration' } })

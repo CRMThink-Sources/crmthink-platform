@@ -6,3 +6,4 @@ prisma/generated/
 .env.*
 !.env.example
 *.tsbuildinfo
+next-day.md

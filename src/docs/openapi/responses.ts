@@ -9,6 +9,10 @@ import type { SessionResponse } from '@/modules/installations/application/sessio
 import type { TokenResponse } from '@/modules/installations/application/token-vault'
 import type { ItemResponse } from '@/modules/billing/application/items-service'
 import type { PlanResponse } from '@/modules/billing/application/plan-catalog'
+import type {
+  IssuedAccess,
+  OperatorView,
+} from '@/modules/backoffice/domain/operator'
 
 /**
  * Schemas das respostas. Não rodam em produção: servem ao OpenAPI e aos testes de
@@ -20,6 +24,15 @@ import type { PlanResponse } from '@/modules/billing/application/plan-catalog'
 const isoDate = z.string().datetime({ offset: true })
 const list = <T extends z.ZodType>(item: T) =>
   z.strictObject({ items: z.array(item) })
+/** Listagem paginada por cursor do backoffice. */
+const page = <T extends z.ZodType>(item: T) =>
+  z.strictObject({
+    items: z.array(item),
+    nextCursor: z
+      .string()
+      .nullable()
+      .describe('Envie em `cursor` para a próxima página; `null` na última'),
+  })
 
 // Infraestrutura
 
@@ -244,6 +257,7 @@ export const appSchema = z.strictObject({
   logoUrl: z.string().nullable(),
   installTheme: installThemeSchema.nullable(),
   bitrixClientId: z.string(),
+  bitrixAppCode: z.string().nullable(),
   scopes: z.array(z.string()),
   installerUrl: z.string().nullable(),
   webhookUrl: z.string().nullable(),
@@ -270,6 +284,10 @@ export const apiKeyRotatedSchema = z.strictObject({
   previousValidUntil: isoDate,
 })
 
+export const webhookSecretRevealedSchema = z.strictObject({
+  webhookSecret: z.string().describe('Segredo de webhook atual'),
+})
+
 export const webhookSecretRotatedSchema = z.strictObject({
   webhookSecret: z.string(),
   previousValidUntil: isoDate,
@@ -291,7 +309,7 @@ export const installAttemptListSchema = list(
   }),
 )
 
-export const outboxEventListSchema = list(
+export const outboxEventListSchema = page(
   z.looseObject({
     eventId: z.string(),
     seq: z.number().int(),
@@ -313,7 +331,7 @@ export const outboxEventListSchema = list(
   }),
 )
 
-export const stripeEventListSchema = list(
+export const stripeEventListSchema = page(
   z.strictObject({
     eventId: z.string(),
     type: z.string(),
@@ -326,8 +344,23 @@ export const stripeEventListSchema = list(
   }),
 )
 
-export const resendResultSchema = z.strictObject({
-  requeued: z.number().int().describe('Eventos recolocados na fila'),
+export const resendResultSchema = z.union([
+  z.strictObject({
+    requeued: z.number().int().describe('Eventos recolocados na fila'),
+  }),
+  z
+    .strictObject({
+      matched: z.number().int().describe('Eventos que o filtro selecionaria'),
+      sample: z.array(z.string()).max(5).describe('Até 5 `eventId` de amostra'),
+    })
+    .describe('Resposta do `dryRun`: nada foi alterado'),
+])
+
+export const tokenRefreshedSchema = z.strictObject({
+  expiresAt: isoDate.describe('Validade do novo token'),
+  health: z
+    .enum(['ok', 'refresh_failing'])
+    .describe('Saúde da credencial após a renovação'),
 })
 
 export const signingKeyRotatedSchema = z.strictObject({
@@ -345,4 +378,217 @@ export const sweepResultSchema = z.strictObject({
       z.strictObject({ since: isoDate }),
     ])
     .describe('`{checked}` na `stripe`; `{since}` (início da janela) na `spa`'),
+})
+
+// Backoffice: acesso e operadores
+
+export const operatorSchema = z.strictObject({
+  id: z.number().int(),
+  email: z.string(),
+  name: z.string(),
+  role: z.enum(['viewer', 'operator']),
+  active: z.boolean(),
+  mustChangePassword: z
+    .boolean()
+    .describe('Senha provisória: só `POST /admin/auth/password` é permitido'),
+  lockedUntil: isoDate.nullable(),
+  lastLoginAt: isoDate.nullable(),
+  createdAt: isoDate,
+}) satisfies z.ZodType<OperatorView>
+
+export const operatorListSchema = list(operatorSchema)
+
+export const issuedAccessSchema = z.strictObject({
+  operator: operatorSchema,
+  temporaryPassword: z
+    .string()
+    .describe('Senha provisória. Só aparece nesta resposta.'),
+  totpUri: z
+    .string()
+    .describe(
+      'URI `otpauth://` para o app autenticador. Só aparece nesta resposta.',
+    ),
+}) satisfies z.ZodType<IssuedAccess>
+
+export const loginResultSchema = z.strictObject({
+  operator: operatorSchema,
+  expiresAt: isoDate.describe(
+    'Fim da validade máxima da sessão; antes disso ela expira após o tempo de inatividade',
+  ),
+})
+
+export const whoAmISchema = z.union([
+  z.strictObject({
+    kind: z.literal('operator'),
+    actor: z.string().describe('`operator:<id>`, como na auditoria'),
+    role: z.enum(['viewer', 'operator']),
+    operator: operatorSchema,
+  }),
+  z.strictObject({
+    kind: z.literal('token'),
+    actor: z.string().describe('`token:<prefixo>`, como na auditoria'),
+    role: z.literal('operator'),
+  }),
+])
+
+export const passwordChangedSchema = z.strictObject({
+  operator: operatorSchema,
+})
+
+// Backoffice: leituras
+
+const tokenHealth = z
+  .enum(['ok', 'refresh_failing', 'missing'])
+  .describe(
+    '`missing`: sem credencial; `refresh_failing`: a última renovação falhou',
+  )
+
+const adminInstallationItem = z.strictObject({
+  id: z.number().int(),
+  appCode: z.string(),
+  domain: z.string(),
+  memberId: z.string(),
+  status: installationStatusSchema,
+  installedAt: isoDate,
+  activatedAt: isoDate.nullable(),
+  uninstalledAt: isoDate.nullable(),
+  trialUsed: z.boolean(),
+  tokenHealth,
+})
+
+export const adminInstallationPageSchema = page(adminInstallationItem)
+
+export const adminInstallationDetailSchema = adminInstallationItem.extend({
+  app: z
+    .strictObject({
+      appCode: z.string(),
+      name: z.string(),
+      active: z.boolean(),
+    })
+    .nullable(),
+  spaItemId: z.number().int().nullable(),
+  contact: z.unknown().nullable(),
+  everActivated: z.boolean(),
+  pendingReinstall: z.boolean(),
+  updatedAt: isoDate,
+  token: z.union([
+    z.strictObject({
+      health: tokenHealth,
+      expiresAt: isoDate,
+      refreshFailures: z.number().int(),
+      lastRefreshError: z.string().nullable(),
+      clientEndpoint: z.string().nullable(),
+      updatedAt: isoDate,
+    }),
+    z.strictObject({ health: z.literal('missing') }),
+  ]),
+  events: z.strictObject({
+    pending: z.number().int(),
+    delivered: z.number().int(),
+    dead: z.number().int(),
+  }),
+  subscription: z.union([
+    z.strictObject({
+      available: z.literal(true),
+      current: currentSubscriptionSchema
+        .nullable()
+        .describe('`null`: instalação sem assinatura vigente'),
+    }),
+    z.strictObject({
+      available: z.literal(false),
+      reason: z.string(),
+    }),
+  ]),
+})
+
+export const timelinePageSchema = page(
+  z.strictObject({
+    kind: z.enum(['install_attempt', 'event', 'purchase', 'admin_action']),
+    occurredAt: isoDate,
+    summary: z.string(),
+    ref: z.strictObject({ type: z.string(), id: z.string() }),
+    data: z
+      .record(z.string(), z.unknown())
+      .describe(
+        'Campos do tipo: etapa e erro, tipo e entregas do evento, compra, ação',
+      ),
+  }),
+)
+
+export const auditPageSchema = page(
+  z.strictObject({
+    id: z.number().int(),
+    actor: z
+      .string()
+      .describe('`operator:<id>`, `token:<prefixo>` ou `anonymous`'),
+    actorRole: z.string().nullable(),
+    action: z.string(),
+    targetType: z.string().nullable(),
+    targetId: z.string().nullable(),
+    statusCode: z.number().int().nullable(),
+    errorCode: z.string().nullable(),
+    summary: z.unknown().describe('Resumo com campos sensíveis mascarados'),
+    ip: z.string().nullable(),
+    userAgent: z.string().nullable(),
+    requestId: z.string().nullable(),
+    createdAt: isoDate,
+  }),
+)
+
+export const overviewSchema = z.strictObject({
+  computedAt: isoDate,
+  installations: z.array(
+    z.strictObject({
+      appCode: z.string(),
+      status: z.string(),
+      count: z.number().int(),
+    }),
+  ),
+  events: z.strictObject({
+    byApp: z.array(
+      z.strictObject({
+        appCode: z.string(),
+        pending: z.number().int(),
+        dead: z.number().int(),
+      }),
+    ),
+    oldestPendingAt: isoDate.nullable(),
+  }),
+  stripeEvents: z.strictObject({
+    failed: z.number().int(),
+    dead: z.number().int(),
+  }),
+  credentialsRefreshFailing: z.number().int(),
+  trialsEndingSoon: z.strictObject({
+    count: z.number().int(),
+    items: z.array(
+      z.strictObject({
+        installationId: z.number().int(),
+        appCode: z.string(),
+        subscriptionId: z.number().int().nullable(),
+        trialEndsAt: isoDate,
+      }),
+    ),
+  }),
+  sweeps: z.array(
+    z.strictObject({
+      kind: z.string(),
+      startedAt: isoDate,
+      finishedAt: isoDate.nullable(),
+      fixed: z.number().int(),
+      errors: z.number().int(),
+    }),
+  ),
+})
+
+export const stripeEventDetailSchema = z.strictObject({
+  eventId: z.string(),
+  type: z.string(),
+  appCode: z.string().nullable(),
+  status: z.string(),
+  attempts: z.number().int(),
+  error: z.string().nullable(),
+  receivedAt: isoDate,
+  processedAt: isoDate.nullable(),
+  payload: z.unknown().describe('Evento cru do Stripe'),
 })

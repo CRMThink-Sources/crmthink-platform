@@ -50,7 +50,7 @@ describe('contrato: rotas sem teste de domínio', () => {
     await http(h).get('/admin/apps').expect(401)
 
     await http(h)
-      .post(`/v1/installations/${installationId}/trial`)
+      .post(`/admin/installations/${installationId}/trial`)
       .set(ADMIN)
       .expect(201)
     await http(h)
@@ -62,13 +62,12 @@ describe('contrato: rotas sem teste de domínio', () => {
     await http(h)
       .post('/admin/signing-keys/rotate')
       .set(ADMIN)
+      .set('X-Admin-Reason', 'teste automatizado')
       .send({ leadMinutes: 0 })
       .expect(201)
     await http(h).post('/admin/sweeps/stripe').set(ADMIN).expect(200)
     await http(h).post('/admin/sweeps/spa').set(ADMIN).expect(200)
     await http(h).post('/admin/sweeps/outro').set(ADMIN).expect(404)
-    // Por último: o PATCH parcial hoje aplica os defaults do cadastro (zera trial e
-    // produtos) — ver updateAppSchema em registry/app-registry.ts.
     await http(h)
       .patch(`/admin/apps/${GPTMAKER}`)
       .set(ADMIN)

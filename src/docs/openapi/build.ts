@@ -4,6 +4,8 @@ import {
   INSTALLATION_EVENT_TYPES,
   type EventType,
 } from '@/modules/events/domain/event'
+import { SESSION_COOKIE } from '@/modules/backoffice/http/cookies'
+import { reasonOf, roleOf } from '@/modules/backoffice/http/policy'
 import { ERROR_CATALOG, type ErrorCode } from '../errors'
 import {
   EVENT_DATA,
@@ -81,11 +83,18 @@ const SECURITY_SCHEMES: Json = {
     description:
       'Chave de API do app (`Authorization: Bearer <apiKey>`). Emitida no cadastro e na rotação; vale só para as instalações do próprio app.',
   },
+  adminSession: {
+    type: 'apiKey',
+    in: 'cookie',
+    name: SESSION_COOKIE,
+    description:
+      'Sessão de operador do backoffice, criada em `POST /admin/auth/login` (e-mail, senha e TOTP). Mutações exigem `Origin` de `BACKOFFICE_ORIGINS`.',
+  },
   adminToken: {
     type: 'http',
     scheme: 'bearer',
     description:
-      'Credencial de operador (`ADMIN_API_TOKENS`). Nunca a chave de um app.',
+      'Credencial de script (`ADMIN_API_TOKENS`), vale como papel `operator` e aparece na auditoria como `token:<prefixo>`. Nunca a chave de um app.',
   },
   stripeSignature: {
     type: 'apiKey',
@@ -165,8 +174,22 @@ function errorCodesOf(
   const codes: Array<ErrorCode | [ErrorCode, number]> = []
   if (operation.security === 'appApiKey')
     codes.push('UNAUTHORIZED', 'APP_INACTIVE')
-  if (operation.security === 'adminToken') codes.push('UNAUTHORIZED')
-  if (operation.body && operation.body.contentType === undefined)
+  if (operation.security === 'admin') {
+    const role = roleOf(operation.method, operation.path)
+    codes.push('UNAUTHORIZED')
+    if (role !== 'self') codes.push('PASSWORD_CHANGE_REQUIRED')
+    if (role === 'operator') codes.push('FORBIDDEN_ROLE')
+    if (operation.method !== 'get') codes.push('ORIGIN_NOT_ALLOWED')
+    const reason = reasonOf(operation.method, operation.path)
+    if (reason) codes.push('REASON_INVALID')
+    if (reason === 'always' || reason === 'conditional')
+      codes.push('REASON_REQUIRED')
+  }
+  if (
+    (operation.body && operation.body.contentType === undefined) ||
+    // Query das listagens de operador é validada (filtros, `limit`, `cursor`).
+    (operation.security === 'admin' && operation.query?.length)
+  )
     codes.push('VALIDATION_ERROR')
   codes.push(...(operation.errors ?? []))
   const result = new Map<ErrorCode, number>()
@@ -194,6 +217,7 @@ const STATUS_TEXT: Record<number, string> = {
   409: 'Conflito',
   410: 'Removido',
   422: 'Não processável',
+  429: 'Muitas requisições',
   502: 'Falha em serviço externo',
   503: 'Indisponível',
 }
@@ -233,7 +257,38 @@ function errorResponses(operation: Operation): Json {
 }
 
 function securityOf(security: Security): Json[] {
-  return security === 'none' ? [] : [{ [security]: [] }]
+  if (security === 'none') return []
+  if (security === 'admin') return [{ adminSession: [] }, { adminToken: [] }]
+  return [{ [security]: [] }]
+}
+
+const ROLE_TEXT = {
+  public: 'sem autenticação',
+  self: 'qualquer sessão de operador',
+  viewer: '`viewer` (leitura)',
+  operator: '`operator`',
+} as const
+
+/** Descrição com o papel mínimo da política (`backoffice/http/policy.ts`). */
+function descriptionOf(operation: Operation): string | undefined {
+  const role =
+    operation.security === 'admin'
+      ? roleOf(operation.method, operation.path)
+      : null
+  const reason =
+    operation.security === 'admin'
+      ? reasonOf(operation.method, operation.path)
+      : null
+  const parts = [
+    operation.description,
+    role ? `**Papel mínimo:** ${ROLE_TEXT[role]}.` : undefined,
+    reason === 'always'
+      ? '**Alto impacto:** exige o motivo em `X-Admin-Reason`.'
+      : reason === 'conditional'
+        ? '**Alto impacto conforme o corpo:** exige `X-Admin-Reason` quando a chamada tem esse efeito (descrito acima).'
+        : undefined,
+  ].filter(Boolean)
+  return parts.length ? parts.join('\n\n') : undefined
 }
 
 function parametersOf(operation: Operation): Json[] {
@@ -246,9 +301,30 @@ function parametersOf(operation: Operation): Json[] {
       in: 'path',
       required: true,
       description,
-      schema: /id$/i.test(name)
-        ? { type: 'integer', minimum: 1 }
-        : { type: 'string' },
+      // `{eventId}` é o id do Stripe (`evt_...`), texto; os demais `*id` são numéricos.
+      schema:
+        /id$/i.test(name) && name !== 'eventId'
+          ? { type: 'integer', minimum: 1 }
+          : { type: 'string' },
+    })
+  }
+  const reason =
+    operation.security === 'admin'
+      ? reasonOf(operation.method, operation.path)
+      : null
+  if (reason) {
+    params.push({
+      name: 'X-Admin-Reason',
+      in: 'header',
+      required: reason === 'always',
+      description:
+        'Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. ' +
+        (reason === 'always'
+          ? 'Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`.'
+          : reason === 'conditional'
+            ? 'Obrigatório quando a chamada tem efeito de alto impacto.'
+            : 'Opcional.'),
+      schema: { type: 'string', minLength: 1, maxLength: 500 },
     })
   }
   for (const query of operation.query ?? []) {
@@ -291,7 +367,9 @@ function operationObject(operation: Operation): Json {
     operationId: operation.operationId,
     tags: [operation.tag],
     summary: operation.summary,
-    ...(operation.description ? { description: operation.description } : {}),
+    ...(descriptionOf(operation)
+      ? { description: descriptionOf(operation) }
+      : {}),
     security: securityOf(operation.security),
     ...(params.length ? { parameters: params } : {}),
     ...(operation.body
@@ -497,7 +575,9 @@ export function buildOpenApi(options: {
     components: {
       securitySchemes: Object.fromEntries(
         Object.entries(SECURITY_SCHEMES).filter(
-          ([name]) => options.audience === 'admin' || name !== 'adminToken',
+          ([name]) =>
+            options.audience === 'admin' ||
+            (name !== 'adminToken' && name !== 'adminSession'),
         ),
       ),
       schemas: prune(

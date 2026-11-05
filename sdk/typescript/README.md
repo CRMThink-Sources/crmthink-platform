@@ -47,6 +47,7 @@ Um método por rota com chave de app, com o nome do `operationId` em `/docs`:
 | `forgetInstallationToken(id)` | descarta o token do cache |
 | `listPlans()` | `GET /v1/plans` |
 | `getSubscription(installationId)` | `GET /v1/installations/{id}/subscription` |
+| `requestTrial(installationId, contact)` | `POST /v1/installations/{id}/trial` (devolve `created`) |
 | `createCheckoutSession(body)` | `POST /v1/checkout-sessions` |
 | `createBillingPortalSession(body)` | `POST /v1/billing-portal-sessions` |
 | `changePlan(subscriptionId, body)` | `POST /v1/subscriptions/{id}/change-plan` |
@@ -78,6 +79,29 @@ try {
 } catch (error) {
   if (error instanceof PlatformError && error.code === 'SUBSCRIPTION_ALREADY_EXISTS') {
     // já assinante: mostrar o portal (createBillingPortalSession)
+  } else throw error
+}
+```
+
+### Trial com contato
+
+Os cinco campos são obrigatórios. `created` é `false` quando a instalação já estava em
+trial (por exemplo, o criado na instalação): o contato foi gravado mesmo assim. Nos
+`409` o contato também fica gravado.
+
+```ts
+try {
+  const { created, trialEndsAt } = await platform.requestTrial(installationId, {
+    name: 'Ana Souza',
+    email: 'ana@cliente.com',
+    phone: '+55 11 99999-0000',
+    company: 'Cliente Ltda',
+    role: 'Diretora comercial',
+  })
+  // created: trial começou agora; senão, já estava em trial até trialEndsAt
+} catch (error) {
+  if (error instanceof PlatformError && error.code === 'TRIAL_ALREADY_USED') {
+    // trial já usado: oferecer checkout
   } else throw error
 }
 ```

@@ -30,24 +30,40 @@ const appCodeSchema = z
     'appCode inválido (ex.: crmthink.gptmaker)',
   )
 
-export const createAppSchema = z.object({
+/** Campos do app sem valor padrão: o PATCH parcial só altera o que vier no corpo. */
+const appFields = {
   appCode: appCodeSchema,
   name: z.string().min(1).max(200),
   logoUrl: z.string().url().nullish(),
   installTheme: installThemeSchema.nullish(),
   bitrixClientId: z.string().min(1),
   bitrixClientSecret: z.string().min(1),
-  scopes: z.array(z.string().min(1)).default([]),
+  bitrixAppCode: z.string().min(1).max(200).nullish(),
+  scopes: z.array(z.string().min(1)),
   installerUrl: z.string().url().nullish(),
   webhookUrl: z.string().url().nullish(),
-  productSpaIds: z.array(z.number().int().positive()).default([]),
-  trialDays: z.number().int().min(0).max(365).default(0),
-  trialOnInstall: z.boolean().default(false),
+  productSpaIds: z.array(z.number().int().positive()),
+  trialDays: z.number().int().min(0).max(365),
+  trialOnInstall: z.boolean(),
   trialPlanId: z.number().int().positive().nullish(),
-  active: z.boolean().default(true),
+  active: z.boolean(),
+}
+
+export const createAppSchema = z.object({
+  ...appFields,
+  scopes: appFields.scopes.default([]),
+  productSpaIds: appFields.productSpaIds.default([]),
+  trialDays: appFields.trialDays.default(0),
+  trialOnInstall: appFields.trialOnInstall.default(false),
+  active: appFields.active.default(true),
 })
 
-export const updateAppSchema = createAppSchema
+/**
+ * Edição parcial: campo ausente não muda. (Antes herdava os defaults do cadastro, e um
+ * `PATCH {name}` reativava o app e zerava trial, escopos e produtos.)
+ */
+export const updateAppSchema = z
+  .object(appFields)
   .omit({ appCode: true, bitrixClientSecret: true })
   .partial()
   .extend({ bitrixClientSecret: z.string().min(1).optional() })
@@ -65,6 +81,7 @@ function toRegisteredApp(row: AppRow): RegisteredApp {
     logoUrl: row.logoUrl,
     installTheme: row.installTheme && theme.success ? theme.data : null,
     bitrixClientId: row.bitrixClientId,
+    bitrixAppCode: row.bitrixAppCode,
     scopes: Array.isArray(row.scopes) ? (row.scopes as string[]) : [],
     installerUrl: row.installerUrl,
     webhookUrl: row.webhookUrl,
@@ -156,6 +173,20 @@ export class AppRegistry {
     }
   }
 
+  /**
+   * Segredo de webhook atual, decifrado, para a consulta do operador. Decifra só ele:
+   * o `client_secret` do Bitrix e a chave de API (que só existe como hash) não saem
+   * daqui. A rota que usa isto é auditada e exige motivo.
+   */
+  async revealWebhookSecret(appCode: string): Promise<string> {
+    const row = await this.db.app.findUnique({
+      where: { appCode },
+      select: { webhookSecretEnc: true },
+    })
+    if (!row) throw notFound('APP_NOT_FOUND')
+    return this.cipher.decrypt(row.webhookSecretEnc)
+  }
+
   async create(
     input: CreateAppInput,
   ): Promise<{ app: RegisteredApp; credentials: IssuedCredentials }> {
@@ -164,6 +195,7 @@ export class AppRegistry {
       where: { appCode: input.appCode },
     })
     if (existing) throw conflict('APP_ALREADY_EXISTS')
+    await this.assertClientIdFree(input.bitrixClientId, input.appCode)
 
     const apiKey = generateApiKey()
     const webhookSecret = generateWebhookSecret()
@@ -176,6 +208,7 @@ export class AppRegistry {
         installTheme: input.installTheme ?? undefined,
         bitrixClientId: input.bitrixClientId,
         bitrixClientSecretEnc: this.cipher.encrypt(input.bitrixClientSecret),
+        bitrixAppCode: input.bitrixAppCode ?? null,
         scopes: input.scopes,
         installerUrl: input.installerUrl ?? null,
         webhookUrl: input.webhookUrl ?? null,
@@ -197,6 +230,9 @@ export class AppRegistry {
 
   async update(appCode: string, input: UpdateAppInput): Promise<RegisteredApp> {
     const current = await this.getOrThrow(appCode)
+    if (input.bitrixClientId) {
+      await this.assertClientIdFree(input.bitrixClientId, appCode)
+    }
     assertTrialConfig({
       trialOnInstall: input.trialOnInstall ?? current.trialOnInstall,
       trialDays: input.trialDays ?? current.trialDays,
@@ -229,6 +265,7 @@ export class AppRegistry {
           bitrixClientSecretEnc: input.bitrixClientSecret
             ? this.cipher.encrypt(input.bitrixClientSecret)
             : undefined,
+          bitrixAppCode: input.bitrixAppCode,
           scopes: input.scopes,
           installerUrl: input.installerUrl,
           webhookUrl: input.webhookUrl,
@@ -241,6 +278,20 @@ export class AppRegistry {
       })
     })
     return toRegisteredApp(row)
+  }
+
+  /** O client_id é único: um app Bitrix pertence a um só cadastro. */
+  private async assertClientIdFree(
+    bitrixClientId: string,
+    appCode: string,
+  ): Promise<void> {
+    const owner = await this.db.app.findUnique({ where: { bitrixClientId } })
+    if (owner && owner.appCode !== appCode) {
+      throw conflict(
+        'BITRIX_CLIENT_ID_IN_USE',
+        `client_id já cadastrado em ${owner.appCode}`,
+      )
+    }
   }
 
   /**

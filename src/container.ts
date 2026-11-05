@@ -18,6 +18,7 @@ import { RedisJsonCache, type JsonCache } from '@/shared/infra/cache'
 import type { Db } from '@/shared/infra/prisma'
 import type { JobQueue } from '@/shared/infra/queue'
 import type { LockStore } from '@/shared/infra/redis'
+import { RedisRateCounter, type RateCounter } from '@/shared/infra/rate-counter'
 import { SpaEnvironment } from '@/shared/spa/environment'
 import { AppRegistry } from '@/modules/registry/app-registry'
 import { EventDelivery } from '@/modules/events/event-delivery'
@@ -65,6 +66,13 @@ import { SubscriptionRepository } from '@/modules/billing/infra/spa/subscription
 import { CacheInvalidatingPaymentGateway } from '@/modules/billing/infra/stripe/cache-invalidating-gateway'
 import { StripePaymentGateway } from '@/modules/billing/infra/stripe/stripe-gateway'
 import type { PaymentGateway } from '@/modules/billing/ports/payment-gateway'
+import { AdminAudit } from '@/modules/backoffice/application/audit'
+import { LoginService } from '@/modules/backoffice/application/login'
+import { OperatorService } from '@/modules/backoffice/application/operators'
+import { AdminSessions } from '@/modules/backoffice/application/sessions'
+import { totpIssuer } from '@/modules/backoffice/domain/operator'
+import { InstallationReads } from '@/modules/backoffice/application/installation-reads'
+import { OverviewQuery } from '@/modules/backoffice/application/overview'
 
 /**
  * Composition root. Tudo que tem efeito externo (banco, Redis, Bitrix, Stripe, relógio,
@@ -78,6 +86,8 @@ export type ContainerDeps = {
   locks: LockStore
   queue: JobQueue
   cache?: JsonCache
+  /** Contadores do limite de tentativas de login (Redis por padrão). */
+  counters?: RateCounter
   pendingTokens?: PendingApplicationTokens
   clock?: Clock
   fetch?: Fetch
@@ -272,6 +282,34 @@ export function buildContainer(deps: ContainerDeps) {
     clock,
   )
 
+  // Backoffice
+  const counters: RateCounter =
+    deps.counters ??
+    new RedisRateCounter(deps.redis as Redis, `${env.queuePrefix}:rate`)
+  const audit = new AdminAudit(db, clock, env.backoffice.auditRetentionDays)
+  const adminSessions = new AdminSessions(db, clock, env.backoffice)
+  const operators = new OperatorService(
+    db,
+    cipher,
+    totpIssuer(env.platformEnvironment),
+    (id, except) => adminSessions.revokeAll(id, except),
+  )
+  const login = new LoginService(
+    db,
+    cipher,
+    adminSessions,
+    counters,
+    audit,
+    clock,
+  )
+
+  const installationReads = new InstallationReads(
+    db,
+    registry,
+    subscriptionQueries,
+  )
+  const overview = new OverviewQuery(db, cache, clock)
+
   const install = new InstallService({
     db,
     registry,
@@ -318,6 +356,12 @@ export function buildContainer(deps: ContainerDeps) {
     spaIngest,
     spaProcessor,
     sweeps,
+    audit,
+    adminSessions,
+    operators,
+    login,
+    installationReads,
+    overview,
   }
 }
 

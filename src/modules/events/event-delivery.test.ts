@@ -140,6 +140,7 @@ describe('entrega de eventos aos apps', () => {
     const range = await http(h)
       .post('/admin/events/resend')
       .set('Authorization', 'Bearer admin-token')
+      .set('X-Admin-Reason', 'teste automatizado')
       .send({
         appCode: GPTMAKER,
         from: new Date(0).toISOString(),
@@ -153,6 +154,7 @@ describe('entrega de eventos aos apps', () => {
     const rotated = await http(h)
       .post(`/admin/apps/${GPTMAKER}/rotate-webhook-secret`)
       .set('Authorization', 'Bearer admin-token')
+      .set('X-Admin-Reason', 'teste automatizado')
     const fresh = rotated.body.webhookSecret as string
     await h.container.delivery.dispatchDue()
     const during = delivered[0]!
@@ -217,5 +219,112 @@ describe('entrega de eventos aos apps', () => {
     expect(worker).toBeTruthy()
     await h.container.delivery.dispatchDue()
     expect(delivered).toHaveLength(1)
+  })
+
+  describe('reenvio com pré-visualização e filtro por instalação', () => {
+    const REASON = 'teste automatizado'
+    const ADMIN = { Authorization: 'Bearer admin-token' }
+
+    async function seedDead(count: number, installationId: number) {
+      for (let i = 0; i < count; i++) {
+        await h.db.asDb().outboxEvent.create({
+          data: {
+            eventId: crypto.randomUUID(),
+            appCode: GPTMAKER,
+            type: 'subscription.renewed',
+            installationId,
+            payload: {},
+            status: 'dead',
+            attempts: 9,
+            deadAt: h.clock.now(),
+          } as never,
+        })
+      }
+    }
+    const range = () => ({
+      from: new Date(0).toISOString(),
+      to: new Date(h.clock.now().getTime() + 1000).toISOString(),
+    })
+    const dead = () => outbox(h).filter(e => e.status === 'dead').length
+
+    it('dryRun devolve quantidade e amostra sem alterar nada nem exigir motivo', async () => {
+      await seedDead(7, 999)
+      const before = dead()
+      const res = await http(h)
+        .post('/admin/events/resend')
+        .set(ADMIN)
+        .send({ appCode: GPTMAKER, ...range(), onlyDead: true, dryRun: true })
+      expect(res.status).toBe(200)
+      expect(res.body.matched).toBe(7)
+      expect(res.body.sample).toHaveLength(5)
+      expect(res.body.requeued).toBeUndefined()
+      expect(dead()).toBe(before)
+    })
+
+    it('reenvio de uma instalação mexe só nos mortos dela', async () => {
+      await seedDead(3, 999)
+      await seedDead(2, 888)
+      const res = await http(h)
+        .post('/admin/events/resend')
+        .set(ADMIN)
+        .set('X-Admin-Reason', REASON)
+        .send({ installationId: 999, ...range(), onlyDead: true })
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual({ requeued: 3 })
+      const other = outbox(h).filter(
+        e => e.installationId === 888 && e.status === 'dead',
+      )
+      expect(other).toHaveLength(2)
+      expect(
+        outbox(h).filter(
+          e => e.installationId === 999 && e.status === 'pending',
+        ),
+      ).toHaveLength(3)
+    })
+
+    it('seletor sem appCode nem installationId é recusado', async () => {
+      const res = await http(h)
+        .post('/admin/events/resend')
+        .set(ADMIN)
+        .set('X-Admin-Reason', REASON)
+        .send({ ...range(), dryRun: true })
+      expect(res.status).toBe(400)
+      expect(res.body.error.code).toBe('VALIDATION_ERROR')
+    })
+
+    it('dryRun com eventId não reenvia o evento', async () => {
+      await seedDead(1, 999)
+      const target = outbox(h).find(e => e.status === 'dead') as any
+      const res = await http(h)
+        .post('/admin/events/resend')
+        .set(ADMIN)
+        .send({ eventId: target.eventId, dryRun: true })
+      expect(res.body).toEqual({ matched: 1, sample: [target.eventId] })
+      expect(dead()).toBe(1)
+    })
+
+    it('acima de 5000 eventos: 422 RESEND_TOO_LARGE, e o dryRun ainda informa a quantidade', async () => {
+      await seedDead(5001, 999)
+      const refused = await http(h)
+        .post('/admin/events/resend')
+        .set(ADMIN)
+        .set('X-Admin-Reason', REASON)
+        .send({ installationId: 999, ...range(), onlyDead: true })
+      expect(refused.status).toBe(422)
+      expect(refused.body.error.code).toBe('RESEND_TOO_LARGE')
+      expect(refused.body.error.details).toEqual({ matched: 5001, limit: 5000 })
+      expect(dead()).toBe(5001)
+
+      const preview = await http(h)
+        .post('/admin/events/resend')
+        .set(ADMIN)
+        .send({
+          installationId: 999,
+          ...range(),
+          onlyDead: true,
+          dryRun: true,
+        })
+      expect(preview.body.matched).toBe(5001)
+    })
   })
 })

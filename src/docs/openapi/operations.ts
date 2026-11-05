@@ -16,6 +16,7 @@ import {
   updateItemSchema,
 } from '@/modules/billing/application/items-service'
 import { spaEventSchema } from '@/modules/billing/application/spa-events'
+import { trialRequestSchema } from '@/modules/billing/application/trial-service'
 import {
   createAppSchema,
   updateAppSchema,
@@ -24,6 +25,12 @@ import {
   resendSchema,
   rotateSigningKeySchema,
 } from '@/modules/registry/http/admin-routes'
+import { loginSchema } from '@/modules/backoffice/application/login'
+import {
+  changePasswordSchema,
+  createOperatorSchema,
+  updateOperatorSchema,
+} from '@/modules/backoffice/application/operators'
 import type { ErrorCode } from '../errors'
 import * as r from './responses'
 
@@ -43,7 +50,8 @@ export type Tag =
   | 'Infraestrutura'
   | 'Operador'
 
-export type Security = 'appApiKey' | 'adminToken' | 'stripeSignature' | 'none'
+/** `admin`: sessão do backoffice (`adminSession`) ou token de script (`adminToken`). */
+export type Security = 'appApiKey' | 'admin' | 'stripeSignature' | 'none'
 
 /** Schema com nome de componente (`#/components/schemas/<id>`). */
 export type Named = { id: string; schema: z.ZodType }
@@ -105,6 +113,7 @@ const req = {
   createItem: named('CreateItemRequest', createItemSchema),
   updateItem: named('UpdateItemRequest', updateItemSchema),
   spaEvent: named('SpaEvent', spaEventSchema),
+  trialRequest: named('TrialRequest', trialRequestSchema),
   stripeEvent: named(
     'StripeEvent',
     z
@@ -115,6 +124,10 @@ const req = {
   updateApp: named('UpdateAppRequest', updateAppSchema),
   resend: named('ResendEventsRequest', resendSchema),
   rotateSigningKey: named('RotateSigningKeyRequest', rotateSigningKeySchema),
+  login: named('OperatorLoginRequest', loginSchema),
+  changePassword: named('ChangePasswordRequest', changePasswordSchema),
+  createOperator: named('CreateOperatorRequest', createOperatorSchema),
+  updateOperator: named('UpdateOperatorRequest', updateOperatorSchema),
 }
 
 // Schemas de resposta com nome de componente.
@@ -141,6 +154,10 @@ const res = {
   appList: named('AppList', r.appListSchema),
   appCreated: named('AppCreated', r.appCreatedSchema),
   apiKeyRotated: named('ApiKeyRotated', r.apiKeyRotatedSchema),
+  webhookSecretRevealed: named(
+    'WebhookSecretRevealed',
+    r.webhookSecretRevealedSchema,
+  ),
   webhookSecretRotated: named(
     'WebhookSecretRotated',
     r.webhookSecretRotatedSchema,
@@ -150,8 +167,27 @@ const res = {
   outboxEvents: named('OutboxEventList', r.outboxEventListSchema),
   stripeEvents: named('StripeEventList', r.stripeEventListSchema),
   resend: named('ResendResult', r.resendResultSchema),
+  tokenRefreshed: named('InstallationTokenRefreshed', r.tokenRefreshedSchema),
   signingKey: named('SigningKeyRotated', r.signingKeyRotatedSchema),
   sweep: named('SweepResult', r.sweepResultSchema),
+  operator: named('Operator', r.operatorSchema),
+  operatorList: named('OperatorList', r.operatorListSchema),
+  issuedAccess: named('IssuedOperatorAccess', r.issuedAccessSchema),
+  loginResult: named('OperatorLoginResult', r.loginResultSchema),
+  whoAmI: named('WhoAmI', r.whoAmISchema),
+  passwordChanged: named('PasswordChanged', r.passwordChangedSchema),
+  stripeEvent: named('StripeEventDetail', r.stripeEventDetailSchema),
+  auditPage: named('AuditPage', r.auditPageSchema),
+  overview: named('Overview', r.overviewSchema),
+  adminInstallations: named(
+    'AdminInstallationPage',
+    r.adminInstallationPageSchema,
+  ),
+  adminInstallation: named(
+    'AdminInstallation',
+    r.adminInstallationDetailSchema,
+  ),
+  timeline: named('InstallationTimeline', r.timelinePageSchema),
 }
 
 const json = (description: string, schema: Named): ResponseDoc => ({
@@ -166,6 +202,22 @@ const BITRIX_TOKEN_ERRORS: ErrorCode[] = [
 ]
 
 const installationId = { id: 'Id da instalação (`installationId`)' }
+
+const PAGE_QUERY: QueryParam[] = [
+  {
+    name: 'limit',
+    description: 'Itens por página (1 a 200, padrão 50)',
+    type: 'integer',
+  },
+  { name: 'cursor', description: '`nextCursor` da página anterior' },
+]
+const PERIOD_QUERY: QueryParam[] = [
+  { name: 'from', description: 'Início (ISO 8601 ou `AAAA-MM-DD`)' },
+  {
+    name: 'to',
+    description: 'Fim (ISO 8601, ou `AAAA-MM-DD` incluindo o dia inteiro)',
+  },
+]
 const subscriptionId = { id: 'Id da assinatura (`subscriptionId`)' }
 
 export const OPERATIONS: Operation[] = [
@@ -280,7 +332,7 @@ export const OPERATIONS: Operation[] = [
     tag: 'Instalação',
     summary: 'Instalar o app no portal',
     description:
-      'Chamado pela página de instalação. Verifica o token no Bitrix (administrador, app e portal corretos), registra a instalação no SPA 1060, guarda os tokens cifrados, registra `ONAPPUNINSTALL` e chama o instalador do app. Idempotente: repetir retoma sem duplicar. Se o instalador do app falhar, responde `INSTALL_PENDING` com `error`.',
+      'Chamado pela página de instalação. Verifica o token no Bitrix (administrador, app e portal corretos), registra a instalação no SPA 1060, guarda os tokens cifrados, registra `ONAPPINSTALL` e `ONAPPUNINSTALL` e chama o instalador do app. Idempotente: repetir retoma sem duplicar. Se o instalador do app falhar, responde `INSTALL_PENDING` com `error`.',
     security: 'none',
     body: { schema: req.install },
     responses: {
@@ -466,6 +518,29 @@ export const OPERATIONS: Operation[] = [
   },
   {
     method: 'post',
+    path: '/v1/installations/{id}/trial',
+    operationId: 'requestTrial',
+    tag: 'Cobrança',
+    summary: 'Solicitar trial com dados de contato',
+    description:
+      'O contato (nome, e-mail, telefone, empresa e cargo) é gravado na instalação e no SPA 1060, e o e-mail passa a ser usado no checkout. Sem trial anterior, cria o trial (201, evento `subscription.trial_started`). Com trial vigente, como o criado por `trial_on_install`, só grava o contato e devolve o trial atual (200). Nos 409 o contato também fica gravado.',
+    security: 'appApiKey',
+    pathParams: installationId,
+    body: { schema: req.trialRequest },
+    responses: {
+      201: json('Trial iniciado', res.trialStarted),
+      200: json('Trial já vigente; contato gravado', res.trialStarted),
+    },
+    errors: [
+      'INSTALLATION_NOT_FOUND',
+      'TRIAL_NOT_CONFIGURED',
+      'TRIAL_ALREADY_USED',
+      'SUBSCRIPTION_ALREADY_EXISTS',
+      'BILLING_BUSY',
+    ],
+  },
+  {
+    method: 'post',
     path: '/v1/checkout-sessions',
     operationId: 'createCheckoutSession',
     tag: 'Cobrança',
@@ -628,6 +703,102 @@ export const OPERATIONS: Operation[] = [
     },
   },
 
+  // Operador: acesso ao backoffice
+  {
+    method: 'post',
+    path: '/admin/auth/login',
+    operationId: 'operatorLogin',
+    tag: 'Operador',
+    summary: 'Entrar no backoffice (e-mail, senha e TOTP)',
+    description:
+      'Define o cookie de sessão `cp_admin_session` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/admin`). Qualquer falha responde `INVALID_CREDENTIALS`, sem dizer qual fator falhou. Após 5 falhas em 15 min a conta fica bloqueada por 15 min; mais de 20 tentativas por IP em 15 min respondem 429 com `Retry-After`. Com `Origin`, ele precisa estar em `BACKOFFICE_ORIGINS`.',
+    security: 'none',
+    body: { schema: req.login },
+    responses: { 200: json('Operador e validade da sessão', res.loginResult) },
+    errors: ['INVALID_CREDENTIALS', 'TOO_MANY_REQUESTS', 'ORIGIN_NOT_ALLOWED'],
+  },
+  {
+    method: 'post',
+    path: '/admin/auth/logout',
+    operationId: 'operatorLogout',
+    tag: 'Operador',
+    summary: 'Sair (revoga a sessão)',
+    security: 'admin',
+    responses: { 204: { description: 'Sessão revogada e cookie apagado' } },
+    errors: ['SESSION_REQUIRED'],
+  },
+  {
+    method: 'get',
+    path: '/admin/auth/me',
+    operationId: 'whoAmI',
+    tag: 'Operador',
+    summary: 'Quem está autenticado (operador da sessão ou token de script)',
+    security: 'admin',
+    responses: { 200: json('Ator', res.whoAmI) },
+  },
+  {
+    method: 'post',
+    path: '/admin/auth/password',
+    operationId: 'changeOwnPassword',
+    tag: 'Operador',
+    summary: 'Trocar a própria senha',
+    description:
+      'Exige a senha atual; a nova tem ao menos 12 caracteres. Libera a conta com senha provisória e derruba as outras sessões dela.',
+    security: 'admin',
+    body: { schema: req.changePassword },
+    responses: { 200: json('Operador atualizado', res.passwordChanged) },
+    errors: ['INVALID_CREDENTIALS', 'SESSION_REQUIRED'],
+  },
+  {
+    method: 'get',
+    path: '/admin/operators',
+    operationId: 'listOperators',
+    tag: 'Operador',
+    summary: 'Listar operadores',
+    security: 'admin',
+    responses: { 200: json('Operadores', res.operatorList) },
+  },
+  {
+    method: 'post',
+    path: '/admin/operators',
+    operationId: 'createOperator',
+    tag: 'Operador',
+    summary: 'Criar operador',
+    description:
+      '**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** O operador troca a senha no primeiro login.',
+    security: 'admin',
+    body: { schema: req.createOperator },
+    responses: { 201: json('Operador e acesso', res.issuedAccess) },
+    errors: ['OPERATOR_EMAIL_TAKEN'],
+  },
+  {
+    method: 'patch',
+    path: '/admin/operators/{id}',
+    operationId: 'updateOperator',
+    tag: 'Operador',
+    summary: 'Trocar papel ou ativar/desativar operador',
+    description:
+      'Derruba as sessões da conta. Ninguém desativa nem rebaixa a própria conta, e sempre resta ao menos um `operator` ativo.',
+    security: 'admin',
+    pathParams: { id: 'Id do operador' },
+    body: { schema: req.updateOperator },
+    responses: { 200: json('Operador atualizado', res.operator) },
+    errors: ['OPERATOR_NOT_FOUND', 'LAST_OPERATOR', 'OPERATOR_SELF_CHANGE'],
+  },
+  {
+    method: 'post',
+    path: '/admin/operators/{id}/reset-access',
+    operationId: 'resetOperatorAccess',
+    tag: 'Operador',
+    summary: 'Redefinir senha e TOTP de um operador',
+    description:
+      '**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** Desbloqueia a conta e derruba as sessões dela.',
+    security: 'admin',
+    pathParams: { id: 'Id do operador' },
+    responses: { 200: json('Operador e acesso novo', res.issuedAccess) },
+    errors: ['OPERATOR_NOT_FOUND'],
+  },
+
   // Operador
   {
     method: 'get',
@@ -635,7 +806,7 @@ export const OPERATIONS: Operation[] = [
     operationId: 'listApps',
     tag: 'Operador',
     summary: 'Listar aplicações cadastradas',
-    security: 'adminToken',
+    security: 'admin',
     responses: { 200: json('Aplicações', res.appList) },
   },
   {
@@ -646,10 +817,14 @@ export const OPERATIONS: Operation[] = [
     summary: 'Cadastrar aplicação',
     description:
       '**`apiKey` e `webhookSecret` só aparecem nesta resposta.** A chave é guardada só como hash; o segredo e o `client_secret` ficam cifrados.',
-    security: 'adminToken',
+    security: 'admin',
     body: { schema: req.createApp },
     responses: { 201: json('Aplicação e credenciais', res.appCreated) },
-    errors: ['APP_ALREADY_EXISTS', 'TRIAL_CONFIG_INVALID'],
+    errors: [
+      'APP_ALREADY_EXISTS',
+      'BITRIX_CLIENT_ID_IN_USE',
+      'TRIAL_CONFIG_INVALID',
+    ],
   },
   {
     method: 'get',
@@ -657,7 +832,7 @@ export const OPERATIONS: Operation[] = [
     operationId: 'getApp',
     tag: 'Operador',
     summary: 'Detalhes de uma aplicação',
-    security: 'adminToken',
+    security: 'admin',
     pathParams: { appCode: 'Código do app' },
     responses: { 200: json('Aplicação', res.app) },
     errors: ['APP_NOT_FOUND'],
@@ -668,11 +843,15 @@ export const OPERATIONS: Operation[] = [
     operationId: 'updateApp',
     tag: 'Operador',
     summary: 'Alterar aplicação',
-    security: 'adminToken',
+    security: 'admin',
     pathParams: { appCode: 'Código do app' },
     body: { schema: req.updateApp },
     responses: { 200: json('Aplicação atualizada', res.app) },
-    errors: ['APP_NOT_FOUND', 'TRIAL_CONFIG_INVALID'],
+    errors: [
+      'APP_NOT_FOUND',
+      'BITRIX_CLIENT_ID_IN_USE',
+      'TRIAL_CONFIG_INVALID',
+    ],
   },
   {
     method: 'post',
@@ -682,9 +861,22 @@ export const OPERATIONS: Operation[] = [
     summary: 'Rotacionar chave de API',
     description:
       'A chave anterior vale até `previousValidUntil` (`CREDENTIAL_ROTATION_GRACE_HOURS`). A nova só aparece nesta resposta.',
-    security: 'adminToken',
+    security: 'admin',
     pathParams: { appCode: 'Código do app' },
     responses: { 200: json('Nova chave', res.apiKeyRotated) },
+    errors: ['APP_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/admin/apps/{appCode}/reveal-webhook-secret',
+    operationId: 'revealWebhookSecret',
+    tag: 'Operador',
+    summary: 'Consultar o segredo de webhook atual',
+    description:
+      'Devolve o segredo de webhook em uso, para quem o perdeu. Fica na auditoria com o motivo e a resposta não é guardada em cache. A chave de API não tem consulta: só existe o hash, e quem a perde rotaciona.',
+    security: 'admin',
+    pathParams: { appCode: 'Código do app' },
+    responses: { 200: json('Segredo atual', res.webhookSecretRevealed) },
     errors: ['APP_NOT_FOUND'],
   },
   {
@@ -695,19 +887,22 @@ export const OPERATIONS: Operation[] = [
     summary: 'Rotacionar segredo de webhook',
     description:
       'Durante a carência os webhooks levam duas assinaturas `v1=`. O novo segredo só aparece nesta resposta.',
-    security: 'adminToken',
+    security: 'admin',
     pathParams: { appCode: 'Código do app' },
     responses: { 200: json('Novo segredo', res.webhookSecretRotated) },
     errors: ['APP_NOT_FOUND'],
   },
   {
     method: 'post',
-    path: '/v1/installations/{id}/trial',
+    path: '/admin/installations/{id}/trial',
     operationId: 'startTrial',
     tag: 'Operador',
     summary: 'Iniciar trial manualmente',
-    security: 'adminToken',
+    description:
+      'Casos excepcionais. Com trial vigente responde `TRIAL_ALREADY_USED`. O contato é opcional; quando enviado, é gravado como na solicitação do app.',
+    security: 'admin',
     pathParams: installationId,
+    body: { schema: req.trialRequest, required: false },
     responses: { 201: json('Trial iniciado', res.trialStarted) },
     errors: [
       'INSTALLATION_NOT_FOUND',
@@ -719,12 +914,32 @@ export const OPERATIONS: Operation[] = [
     ],
   },
   {
+    method: 'post',
+    path: '/admin/installations/{id}/token/refresh',
+    operationId: 'forceTokenRefresh',
+    tag: 'Operador',
+    summary: 'Forçar a renovação do token do Bitrix',
+    description:
+      'Renova o token da instalação com a mesma trava e a mesma contagem de falhas da renovação agendada. A resposta traz só a nova validade e a saúde, nunca o token. Se o Bitrix recusar, `TOKEN_REFRESH_FAILED` traz o motivo em `details.reason`.',
+    security: 'admin',
+    pathParams: installationId,
+    responses: { 200: json('Token renovado', res.tokenRefreshed) },
+    errors: [
+      'INSTALLATION_NOT_FOUND',
+      ['INSTALLATION_NOT_ACTIVE', 409],
+      'TOKEN_REFRESH_FAILED',
+      'BITRIX_UNAVAILABLE',
+      'TOKEN_REFRESH_BUSY',
+      'AUTH_ERROR',
+    ],
+  },
+  {
     method: 'get',
     path: '/admin/installations/{id}/attempts',
     operationId: 'listInstallAttempts',
     tag: 'Operador',
     summary: 'Passos registrados da instalação (50 mais recentes)',
-    security: 'adminToken',
+    security: 'admin',
     pathParams: installationId,
     responses: { 200: json('Tentativas', res.attempts) },
     errors: ['NOT_FOUND'],
@@ -734,15 +949,28 @@ export const OPERATIONS: Operation[] = [
     path: '/admin/events',
     operationId: 'listOutboxEvents',
     tag: 'Operador',
-    summary: 'Eventos do outbox (100 mais recentes)',
-    security: 'adminToken',
+    summary: 'Eventos enviados aos apps (outbox), paginados',
+    description:
+      'Do mais recente para o mais antigo, com as 3 tentativas de entrega mais recentes de cada evento.',
+    security: 'admin',
     query: [
+      ...PAGE_QUERY,
       {
         name: 'status',
         description: 'Filtra por status',
         enum: ['pending', 'delivered', 'dead'],
       },
       { name: 'appCode', description: 'Filtra por app' },
+      {
+        name: 'type',
+        description: 'Tipo do evento (ex.: `subscription.renewed`)',
+      },
+      {
+        name: 'installationId',
+        description: 'Filtra por instalação',
+        type: 'integer',
+      },
+      ...PERIOD_QUERY,
     ],
     responses: {
       200: json('Eventos com as últimas tentativas', res.outboxEvents),
@@ -753,21 +981,146 @@ export const OPERATIONS: Operation[] = [
     path: '/admin/stripe-events',
     operationId: 'listStripeEvents',
     tag: 'Operador',
-    summary: 'Eventos Stripe recebidos (100 mais recentes, sem payload)',
-    security: 'adminToken',
-    query: [{ name: 'status', description: 'Filtra por status' }],
+    summary: 'Eventos Stripe recebidos, paginados (sem payload)',
+    security: 'admin',
+    query: [
+      ...PAGE_QUERY,
+      { name: 'status', description: 'Filtra por status' },
+      { name: 'type', description: 'Tipo do evento Stripe' },
+      { name: 'appCode', description: 'App roteado' },
+      ...PERIOD_QUERY,
+    ],
     responses: { 200: json('Eventos', res.stripeEvents) },
+  },
+  {
+    method: 'get',
+    path: '/admin/stripe-events/{eventId}',
+    operationId: 'getStripeEvent',
+    tag: 'Operador',
+    summary: 'Evento Stripe com o payload cru',
+    security: 'admin',
+    pathParams: { eventId: 'Id do evento no Stripe (`evt_...`)' },
+    responses: { 200: json('Evento', res.stripeEvent) },
+    errors: ['NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/admin/audit',
+    operationId: 'listAudit',
+    tag: 'Operador',
+    summary: 'Trilha de auditoria do backoffice, paginada',
+    description:
+      'Do mais recente para o mais antigo. Registra toda mutação em `/admin/*` (inclusive as negadas) e os eventos de acesso (`auth.*`). Os registros não podem ser alterados nem apagados.',
+    security: 'admin',
+    query: [
+      ...PAGE_QUERY,
+      {
+        name: 'actor',
+        description: '`operator:<id>`, `token:<prefixo>` ou `anonymous`',
+      },
+      {
+        name: 'action',
+        description:
+          'Ex.: `POST /admin/apps/:appCode/rotate-api-key` ou `auth.login_failed`',
+      },
+      {
+        name: 'targetType',
+        description: 'Ex.: `app`, `installation`, `operator`',
+      },
+      { name: 'targetId', description: 'Id do alvo' },
+      {
+        name: 'result',
+        description: 'Só sucessos ou só falhas',
+        enum: ['success', 'failure'],
+      },
+      ...PERIOD_QUERY,
+    ],
+    responses: { 200: json('Registros', res.auditPage) },
+  },
+  {
+    method: 'get',
+    path: '/admin/overview',
+    operationId: 'getOverview',
+    tag: 'Operador',
+    summary: 'Contadores do painel do backoffice',
+    description:
+      'Calculado só com o banco, no máximo a cada 60 s (`computedAt`). Trials que terminam em 7 dias vêm dos eventos `subscription.trial_started` sem ativação ou fim posterior.',
+    security: 'admin',
+    responses: { 200: json('Contadores', res.overview) },
+  },
+  {
+    method: 'get',
+    path: '/admin/installations',
+    operationId: 'listAdminInstallations',
+    tag: 'Operador',
+    summary: 'Instalações de todos os apps, paginadas',
+    security: 'admin',
+    query: [
+      ...PAGE_QUERY,
+      { name: 'appCode', description: 'Filtra por app' },
+      { name: 'status', description: 'Filtra por status da instalação' },
+      {
+        name: 'q',
+        description:
+          'Trecho do domínio ou `memberId` exato; só dígitos busca id da instalação ou `memberId`',
+      },
+    ],
+    responses: { 200: json('Instalações', res.adminInstallations) },
+  },
+  {
+    method: 'get',
+    path: '/admin/installations/{id}',
+    operationId: 'getAdminInstallation',
+    tag: 'Operador',
+    summary:
+      'Detalhe da instalação (contato, saúde do token, eventos e assinatura)',
+    description:
+      'Nunca devolve tokens. A assinatura vem do portal CRMThink: se ele falhar ou passar de 3 s, `subscription` vem com `available: false` e o motivo, e o resto sai normalmente.',
+    security: 'admin',
+    pathParams: installationId,
+    responses: { 200: json('Instalação', res.adminInstallation) },
+    errors: ['INSTALLATION_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/admin/installations/{id}/timeline',
+    operationId: 'getInstallationTimeline',
+    tag: 'Operador',
+    summary: 'Linha do tempo da instalação, paginada',
+    description:
+      'Junta, do mais recente para o mais antigo: tentativas de instalação, eventos enviados ao app (com as 5 últimas entregas), compras avulsas e ações de operador sobre a instalação. Sem payload completo dos eventos.',
+    security: 'admin',
+    pathParams: installationId,
+    query: [
+      ...PAGE_QUERY,
+      {
+        name: 'kind',
+        description:
+          'Tipos separados por vírgula: `install_attempt`, `event`, `purchase`, `admin_action`',
+      },
+      ...PERIOD_QUERY,
+    ],
+    responses: { 200: json('Itens', res.timeline) },
+    errors: ['INSTALLATION_NOT_FOUND'],
   },
   {
     method: 'post',
     path: '/admin/events/resend',
     operationId: 'resendEvents',
     tag: 'Operador',
-    summary: 'Reenviar eventos (um `eventId` ou uma janela por app)',
-    description: 'Reabre a janela de reenvio de 24 h dos eventos selecionados.',
-    security: 'adminToken',
+    summary:
+      'Reenviar eventos (um `eventId` ou uma janela por app e/ou instalação)',
+    description:
+      'Reabre a janela de reenvio de 24 h dos eventos selecionados. O seletor por filtro aceita `appCode` e/ou `installationId` (pelo menos um). Com `dryRun: true` só responde `{ matched, sample }` (quantidade e até 5 `eventId`), sem alterar nada e sem exigir motivo. O reenvio em lote (por filtro, sem `dryRun`) exige `X-Admin-Reason` e é recusado com `RESEND_TOO_LARGE` acima de 5000 eventos.',
+    security: 'admin',
     body: { schema: req.resend },
-    responses: { 200: json('Quantidade reenfileirada', res.resend) },
+    responses: {
+      200: json(
+        'Quantidade reenfileirada, ou a prévia do `dryRun`',
+        res.resend,
+      ),
+    },
+    errors: [['RESEND_TOO_LARGE', 422]],
   },
   {
     method: 'post',
@@ -777,7 +1130,7 @@ export const OPERATIONS: Operation[] = [
     summary: 'Gerar nova chave de assinatura do JWT',
     description:
       'A chave entra no JWKS já, mas só passa a assinar após `leadMinutes` — tempo para os apps atualizarem o cache do JWKS.',
-    security: 'adminToken',
+    security: 'admin',
     body: { schema: req.rotateSigningKey, required: false },
     responses: { 201: json('Chave criada', res.signingKey) },
   },
@@ -787,7 +1140,7 @@ export const OPERATIONS: Operation[] = [
     operationId: 'runSweep',
     tag: 'Operador',
     summary: 'Rodar varredura de reconciliação agora',
-    security: 'adminToken',
+    security: 'admin',
     pathParams: { kind: '`stripe` ou `spa`' },
     responses: { 200: json('Resultado da varredura', res.sweep) },
     errors: ['NOT_FOUND'],

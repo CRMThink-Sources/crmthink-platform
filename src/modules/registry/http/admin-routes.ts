@@ -1,37 +1,48 @@
-import express, { Router } from 'express'
+import { Router } from 'express'
 import z from 'zod'
 import type { Db } from '@/shared/infra/prisma'
 import { asyncHandler, intParam } from '@/shared/http/errors'
 import type { EventDelivery } from '@/modules/events/event-delivery'
+import type { TokenVault } from '@/modules/installations/application/token-vault'
+import { tokenHealth } from '@/modules/backoffice/application/installation-reads'
 import type { SigningKeys } from '@/modules/installations/application/signing-keys'
-import type { TrialService } from '@/modules/billing/application/trial-service'
+import {
+  trialRequestSchema,
+  type TrialService,
+} from '@/modules/billing/application/trial-service'
 import type { Sweeps } from '@/modules/billing/application/sweeps'
 import {
   createAppSchema,
   updateAppSchema,
   type AppRegistry,
 } from '../app-registry'
-import { adminAuth } from './auth'
 
 export type AdminRoutesDeps = {
   db: Db
-  adminTokens: string[]
   registry: AppRegistry
   delivery: EventDelivery
   signingKeys: SigningKeys
   trials: TrialService
   sweeps: Sweeps
+  vault: TokenVault
 }
 
 export const resendSchema = z.union([
-  z.object({ eventId: z.string().uuid() }),
-  z.object({
-    appCode: z.string().min(1),
-    from: z.coerce.date(),
-    to: z.coerce.date(),
-    onlyDead: z.boolean().optional(),
-    type: z.string().optional(),
-  }),
+  z.object({ eventId: z.string().uuid(), dryRun: z.boolean().optional() }),
+  z
+    .object({
+      appCode: z.string().min(1).optional(),
+      installationId: z.number().int().positive().optional(),
+      from: z.coerce.date(),
+      to: z.coerce.date(),
+      onlyDead: z.boolean().optional(),
+      type: z.string().optional(),
+      dryRun: z.boolean().optional(),
+    })
+    .refine(body => body.appCode || body.installationId, {
+      message: 'Informe appCode e/ou installationId',
+      path: ['appCode'],
+    }),
 ])
 
 export const rotateSigningKeySchema = z.object({
@@ -39,22 +50,12 @@ export const rotateSigningKeySchema = z.object({
 })
 
 /**
- * Rotas de operador, com credencial própria (`ADMIN_API_TOKENS`), nunca a chave de um
- * app. Segredos gerados aparecem **só** na resposta da criação/rotação.
+ * Rotas de operador. Montadas atrás de `adminGate` (`backoffice/http/gate.ts`): sessão
+ * de operador ou token de `ADMIN_API_TOKENS`, nunca a chave de um app. Segredos
+ * gerados aparecem **só** na resposta da criação/rotação.
  */
 export function adminRoutes(deps: AdminRoutesDeps): Router {
   const router = Router()
-  router.use(
-    '/admin',
-    adminAuth(deps.adminTokens),
-    express.json({ limit: '64kb' }),
-  )
-  // Rota administrativa do contrato: trial manual por instalação.
-  router.use(
-    '/v1/installations/:id/trial',
-    adminAuth(deps.adminTokens),
-    express.json({ limit: '4kb' }),
-  )
 
   router.get(
     '/admin/apps',
@@ -69,6 +70,7 @@ export function adminRoutes(deps: AdminRoutesDeps): Router {
       const { app, credentials } = await deps.registry.create(
         createAppSchema.parse(req.body),
       )
+      res.locals.auditTargetId = app.appCode
       res.status(201).json({
         app,
         credentials,
@@ -113,15 +115,51 @@ export function adminRoutes(deps: AdminRoutesDeps): Router {
     }),
   )
 
+  // Consulta do segredo de webhook já cadastrado (o operador perdeu o valor). É POST de
+  // propósito: entra na auditoria como qualquer mutação e exige o motivo (alto impacto),
+  // e a resposta nunca fica em cache. A chave de API não tem equivalente: só existe o hash.
   router.post(
-    '/v1/installations/:id/trial',
+    '/admin/apps/:appCode/reveal-webhook-secret',
     asyncHandler(async (req, res) => {
-      const subscription = await deps.trials.start(
+      const webhookSecret = await deps.registry.revealWebhookSecret(
+        req.params.appCode ?? '',
+      )
+      res.setHeader('Cache-Control', 'no-store')
+      res.json({ webhookSecret })
+    }),
+  )
+
+  // Trial manual por instalação (casos excepcionais); o contato é opcional.
+  router.post(
+    '/admin/installations/:id/trial',
+    asyncHandler(async (req, res) => {
+      const body: unknown = req.body
+      const hasBody =
+        typeof body === 'object' &&
+        body !== null &&
+        Object.keys(body).length > 0
+      const { subscription } = await deps.trials.request(
+        { kind: 'operator' },
         intParam(req.params.id, 'INSTALLATION_NOT_FOUND'),
+        hasBody ? trialRequestSchema.parse(body) : undefined,
       )
       res.status(201).json({
         subscriptionId: subscription.id,
         trialEndsAt: subscription.periodEnd.toISOString(),
+      })
+    }),
+  )
+
+  // Renovação forçada do token do Bitrix. Nunca devolve o token, só expiração e saúde.
+  router.post(
+    '/admin/installations/:id/token/refresh',
+    asyncHandler(async (req, res) => {
+      const credential = await deps.vault.forceRefresh(
+        intParam(req.params.id, 'INSTALLATION_NOT_FOUND'),
+      )
+      res.json({
+        expiresAt: credential.expiresAt.toISOString(),
+        health: tokenHealth(credential),
       })
     }),
   )
@@ -138,57 +176,13 @@ export function adminRoutes(deps: AdminRoutesDeps): Router {
     }),
   )
 
-  router.get(
-    '/admin/events',
-    asyncHandler(async (req, res) => {
-      const status =
-        typeof req.query.status === 'string' ? req.query.status : undefined
-      const appCode =
-        typeof req.query.appCode === 'string' ? req.query.appCode : undefined
-      const items = await deps.db.outboxEvent.findMany({
-        where: {
-          ...(status ? { status } : {}),
-          ...(appCode ? { appCode } : {}),
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 100,
-        include: { deliveries: { orderBy: { attempt: 'desc' }, take: 3 } },
-      })
-      res.json({ items })
-    }),
-  )
-
-  // Eventos Stripe recebidos (sem o payload): status, app roteado, tentativas e erro.
-  router.get(
-    '/admin/stripe-events',
-    asyncHandler(async (req, res) => {
-      const status =
-        typeof req.query.status === 'string' ? req.query.status : undefined
-      const items = await deps.db.stripeEvent.findMany({
-        where: status ? { status } : {},
-        orderBy: { receivedAt: 'desc' },
-        take: 100,
-        select: {
-          eventId: true,
-          type: true,
-          appCode: true,
-          status: true,
-          attempts: true,
-          error: true,
-          receivedAt: true,
-          processedAt: true,
-        },
-      })
-      res.json({ items })
-    }),
-  )
-
   router.post(
     '/admin/events/resend',
     asyncHandler(async (req, res) => {
-      res.json({
-        requeued: await deps.delivery.resend(resendSchema.parse(req.body)),
-      })
+      const selector = resendSchema.parse(req.body)
+      const result = await deps.delivery.resend(selector)
+      // Com `dryRun` só a prévia (`{ matched, sample }`); sem ele, a contagem.
+      res.json(typeof result === 'number' ? { requeued: result } : result)
     }),
   )
 

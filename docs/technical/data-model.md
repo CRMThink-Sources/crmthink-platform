@@ -17,10 +17,12 @@ erDiagram
   Installation ||--o| ApplicationToken : "application_token"
   Installation ||--o{ InstallAttempt : "passos"
   OutboxEvent ||--o{ EventDelivery : "tentativas"
+  AdminOperator ||--o{ AdminSession : "sessões"
 
   App {
     string appCode PK
     string bitrixClientId UK
+    string bitrixAppCode "CODE do app.info (parceiro)"
     string bitrixClientSecretEnc "cifrado"
     string webhookSecretEnc "cifrado"
     string apiKeyHash UK "SHA-256"
@@ -48,10 +50,26 @@ erDiagram
     string dedupeKey UK
     json payload
   }
+  AdminOperator {
+    int id PK
+    string email UK "minúsculas"
+    string role "viewer|operator"
+    string passwordHash "argon2id"
+    string totpSecretEnc "cifrado"
+    datetime lockedUntil
+  }
+  AdminSession {
+    int id PK
+    string idHash UK "SHA-256 do cookie"
+    datetime lastSeenAt
+    datetime expiresAt
+    datetime revokedAt
+  }
 ```
 
 Tabelas sem relação declarada: `SigningKey`, `StripeEvent`, `SubscriptionVersion`,
-`ItemVersion`, `SweepRun`, `PeriodNotice`, `Purchase`.
+`ItemVersion`, `SweepRun`, `PeriodNotice`, `Purchase`, `AdminAuditLog` (o alvo é texto:
+`installation:<id>`, `app:<appCode>`, ...).
 
 ## Tabelas
 
@@ -66,7 +84,7 @@ Tabelas sem relação declarada: `SigningKey`, `StripeEvent`, `SubscriptionVersi
 
 | Tabela | Propósito | Notas |
 | --- | --- | --- |
-| `installation` | Um app instalado em um portal (`app_code` + `member_id` únicos) | `id` = id do primeiro item do SPA 1060 criado, estável entre reinstalações. `status`: `INSTALLING` → `ACTIVE`, ou `INSTALL_PENDING` (instalador do app falhou), `UNINSTALLED`, `AUTH_ERROR` (refresh falhou 5 vezes). `ever_activated` decide `installation.created` × `.reinstalled`. `spa_item_id = null` quando o item do SPA foi removido à mão: a instalação some para o app (404) até reinstalar. |
+| `installation` | Um app instalado em um portal (`app_code` + `member_id` únicos) | `id` = id do primeiro item do SPA 1060 criado, estável entre reinstalações. `status`: `INSTALLING` → `ACTIVE`, ou `INSTALL_PENDING` (instalador do app falhou), `UNINSTALLED`, `AUTH_ERROR` (refresh falhou 5 vezes). `ever_activated` decide `installation.created` × `.reinstalled`. `spa_item_id = null` quando o item do SPA foi removido à mão: a instalação some para o app (404) até reinstalar. `contact` (JSON: nome, e-mail, telefone, empresa, cargo) vem da solicitação de trial pelo app (ou da importação do hub-core) e é copiado para o item do SPA 1060; o checkout usa o e-mail. |
 | `credential` | Access/refresh token do Bitrix (cifrados), validade, endpoint REST | `refresh_failures` e `last_refresh_error` alimentam o `AUTH_ERROR`. |
 | `application_token` | `application_token` do `ONAPPINSTALL` (cifrado) | Prova de origem do `ONAPPUNINSTALL`; entregue ao app em `GET /v1/installations/{id}`. |
 | `install_attempt` | Passos da instalação (`register`, `event-bind`, `installer`) com status e erro | É como o suporte sabe onde a instalação parou (`GET /admin/installations/{id}/attempts`). |
@@ -89,6 +107,18 @@ Tabelas sem relação declarada: `SigningKey`, `StripeEvent`, `SubscriptionVersi
 | --- | --- | --- |
 | `outbox_event` | Evento gravado na transação da decisão | `seq` define a ordem por instalação; `dedupe_key` impede evento duplicado para a mesma decisão; `next_attempt_at`, `attempts`, `window_started_at` controlam o reenvio. |
 | `event_delivery` | Cada tentativa de entrega | Status HTTP, erro, próximo horário. |
+
+### Backoffice
+
+| Tabela | Propósito | Notas |
+| --- | --- | --- |
+| `admin_operator` | Conta de cada pessoa que opera a plataforma | Senha só como hash argon2id; segredo TOTP cifrado (`v1:`); `last_totp_step` impede reuso do código; `failed_logins`/`locked_until` do bloqueio; `must_change_password` na senha provisória. |
+| `admin_session` | Sessão do backoffice | Só o SHA-256 do cookie (`id_hash`); `last_seen_at` (regravado a cada minuto) e `expires_at` definem a expiração; `revoked_at` no logout, expiração e revogação por conta. |
+| `admin_audit_log` | Trilha de auditoria | Só inserção; apagada só pela retenção (`ADMIN_AUDIT_RETENTION_DAYS`). Índices por alvo, ator e data para a consulta e a linha do tempo da instalação. Ver [security.md](security.md#trilha-de-auditoria). |
+
+A linha do tempo da instalação (`GET /admin/installations/{id}/timeline`) lê `install_attempt`,
+`outbox_event` + `event_delivery`, `purchase` e `admin_audit_log`; por isso `outbox_event` e
+`purchase` têm índice `(installation_id, created_at)`.
 
 ## SPAs do portal CRMThink
 

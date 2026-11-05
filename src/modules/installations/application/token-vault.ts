@@ -7,7 +7,7 @@ import {
   type BitrixOAuth,
 } from '@/shared/bitrix/bitrix-oauth.client'
 import { BitrixUnavailableError } from '@/shared/bitrix/bitrix-errors'
-import { conflict, gone, HttpError } from '@/shared/http/errors'
+import { conflict, gone, HttpError, notFound } from '@/shared/http/errors'
 import {
   LockTimeoutError,
   SingleFlight,
@@ -48,7 +48,7 @@ export type TokenResponse = {
   clientEndpoint: string | null
 }
 
-type Trigger = 'on-demand' | 'job' | 'delivery'
+type Trigger = 'on-demand' | 'job' | 'delivery' | 'operator'
 
 export class TokenVault {
   private readonly singleFlight = new SingleFlight<Credential>()
@@ -168,37 +168,83 @@ export class TokenVault {
           },
         )
       } catch (error) {
-        if (error instanceof LockTimeoutError) {
-          throw new HttpError(
-            503,
-            'TOKEN_REFRESH_BUSY',
-            'Renovação em andamento; tente novamente',
-          )
-        }
-        if (error instanceof BitrixUnavailableError) {
-          throw new HttpError(
-            503,
-            'BITRIX_UNAVAILABLE',
-            'Bitrix indisponível para renovar o token',
-          )
-        }
-        if (error instanceof BitrixOAuthRejectedError) {
-          const fresh = await this.db.installation.findUnique({
-            where: { id: installation.id },
-          })
-          if (fresh?.status === 'AUTH_ERROR') {
-            throw conflict(
-              'AUTH_ERROR',
-              'Credencial do Bitrix inválida; é preciso reinstalar o app',
-            )
-          }
-          throw new HttpError(
-            502,
-            'TOKEN_REFRESH_FAILED',
-            'O Bitrix recusou a renovação do token',
-          )
-        }
-        throw error
+        throw await this.refreshError(installation, error)
+      }
+    })
+  }
+
+  /** Traduz a falha de uma renovação no erro HTTP do contrato (ou devolve o original). */
+  private async refreshError(
+    installation: Installation,
+    error: unknown,
+    withReason = false,
+  ): Promise<unknown> {
+    if (error instanceof LockTimeoutError) {
+      return new HttpError(
+        503,
+        'TOKEN_REFRESH_BUSY',
+        'Renovação em andamento; tente novamente',
+      )
+    }
+    if (error instanceof BitrixUnavailableError) {
+      return new HttpError(
+        503,
+        'BITRIX_UNAVAILABLE',
+        'Bitrix indisponível para renovar o token',
+      )
+    }
+    if (error instanceof BitrixOAuthRejectedError) {
+      const fresh = await this.db.installation.findUnique({
+        where: { id: installation.id },
+      })
+      if (fresh?.status === 'AUTH_ERROR') {
+        return conflict(
+          'AUTH_ERROR',
+          'Credencial do Bitrix inválida; é preciso reinstalar o app',
+        )
+      }
+      return new HttpError(
+        502,
+        'TOKEN_REFRESH_FAILED',
+        'O Bitrix recusou a renovação do token',
+        withReason ? { reason: error.code } : undefined,
+      )
+    }
+    return error
+  }
+
+  /**
+   * Renovação forçada pelo operador (`POST /admin/installations/{id}/token/refresh`):
+   * mesma trava e mesma contagem de falhas da renovação agendada, sem exigir um token
+   * recusado. Só instalações ativas; devolve a credencial já gravada (quem chama expõe
+   * apenas a expiração e a saúde, nunca o token).
+   */
+  async forceRefresh(installationId: number): Promise<Credential> {
+    const installation = await this.db.installation.findUnique({
+      where: { id: installationId },
+    })
+    if (!installation) throw notFound('INSTALLATION_NOT_FOUND')
+    if (installation.status !== 'ACTIVE') {
+      throw conflict(
+        'INSTALLATION_NOT_ACTIVE',
+        'Só instalações ativas podem ter o token renovado',
+      )
+    }
+    return this.singleFlight.run(`${installation.id}`, async () => {
+      try {
+        return await withLock(
+          this.locks,
+          this.lockKey(installation.id),
+          { ttlMs: LOCK_TTL_MS, waitMs: LOCK_WAIT_MS },
+          async () =>
+            this.refreshLocked(
+              installation,
+              await this.credentialOf(installation.id),
+              'operator',
+            ),
+        )
+      } catch (error) {
+        throw await this.refreshError(installation, error, true)
       }
     })
   }

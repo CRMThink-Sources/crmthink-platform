@@ -1,6 +1,15 @@
 # syntax=docker/dockerfile:1
 # Uma imagem para os dois processos: `api` (padrão) e `worker` (command no compose).
 
+# Backoffice (React): só o `dist` estático vai para a imagem final; as dependências
+# dele ficam neste estágio.
+FROM node:22-alpine AS web
+WORKDIR /web
+COPY web/backoffice/package.json web/backoffice/yarn.lock ./
+RUN yarn install --frozen-lockfile
+COPY web/backoffice ./
+RUN yarn build && test -f dist/index.html
+
 FROM node:20-alpine AS builder
 WORKDIR /app
 
@@ -32,6 +41,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma/schema.prisma ./prisma/schema.prisma
 COPY --from=builder /app/prisma/migrations ./prisma/migrations
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=web /web/dist ./web/backoffice/dist
 
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 platform
 USER platform

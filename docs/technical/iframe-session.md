@@ -2,7 +2,7 @@
 
 Código: `src/modules/installations/application/session-service.ts`,
 `application/signing-keys.ts`, `application/bitrix-auth-verifier.ts` (`verifyUser`),
-`http/routes.ts` (`sessionCors`), `scripts/rotate-signing-key.ts`; SDK `sdk/typescript`
+`http/routes.ts` (`sessionCors`), `src/cli/rotate-signing-key.ts`; SDK `sdk/typescript`
 (`createSessionVerifier`).
 
 Operações: `createSession`, `getJwks`, `rotateSigningKey`.
@@ -59,7 +59,9 @@ Header: `alg: RS256`, `kid`, `typ: JWT`.
    para os tokens já emitidos continuarem válidos.
 
 Rotação: `POST /admin/signing-keys/rotate {leadMinutes}` (padrão 10) ou
-`yarn admin:rotate-signing-key` quando a API não sobe. O `leadMinutes` dá tempo para os apps
+o comando `node dist/src/cli/rotate-signing-key.js --lead=<min>` quando a API não sobe
+(`docker run --rm --network crmthink --env-file <DEPLOY_DIR>/.env "$(docker inspect -f '{{.Config.Image}}' <COMPOSE_PROJECT>-api)" node dist/src/cli/rotate-signing-key.js`;
+em desenvolvimento, `yarn admin:rotate-signing-key`). O `leadMinutes` dá tempo para os apps
 renovarem o cache do JWKS (que a plataforma serve com `max-age=300`) antes de a chave nova
 assinar. No primeiro boot sem chave no banco, `JWT_SIGNING_PRIVATE_KEY` semeia a primeira;
 sem nenhuma das duas, o boot falha e `/health/ready` acusa `signingKey`.
