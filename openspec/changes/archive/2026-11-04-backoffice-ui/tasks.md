@@ -33,4 +33,4 @@
 
 ## 6. Integração
 
-- [ ] 6.1 Em staging, com `backoffice-foundation` implantada: entrar como `operator` e como `viewer`, percorrer todas as telas, abrir um link compartilhado em outra aba, deixar a sessão expirar e conferir a volta ao mesmo endereço; verificar também no console do navegador que não há violação de CSP
+- [x] 6.1 Em staging, com `backoffice-foundation` implantada: entrar como `operator` e como `viewer`, percorrer todas as telas, abrir um link compartilhado em outra aba, deixar a sessão expirar e conferir a volta ao mesmo endereço; verificar também no console do navegador que não há violação de CSP
