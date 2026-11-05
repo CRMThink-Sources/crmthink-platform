@@ -56,10 +56,8 @@ type Pending =
 /** Senha provisória e QR code do TOTP, mostrados uma vez e só aqui. */
 const revealOf = (title: string, issued: Issued): SecretReveal => ({
   title,
-  secrets: [
-    { label: 'Senha provisória', value: issued.temporaryPassword },
-    { label: 'E-mail de acesso', value: issued.operator.email },
-  ],
+  secrets: [{ label: 'Senha provisória', value: issued.temporaryPassword }],
+  notes: [{ label: 'E-mail de acesso', value: issued.operator.email }],
   otpauthUri: issued.totpUri,
 })
 

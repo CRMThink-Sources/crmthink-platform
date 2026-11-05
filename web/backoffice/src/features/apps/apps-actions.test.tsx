@@ -281,6 +281,9 @@ describe('ações no detalhe do app', () => {
     await user.click(confirm)
 
     expect(await screen.findByText(NEW_API_KEY)).toBeInTheDocument()
+    // A validade da chave anterior é só informação: não ganha botão de copiar.
+    expect(screen.getByText(/A chave anterior vale até/)).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /^Copiar/ })).toHaveLength(1)
     expect(reason).toBe('chave vazou')
     await user.click(screen.getByRole('button', { name: 'Guardei' }))
     await waitFor(() => expect(screen.queryByText(NEW_API_KEY)).toBeNull())

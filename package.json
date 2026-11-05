@@ -24,6 +24,7 @@
     "sdk:build": "node -e \"require('fs').rmSync('sdk/typescript/dist',{recursive:true,force:true})\" && tsc -p sdk/typescript/tsconfig.build.json",
     "admin:rotate-signing-key": "tsx src/cli/rotate-signing-key.ts",
     "admin:create-operator": "tsx src/cli/create-operator.ts",
+    "seed:dev": "tsx scripts/seed-dev.ts",
     "admin:generate-encryption-key": "node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\""
   },
   "dependencies": {

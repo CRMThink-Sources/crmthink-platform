@@ -112,8 +112,8 @@ export function AppActions({ app }: { app: App }) {
           setOpen(null)
           secret.show({
             title: 'Nova chave de API',
-            secrets: [
-              { label: 'Chave de API', value: done.result.apiKey },
+            secrets: [{ label: 'Chave de API', value: done.result.apiKey }],
+            notes: [
               {
                 label: 'A chave anterior vale até',
                 value: formatDateTime(done.result.previousValidUntil),
@@ -147,6 +147,8 @@ export function AppActions({ app }: { app: App }) {
             title: 'Novo segredo de webhook',
             secrets: [
               { label: 'Segredo de webhook', value: done.result.webhookSecret },
+            ],
+            notes: [
               {
                 label: 'O anterior vale até',
                 value: formatDateTime(done.result.previousValidUntil),

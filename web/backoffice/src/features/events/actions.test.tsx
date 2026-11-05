@@ -126,6 +126,8 @@ describe('ações em eventos', () => {
       await within(dialog).findByText(/Acima do limite de 5000/),
     ).toBeInTheDocument()
     expect(dialog).toHaveTextContent(/Reduza o período/)
+    expect(dialog).toHaveTextContent(/Nada será reenviado/)
+    expect(dialog).not.toHaveTextContent(/serão reenviados ao app/)
     expect(
       within(dialog).getByRole('button', { name: 'Reenviar' }),
     ).toBeDisabled()

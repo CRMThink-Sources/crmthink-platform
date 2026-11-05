@@ -101,7 +101,9 @@ export function BulkResendDialog(props: {
       effect={
         matched === undefined
           ? 'Calculando quantos eventos serão reenviados…'
-          : `${matched} ${matched === 1 ? 'evento será reenviado' : 'eventos serão reenviados'} ao app, com a janela de 24 h reaberta.`
+          : tooLarge
+            ? `O filtro encontrou ${matched} eventos, mais do que o limite de ${RESEND_LIMIT} por reenvio. Nada será reenviado.`
+            : `${matched} ${matched === 1 ? 'evento será reenviado' : 'eventos serão reenviados'} ao app, com a janela de 24 h reaberta.`
       }
       confirmLabel="Reenviar"
       confirmText={matched ? `REENVIAR ${matched}` : 'REENVIAR'}
