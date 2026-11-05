@@ -558,6 +558,7 @@ describe('autenticação dos apps', () => {
     const admin = await http(h)
       .post(`/admin/apps/${GPTMAKER}/rotate-api-key`)
       .set('Authorization', 'Bearer admin-token')
+      .set('X-Admin-Reason', 'teste automatizado')
     expect(admin.status).toBe(200)
     expect(
       (

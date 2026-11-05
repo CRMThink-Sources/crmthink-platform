@@ -340,8 +340,23 @@ export const stripeEventListSchema = page(
   }),
 )
 
-export const resendResultSchema = z.strictObject({
-  requeued: z.number().int().describe('Eventos recolocados na fila'),
+export const resendResultSchema = z.union([
+  z.strictObject({
+    requeued: z.number().int().describe('Eventos recolocados na fila'),
+  }),
+  z
+    .strictObject({
+      matched: z.number().int().describe('Eventos que o filtro selecionaria'),
+      sample: z.array(z.string()).max(5).describe('Até 5 `eventId` de amostra'),
+    })
+    .describe('Resposta do `dryRun`: nada foi alterado'),
+])
+
+export const tokenRefreshedSchema = z.strictObject({
+  expiresAt: isoDate.describe('Validade do novo token'),
+  health: z
+    .enum(['ok', 'refresh_failing'])
+    .describe('Saúde da credencial após a renovação'),
 })
 
 export const signingKeyRotatedSchema = z.strictObject({

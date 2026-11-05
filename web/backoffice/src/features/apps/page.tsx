@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
+import { RoleGate } from '@/components/role-gate'
+import { Button } from '@/components/ui/button'
 import { api, call } from '@/api/client'
 import { PageHeader } from '@/components/filters'
 import { EmptyState, ErrorState, LoadingState } from '@/components/states'
@@ -23,7 +25,13 @@ export function AppsPage() {
   const apps = useQuery(appsQuery)
   return (
     <>
-      <PageHeader title="Apps" />
+      <PageHeader title="Apps">
+        <RoleGate role="operator">
+          <Button asChild>
+            <Link to="/apps/new">Cadastrar app</Link>
+          </Button>
+        </RoleGate>
+      </PageHeader>
       {apps.isPending ? (
         <LoadingState />
       ) : apps.isError ? (

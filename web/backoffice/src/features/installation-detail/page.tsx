@@ -23,6 +23,7 @@ import {
 import { EventsTable } from '@/features/events/page'
 import { useSearchState } from '@/lib/search-state'
 import { formatMoney } from '@/lib/format'
+import { InstallationActions } from './actions'
 import { Timeline } from './timeline'
 
 const TABS = ['timeline', 'events', 'attempts'] as const
@@ -240,7 +241,9 @@ export function InstallationDetailPage() {
         title={
           detail.data ? `#${id} · ${detail.data.domain}` : `Instalação #${id}`
         }
-      />
+      >
+        {detail.data && <InstallationActions data={detail.data} />}
+      </PageHeader>
       {detail.isPending ? (
         <LoadingState rows={4} />
       ) : detail.isError ? (

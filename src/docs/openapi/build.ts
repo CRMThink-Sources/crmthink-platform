@@ -5,7 +5,7 @@ import {
   type EventType,
 } from '@/modules/events/domain/event'
 import { SESSION_COOKIE } from '@/modules/backoffice/http/cookies'
-import { roleOf } from '@/modules/backoffice/http/policy'
+import { reasonOf, roleOf } from '@/modules/backoffice/http/policy'
 import { ERROR_CATALOG, type ErrorCode } from '../errors'
 import {
   EVENT_DATA,
@@ -180,6 +180,10 @@ function errorCodesOf(
     if (role !== 'self') codes.push('PASSWORD_CHANGE_REQUIRED')
     if (role === 'operator') codes.push('FORBIDDEN_ROLE')
     if (operation.method !== 'get') codes.push('ORIGIN_NOT_ALLOWED')
+    const reason = reasonOf(operation.method, operation.path)
+    if (reason) codes.push('REASON_INVALID')
+    if (reason === 'always' || reason === 'conditional')
+      codes.push('REASON_REQUIRED')
   }
   if (
     (operation.body && operation.body.contentType === undefined) ||
@@ -271,9 +275,18 @@ function descriptionOf(operation: Operation): string | undefined {
     operation.security === 'admin'
       ? roleOf(operation.method, operation.path)
       : null
+  const reason =
+    operation.security === 'admin'
+      ? reasonOf(operation.method, operation.path)
+      : null
   const parts = [
     operation.description,
     role ? `**Papel mínimo:** ${ROLE_TEXT[role]}.` : undefined,
+    reason === 'always'
+      ? '**Alto impacto:** exige o motivo em `X-Admin-Reason`.'
+      : reason === 'conditional'
+        ? '**Alto impacto conforme o corpo:** exige `X-Admin-Reason` quando a chamada tem esse efeito (descrito acima).'
+        : undefined,
   ].filter(Boolean)
   return parts.length ? parts.join('\n\n') : undefined
 }
@@ -293,6 +306,25 @@ function parametersOf(operation: Operation): Json[] {
         /id$/i.test(name) && name !== 'eventId'
           ? { type: 'integer', minimum: 1 }
           : { type: 'string' },
+    })
+  }
+  const reason =
+    operation.security === 'admin'
+      ? reasonOf(operation.method, operation.path)
+      : null
+  if (reason) {
+    params.push({
+      name: 'X-Admin-Reason',
+      in: 'header',
+      required: reason === 'always',
+      description:
+        'Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. ' +
+        (reason === 'always'
+          ? 'Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`.'
+          : reason === 'conditional'
+            ? 'Obrigatório quando a chamada tem efeito de alto impacto.'
+            : 'Opcional.'),
+      schema: { type: 'string', minLength: 1, maxLength: 500 },
     })
   }
   for (const query of operation.query ?? []) {

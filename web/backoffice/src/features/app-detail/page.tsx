@@ -6,6 +6,7 @@ import { JsonBlock, PageHeader } from '@/components/filters'
 import { ErrorState, LoadingState } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AppActions } from './actions'
 
 function Field(props: { label: string; children: ReactNode }) {
   return (
@@ -31,7 +32,8 @@ export function AppDetailPage() {
   return (
     <>
       <PageHeader title={app.data?.name ?? appCode}>
-        <div className="flex gap-3 text-sm">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          {app.data && <AppActions app={app.data} />}
           <Link
             className="hover:underline"
             to={`/installations?appCode=${encodeURIComponent(appCode)}`}

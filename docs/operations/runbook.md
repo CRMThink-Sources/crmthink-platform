@@ -150,20 +150,35 @@ Ambiente (item sem Ambiente = produção).
 
 ## Procedimentos
 
-| Situação | Ação |
-| --- | --- |
-| Evento em dead-letter | `GET /admin/events?status=dead` → corrigir o app → `POST /admin/events/resend {"eventId"}` ou `{"appCode","from","to","onlyDead":true}` |
-| Evento Stripe `dead` | `GET /admin/stripe-events?status=dead`; corrigir causa; `POST /admin/sweeps/stripe` reconcilia o SPA e emite o que faltou |
-| Instalação `INSTALL_PENDING` | `GET /admin/installations/{id}/attempts` (erro do instalador); o admin do portal clica "tentar novamente" |
-| Instalação `AUTH_ERROR` | O cliente reinstala o app (volta a `ACTIVE` e emite `installation.auth_restored`) |
-| Rotação da chave do JWT | `POST /admin/signing-keys/rotate {"leadMinutes":10}` — publicada já, assina após 10 min |
-| Rotação de credencial de app | `POST /admin/apps/{appCode}/rotate-api-key` ou `/rotate-webhook-secret` (24h de transição) |
-| SPA divergente | `POST /admin/sweeps/spa` e `/admin/sweeps/stripe` |
-| Investigar um cliente | `GET /admin/installations?q=<trecho do domínio>` → `GET /admin/installations/{id}` (saúde do token, eventos, assinatura) → `GET /admin/installations/{id}/timeline` |
-| Quem fez uma ação | `GET /admin/audit?targetType=app&targetId=<appCode>` (ou `targetType=installation`, `actor=operator:<id>`, `result=failure`) |
-| Conta de operador bloqueada | Espera 15 min, ou outro `operator` redefine o acesso (`POST /admin/operators/{id}/reset-access`), o que também desbloqueia |
-| Alerta `AdminLoginFailuresHigh` | `GET /admin/audit?action=auth.login_failed`: IPs e e-mails tentados. Se for ataque, bloquear o IP no Caddy/firewall |
-| Rollback | redeploy da imagem anterior (`PLATFORM_IMAGE=…:<sha>`); outbox e tokens permanecem no banco |
+Cada procedimento pode ser feito no backoffice (tela indicada) ou pela API. **Ações de alto
+impacto exigem o motivo** (1 a 500 caracteres, uma linha) no header `X-Admin-Reason`; sem ele a
+resposta é 400 `REASON_REQUIRED` e nada é executado. São elas: rotação de chave de API,
+rotação de segredo de webhook, desativação de app (`PATCH` com `active:false`), reenvio em lote,
+rotação da chave do JWT e redefinição de acesso de operador. Nas demais mutações o motivo é
+opcional, mas fica na auditoria quando enviado. Scripts que chamam essas ações precisam passar
+o header, por exemplo:
+
+```bash
+curl -X POST "$PLATFORM/admin/apps/<appCode>/rotate-api-key" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "X-Admin-Reason: chave vazou em um print"
+```
+
+| Situação                                  | Ação                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Evento em dead-letter                     | Tela **Eventos** (filtro `status=dead` → "Reenviar este" ou "Reenviar todos"). API: `GET /admin/events?status=dead` → corrigir o app → `POST /admin/events/resend {"eventId"}` ou, em lote, `{"appCode","from","to","onlyDead":true}` com `X-Admin-Reason`. Antes de um lote, `"dryRun":true` devolve `{matched, sample}` sem alterar nada (e sem motivo); também aceita `"installationId"`; acima de 5000 eventos responde 422 `RESEND_TOO_LARGE` (reduza o período) |
+| Evento Stripe `dead`                      | `GET /admin/stripe-events?status=dead`; corrigir causa; `POST /admin/sweeps/stripe` reconcilia o SPA e emite o que faltou                                                                                                                                                                                                                                                                                                                                             |
+| Instalação `INSTALL_PENDING`              | `GET /admin/installations/{id}/attempts` (erro do instalador); o admin do portal clica "tentar novamente"                                                                                                                                                                                                                                                                                                                                                             |
+| Instalação `AUTH_ERROR`                   | O cliente reinstala o app (volta a `ACTIVE` e emite `installation.auth_restored`)                                                                                                                                                                                                                                                                                                                                                                                     |
+| Token da instalação com `refresh_failing` | Detalhe da instalação → "Renovar token". API: `POST /admin/installations/{id}/token/refresh` (só instalação `ACTIVE`; devolve a validade e a saúde, nunca o token). Se o Bitrix recusar, 502 `TOKEN_REFRESH_FAILED` com `details.reason` (ex.: `invalid_grant` pede reinstalar o app)                                                                                                                                                                                 |
+| Rotação da chave do JWT                   | Tela **Sistema** → "Rotacionar chave do JWT". API: `POST /admin/signing-keys/rotate {"leadMinutes":10}` com `X-Admin-Reason` — publicada já, assina após 10 min                                                                                                                                                                                                                                                                                                       |
+| Rotação de credencial de app              | Detalhe do app na tela **Apps** → "Rotacionar chave" ou "Rotacionar segredo". API: `POST /admin/apps/{appCode}/rotate-api-key` ou `/rotate-webhook-secret` com `X-Admin-Reason` (24h de transição)                                                                                                                                                                                                                                                                    |
+| SPA divergente                            | Tela **Sistema** → varreduras Stripe e SPA. API: `POST /admin/sweeps/spa` e `/admin/sweeps/stripe`                                                                                                                                                                                                                                                                                                                                                                    |
+| Investigar um cliente                     | `GET /admin/installations?q=<trecho do domínio>` → `GET /admin/installations/{id}` (saúde do token, eventos, assinatura) → `GET /admin/installations/{id}/timeline`                                                                                                                                                                                                                                                                                                   |
+| Quem fez uma ação                         | `GET /admin/audit?targetType=app&targetId=<appCode>` (ou `targetType=installation`, `actor=operator:<id>`, `result=failure`)                                                                                                                                                                                                                                                                                                                                          |
+| Conta de operador bloqueada               | Espera 15 min, ou outro `operator` redefine o acesso (tela **Operadores** → "Redefinir acesso", ou `POST /admin/operators/{id}/reset-access` com `X-Admin-Reason`), o que também desbloqueia                                                                                                                                                                                                                                                                          |
+| Alerta `AdminLoginFailuresHigh`           | `GET /admin/audit?action=auth.login_failed`: IPs e e-mails tentados. Se for ataque, bloquear o IP no Caddy/firewall                                                                                                                                                                                                                                                                                                                                                   |
+| Rollback                                  | redeploy da imagem anterior (`PLATFORM_IMAGE=…:<sha>`); outbox e tokens permanecem no banco                                                                                                                                                                                                                                                                                                                                                                           |
 
 ## Operadores do backoffice
 
@@ -187,10 +202,10 @@ Cada pessoa entra com a própria conta (e-mail, senha e TOTP). Não há cadastro
   URI no app autenticador (Google Authenticator, 1Password, etc.; na entrada manual, só o
   valor de `secret=`; para QR code, `qrencode -t ansiutf8 '<uri>'`, nunca um gerador online)
   e entregue a senha por canal privado. No primeiro login a troca de senha é obrigatória.
+
 - **Demais contas**: um `operator` cria pela rota `POST /admin/operators` (ou pelo
   backoffice). Papéis: `viewer` (suporte, só leitura) e `operator` (dev, leitura e ações).
 - **Perdeu o celular ou a senha**: outro `operator` usa `POST /admin/operators/{id}/reset-access`.
   Sem nenhum `operator` disponível:
   `docker exec -it <COMPOSE_PROJECT>-api node dist/src/cli/create-operator.js --email <e-mail> --reset`.
   A redefinição derruba as sessões abertas da conta e desfaz o bloqueio.
-

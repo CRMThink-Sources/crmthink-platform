@@ -22,6 +22,8 @@ export type AuditEntry = {
   statusCode?: number | null
   errorCode?: string | null
   summary?: Record<string, unknown> | null
+  /** Motivo informado pelo operador (`X-Admin-Reason`); fica em `summary.reason`. */
+  reason?: string | null
   ip?: string | null
   userAgent?: string | null
   requestId?: string | null
@@ -78,6 +80,11 @@ export class AdminAudit {
   }
 
   async record(entry: AuditEntry): Promise<void> {
+    // O motivo entra depois do mascaramento: tem até 500 caracteres e não pode ser
+    // encurtado nem descartado junto com um corpo grande.
+    const summary = entry.reason
+      ? { ...(boundedSummary(entry.summary) ?? {}), reason: entry.reason }
+      : boundedSummary(entry.summary)
     try {
       await this.db.adminAuditLog.create({
         data: {
@@ -88,8 +95,7 @@ export class AdminAudit {
           targetId: entry.targetId?.slice(0, 200) ?? null,
           statusCode: entry.statusCode ?? null,
           errorCode: entry.errorCode ?? null,
-          summary: (boundedSummary(entry.summary) ?? undefined) as
-            Prisma.InputJsonValue | undefined,
+          summary: (summary ?? undefined) as Prisma.InputJsonValue | undefined,
           ip: entry.ip?.slice(0, 64) ?? null,
           userAgent: entry.userAgent?.slice(0, 500) ?? null,
           requestId: entry.requestId?.slice(0, 100) ?? null,

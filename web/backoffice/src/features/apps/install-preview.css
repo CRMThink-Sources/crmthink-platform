@@ -1,0 +1,73 @@
+/*
+ * Cópia do CSS da página de instalação do servidor
+ * (src/modules/installations/http/install-page.ts), com cada regra dentro de
+ * `.install-preview` e as variáveis de tema no próprio elemento (style inline).
+ * `install-preview.test.ts` falha se o CSS do servidor mudar sem esta cópia.
+ */
+.install-preview * {
+  box-sizing: border-box;
+}
+.install-preview {
+  margin: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+.install-preview main {
+  max-width: 480px;
+  margin: 32px auto;
+  padding: 24px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+.install-preview .logo {
+  max-height: 56px;
+  display: block;
+  margin: 0 auto 16px;
+}
+.install-preview h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+  text-align: center;
+}
+.install-preview p {
+  line-height: 1.5;
+}
+.install-preview .terms {
+  font-size: 0.85rem;
+  text-align: center;
+  color: #6b7280;
+}
+.install-preview button {
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 8px;
+}
+.install-preview button[disabled] {
+  opacity: 0.6;
+  cursor: wait;
+}
+.install-preview .state {
+  display: none;
+  text-align: center;
+}
+.install-preview .state.active {
+  display: block;
+}
+.install-preview .error {
+  color: #b91c1c;
+  font-size: 0.9rem;
+  min-height: 1.2em;
+}

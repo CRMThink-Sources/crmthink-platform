@@ -10,6 +10,7 @@ import { logger, scrubSecrets } from '@/shared/observability/logger'
 import { metrics } from '@/shared/observability/metrics'
 import { raiseAlert } from '@/shared/observability/alert'
 import { runWithLogContext } from '@/shared/observability/log-context'
+import { HttpError } from '@/shared/http/errors'
 import type { AppRegistry } from '@/modules/registry/app-registry'
 
 /**
@@ -23,6 +24,23 @@ import type { AppRegistry } from '@/modules/registry/app-registry'
  * Falha (não 2xx ou timeout) reagenda com backoff exponencial; passada a janela
  * (24h desde a criação ou do último reenvio manual), dead-letter + alerta.
  */
+
+/** Proteção do reenvio em lote: acima disso o operador reduz o período ou o filtro. */
+export const RESEND_LIMIT = 5000
+
+export type ResendSelector =
+  | { eventId: string; dryRun?: boolean }
+  | {
+      appCode?: string
+      installationId?: number
+      from: Date
+      to: Date
+      onlyDead?: boolean
+      type?: string
+      dryRun?: boolean
+    }
+
+export type ResendPreview = { matched: number; sample: string[] }
 
 export const BACKOFF_BASE_MS = 30_000
 export const BACKOFF_MAX_MS = 60 * 60_000
@@ -226,29 +244,55 @@ export class EventDelivery {
 
   /**
    * Reenvio manual: volta eventos a `pending` com janela nova. Por `eventId`, ou por
-   * intervalo de criação de um app (opcionalmente só os mortos).
+   * intervalo de criação de um app e/ou de uma instalação (opcionalmente só os mortos).
+   *
+   * Com `dryRun` só conta (`matched` e até 5 `eventId` de amostra) e não altera nada.
+   * Um seletor por filtro com mais de `RESEND_LIMIT` eventos é recusado (422).
    */
   async resend(
-    selector:
-      | { eventId: string }
-      | {
-          appCode: string
-          from: Date
-          to: Date
-          onlyDead?: boolean
-          type?: string
-        },
-  ): Promise<number> {
+    selector: ResendSelector & { dryRun: true },
+  ): Promise<ResendPreview>
+  async resend(selector: ResendSelector): Promise<number | ResendPreview>
+  async resend(selector: ResendSelector): Promise<number | ResendPreview> {
     const now = this.clock.now()
     const where =
       'eventId' in selector
         ? { eventId: selector.eventId }
         : {
-            appCode: selector.appCode,
+            ...(selector.appCode ? { appCode: selector.appCode } : {}),
+            ...(selector.installationId
+              ? { installationId: selector.installationId }
+              : {}),
             createdAt: { gte: selector.from, lte: selector.to },
             ...(selector.onlyDead ? { status: 'dead' } : {}),
             ...(selector.type ? { type: selector.type } : {}),
           }
+
+    if (selector.dryRun) {
+      const [matched, sample] = await Promise.all([
+        this.db.outboxEvent.count({ where }),
+        this.db.outboxEvent.findMany({
+          where,
+          orderBy: { seq: 'asc' },
+          take: 5,
+          select: { eventId: true },
+        }),
+      ])
+      return { matched, sample: sample.map(row => row.eventId) }
+    }
+
+    if (!('eventId' in selector)) {
+      const matched = await this.db.outboxEvent.count({ where })
+      if (matched > RESEND_LIMIT) {
+        throw new HttpError(
+          422,
+          'RESEND_TOO_LARGE',
+          `O filtro encontrou ${matched} eventos; o limite por reenvio é ${RESEND_LIMIT}. Reduza o período.`,
+          { matched, limit: RESEND_LIMIT },
+        )
+      }
+    }
+
     const result = await this.db.outboxEvent.updateMany({
       where,
       data: {

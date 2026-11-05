@@ -163,6 +163,7 @@ const res = {
   outboxEvents: named('OutboxEventList', r.outboxEventListSchema),
   stripeEvents: named('StripeEventList', r.stripeEventListSchema),
   resend: named('ResendResult', r.resendResultSchema),
+  tokenRefreshed: named('InstallationTokenRefreshed', r.tokenRefreshedSchema),
   signingKey: named('SigningKeyRotated', r.signingKeyRotatedSchema),
   sweep: named('SweepResult', r.sweepResultSchema),
   operator: named('Operator', r.operatorSchema),
@@ -896,6 +897,26 @@ export const OPERATIONS: Operation[] = [
     ],
   },
   {
+    method: 'post',
+    path: '/admin/installations/{id}/token/refresh',
+    operationId: 'forceTokenRefresh',
+    tag: 'Operador',
+    summary: 'Forçar a renovação do token do Bitrix',
+    description:
+      'Renova o token da instalação com a mesma trava e a mesma contagem de falhas da renovação agendada. A resposta traz só a nova validade e a saúde, nunca o token. Se o Bitrix recusar, `TOKEN_REFRESH_FAILED` traz o motivo em `details.reason`.',
+    security: 'admin',
+    pathParams: installationId,
+    responses: { 200: json('Token renovado', res.tokenRefreshed) },
+    errors: [
+      'INSTALLATION_NOT_FOUND',
+      ['INSTALLATION_NOT_ACTIVE', 409],
+      'TOKEN_REFRESH_FAILED',
+      'BITRIX_UNAVAILABLE',
+      'TOKEN_REFRESH_BUSY',
+      'AUTH_ERROR',
+    ],
+  },
+  {
     method: 'get',
     path: '/admin/installations/{id}/attempts',
     operationId: 'listInstallAttempts',
@@ -1070,11 +1091,19 @@ export const OPERATIONS: Operation[] = [
     path: '/admin/events/resend',
     operationId: 'resendEvents',
     tag: 'Operador',
-    summary: 'Reenviar eventos (um `eventId` ou uma janela por app)',
-    description: 'Reabre a janela de reenvio de 24 h dos eventos selecionados.',
+    summary:
+      'Reenviar eventos (um `eventId` ou uma janela por app e/ou instalação)',
+    description:
+      'Reabre a janela de reenvio de 24 h dos eventos selecionados. O seletor por filtro aceita `appCode` e/ou `installationId` (pelo menos um). Com `dryRun: true` só responde `{ matched, sample }` (quantidade e até 5 `eventId`), sem alterar nada e sem exigir motivo. O reenvio em lote (por filtro, sem `dryRun`) exige `X-Admin-Reason` e é recusado com `RESEND_TOO_LARGE` acima de 5000 eventos.',
     security: 'admin',
     body: { schema: req.resend },
-    responses: { 200: json('Quantidade reenfileirada', res.resend) },
+    responses: {
+      200: json(
+        'Quantidade reenfileirada, ou a prévia do `dryRun`',
+        res.resend,
+      ),
+    },
+    errors: [['RESEND_TOO_LARGE', 422]],
   },
   {
     method: 'post',

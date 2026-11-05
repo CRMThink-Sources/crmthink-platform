@@ -168,7 +168,7 @@ export const ERROR_CATALOG = {
   INSTALLATION_NOT_ACTIVE: {
     status: 403,
     meaning:
-      'Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout: 409).',
+      'Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).',
     action: 'Concluir ou refazer a instalação.',
     origin:
       'installations/application/session-service.ts, billing/application/checkout-service.ts',
@@ -209,8 +209,10 @@ export const ERROR_CATALOG = {
   },
   TOKEN_REFRESH_FAILED: {
     status: 502,
-    meaning: 'O OAuth do Bitrix falhou ao renovar o token.',
-    action: 'Repetir com backoff.',
+    meaning:
+      'O OAuth do Bitrix falhou ao renovar o token. Na renovação forçada pelo operador, `details.reason` traz o código devolvido (ex.: `invalid_grant`) e a falha conta nas falhas da credencial.',
+    action:
+      'Apps: repetir com backoff. Operador: ver `details.reason`; `invalid_grant` pede reinstalar o app.',
     origin: 'installations/application/token-vault.ts',
   },
 
@@ -362,6 +364,30 @@ export const ERROR_CATALOG = {
     meaning: 'O papel do operador não permite esta rota (`viewer` só lê).',
     action: 'Pedir a um `operator`.',
     origin: 'backoffice/http/gate.ts (papel em backoffice/http/policy.ts)',
+  },
+  REASON_REQUIRED: {
+    status: 400,
+    meaning:
+      'Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.',
+    action:
+      'Repetir informando o motivo (1 a 500 caracteres) em `X-Admin-Reason`.',
+    origin:
+      'backoffice/http/gate.ts (alto impacto em backoffice/http/policy.ts)',
+  },
+  RESEND_TOO_LARGE: {
+    status: 422,
+    meaning:
+      'O filtro do reenvio em lote encontrou mais de 5000 eventos (`details.matched` e `details.limit`); nada foi reenviado.',
+    action:
+      'Reduzir o período ou filtrar por instalação e repetir; use `dryRun` para ver a quantidade.',
+    origin: 'events/event-delivery.ts',
+  },
+  REASON_INVALID: {
+    status: 400,
+    meaning:
+      '`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.',
+    action: 'Enviar o motivo em uma linha, com até 500 caracteres.',
+    origin: 'backoffice/http/gate.ts',
   },
   PASSWORD_CHANGE_REQUIRED: {
     status: 403,
