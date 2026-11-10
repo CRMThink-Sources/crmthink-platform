@@ -23,6 +23,11 @@ export class TrustedDevices {
     return this.config.trustedDeviceDays > 0
   }
 
+  /** Prazo em dias (0 = desligado). */
+  get days(): number {
+    return this.config.trustedDeviceDays
+  }
+
   async trust(
     operatorId: number,
     meta: { userAgent?: string | null } = {},

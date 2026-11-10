@@ -25,7 +25,7 @@ import {
   resendSchema,
   rotateSigningKeySchema,
 } from '@/modules/registry/http/admin-routes'
-import { loginSchema } from '@/modules/backoffice/application/login'
+import { loginSchema, totpSchema } from '@/modules/backoffice/application/login'
 import {
   changePasswordSchema,
   createOperatorSchema,
@@ -125,6 +125,7 @@ const req = {
   resend: named('ResendEventsRequest', resendSchema),
   rotateSigningKey: named('RotateSigningKeyRequest', rotateSigningKeySchema),
   login: named('OperatorLoginRequest', loginSchema),
+  totp: named('OperatorTotpRequest', totpSchema),
   changePassword: named('ChangePasswordRequest', changePasswordSchema),
   createOperator: named('CreateOperatorRequest', createOperatorSchema),
   updateOperator: named('UpdateOperatorRequest', updateOperatorSchema),
@@ -173,7 +174,8 @@ const res = {
   operator: named('Operator', r.operatorSchema),
   operatorList: named('OperatorList', r.operatorListSchema),
   issuedAccess: named('IssuedOperatorAccess', r.issuedAccessSchema),
-  loginResult: named('OperatorLoginResult', r.loginResultSchema),
+  loginStep: named('OperatorLoginStep', r.loginStepSchema),
+  totpResult: named('OperatorTotpResult', r.totpResultSchema),
   whoAmI: named('WhoAmI', r.whoAmISchema),
   passwordChanged: named('PasswordChanged', r.passwordChangedSchema),
   stripeEvent: named('StripeEventDetail', r.stripeEventDetailSchema),
@@ -709,13 +711,33 @@ export const OPERATIONS: Operation[] = [
     path: '/admin/auth/login',
     operationId: 'operatorLogin',
     tag: 'Operador',
-    summary: 'Entrar no backoffice (e-mail, senha e TOTP)',
+    summary: 'Entrar no backoffice, 1ª etapa (e-mail e senha)',
     description:
-      'Define o cookie de sessão `cp_admin_session` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/admin`). Qualquer falha responde `INVALID_CREDENTIALS`, sem dizer qual fator falhou. Após 5 falhas em 15 min a conta fica bloqueada por 15 min; mais de 20 tentativas por IP em 15 min respondem 429 com `Retry-After`. Com `Origin`, ele precisa estar em `BACKOFFICE_ORIGINS`.',
+      'Confere e-mail e senha e responde o próximo passo em `step`: `totp` (falta o código do autenticador), `totp-setup` (a conta ainda não tem autenticador: a resposta traz o segredo e o URI `otpauth://` para o QR code) ou `authenticated` (o navegador está lembrado e a sessão já abriu). Só `authenticated` define o cookie de sessão `cp_admin_session` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/admin`). O cookie `cp_admin_device`, quando válido para a conta, dispensa o código; a senha continua obrigatória. Qualquer falha responde `INVALID_CREDENTIALS`, sem dizer qual fator falhou. Após 5 falhas em 15 min a conta fica bloqueada por 15 min; mais de 20 tentativas por IP em 15 min (somando `/admin/auth/totp`) respondem 429 com `Retry-After`. Com `Origin`, ele precisa estar em `BACKOFFICE_ORIGINS`.',
     security: 'none',
     body: { schema: req.login },
-    responses: { 200: json('Operador e validade da sessão', res.loginResult) },
+    responses: {
+      200: json('Próximo passo do login', res.loginStep),
+    },
     errors: ['INVALID_CREDENTIALS', 'TOO_MANY_REQUESTS', 'ORIGIN_NOT_ALLOWED'],
+  },
+  {
+    method: 'post',
+    path: '/admin/auth/totp',
+    operationId: 'operatorTotp',
+    tag: 'Operador',
+    summary: 'Entrar no backoffice, 2ª etapa (código do autenticador)',
+    description:
+      'Recebe o desafio da 1ª etapa e o código de 6 dígitos. No `totp-setup`, o código prova que o app foi cadastrado e só então o segredo é gravado na conta. Define o cookie de sessão e, com `rememberDevice: true`, o cookie `cp_admin_device` pelo prazo de `ADMIN_TRUSTED_DEVICE_DAYS`. O desafio vale 5 minutos, é de uso único e aceita 5 códigos errados (`CHALLENGE_EXPIRED` depois disso). Um código já usado não vale de novo.',
+    security: 'none',
+    body: { schema: req.totp },
+    responses: { 200: json('Operador e validade da sessão', res.totpResult) },
+    errors: [
+      'INVALID_CREDENTIALS',
+      'CHALLENGE_EXPIRED',
+      'TOO_MANY_REQUESTS',
+      'ORIGIN_NOT_ALLOWED',
+    ],
   },
   {
     method: 'post',

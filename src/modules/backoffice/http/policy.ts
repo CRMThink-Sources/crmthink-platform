@@ -53,6 +53,7 @@ const operator = (p: Record<string, string>) => ({
 /** Chave: `MÉTODO /caminho` no formato do Express (`:param`). */
 export const ADMIN_POLICIES: Record<string, AdminPolicy> = {
   'POST /admin/auth/login': { role: 'public', auditedByHandler: true },
+  'POST /admin/auth/totp': { role: 'public', auditedByHandler: true },
   'POST /admin/auth/logout': { role: 'self', auditedByHandler: true },
   'GET /admin/auth/me': { role: 'self' },
   'POST /admin/auth/password': { role: 'self', auditedByHandler: true },

@@ -410,12 +410,50 @@ export const issuedAccessSchema = z.strictObject({
     ),
 }) satisfies z.ZodType<IssuedAccess>
 
-export const loginResultSchema = z.strictObject({
+const authenticatedSchema = z.strictObject({
+  step: z.literal('authenticated'),
   operator: operatorSchema,
   expiresAt: isoDate.describe(
     'Fim da validade máxima da sessão; antes disso ela expira após o tempo de inatividade',
   ),
 })
+
+const trustedDeviceDays = z
+  .number()
+  .int()
+  .describe(
+    'Dias em que "lembrar este navegador" dispensa o código; `0` quando o recurso está desligado',
+  )
+
+export const loginStepSchema = z.union([
+  z.strictObject({
+    step: z.literal('totp'),
+    challenge: z
+      .string()
+      .describe('Desafio de uso único, válido por 5 minutos'),
+    trustedDeviceDays,
+  }),
+  z.strictObject({
+    step: z.literal('totp-setup'),
+    challenge: z
+      .string()
+      .describe('Desafio de uso único, válido por 5 minutos'),
+    secret: z
+      .string()
+      .describe(
+        'Segredo novo em base32, só nesta resposta. Só é gravado na conta depois do primeiro código válido.',
+      ),
+    otpauthUri: z
+      .string()
+      .describe(
+        'URI `otpauth://` do segredo, para o QR code do app autenticador',
+      ),
+    trustedDeviceDays,
+  }),
+  authenticatedSchema,
+])
+
+export const totpResultSchema = authenticatedSchema
 
 export const whoAmISchema = z.union([
   z.strictObject({
