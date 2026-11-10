@@ -353,6 +353,14 @@ export const ERROR_CATALOG = {
     origin:
       'backoffice/application/login.ts, backoffice/application/operators.ts',
   },
+  CHALLENGE_EXPIRED: {
+    status: 401,
+    meaning:
+      'O desafio do login (entre a senha e o código do autenticador) venceu, já foi usado, esgotou as 5 tentativas ou não existe.',
+    action:
+      'Voltar à tela de login e entrar de novo com e-mail e senha: um desafio novo vale por 5 minutos.',
+    origin: 'backoffice/application/login.ts',
+  },
   TOO_MANY_REQUESTS: {
     status: 429,
     meaning: 'Limite de tentativas de login por IP excedido (20 em 15 min).',

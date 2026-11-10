@@ -67,7 +67,9 @@ import { CacheInvalidatingPaymentGateway } from '@/modules/billing/infra/stripe/
 import { StripePaymentGateway } from '@/modules/billing/infra/stripe/stripe-gateway'
 import type { PaymentGateway } from '@/modules/billing/ports/payment-gateway'
 import { AdminAudit } from '@/modules/backoffice/application/audit'
+import { LoginChallenges } from '@/modules/backoffice/application/login-challenges'
 import { LoginService } from '@/modules/backoffice/application/login'
+import { TrustedDevices } from '@/modules/backoffice/application/trusted-devices'
 import { OperatorService } from '@/modules/backoffice/application/operators'
 import { AdminSessions } from '@/modules/backoffice/application/sessions'
 import { totpIssuer } from '@/modules/backoffice/domain/operator'
@@ -288,12 +290,12 @@ export function buildContainer(deps: ContainerDeps) {
     new RedisRateCounter(deps.redis as Redis, `${env.queuePrefix}:rate`)
   const audit = new AdminAudit(db, clock, env.backoffice.auditRetentionDays)
   const adminSessions = new AdminSessions(db, clock, env.backoffice)
-  const operators = new OperatorService(
-    db,
-    cipher,
-    totpIssuer(env.platformEnvironment),
-    (id, except) => adminSessions.revokeAll(id, except),
-  )
+  const trustedDevices = new TrustedDevices(db, clock, env.backoffice)
+  const loginChallenges = new LoginChallenges(cache, clock, cipher, counters)
+  const operators = new OperatorService(db, async (id, except) => {
+    await adminSessions.revokeAll(id, except)
+    await trustedDevices.revokeAll(id)
+  })
   const login = new LoginService(
     db,
     cipher,
@@ -301,6 +303,9 @@ export function buildContainer(deps: ContainerDeps) {
     counters,
     audit,
     clock,
+    loginChallenges,
+    trustedDevices,
+    totpIssuer(env.platformEnvironment),
   )
 
   const installationReads = new InstallationReads(
@@ -358,6 +363,7 @@ export function buildContainer(deps: ContainerDeps) {
     sweeps,
     audit,
     adminSessions,
+    trustedDevices,
     operators,
     login,
     installationReads,

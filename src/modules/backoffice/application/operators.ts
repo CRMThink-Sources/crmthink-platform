@@ -1,8 +1,6 @@
 import z from 'zod'
 import { Prisma } from '@/prisma/client'
 import type { Db } from '@/shared/infra/prisma'
-import type { TokenCipher } from '@/shared/crypto/token-cipher'
-import { generateTotpSecret, totpUri } from '@/shared/crypto/totp'
 import { badRequest, conflict, HttpError, notFound } from '@/shared/http/errors'
 import {
   emailSchema,
@@ -49,6 +47,7 @@ export function toOperatorView(row: OperatorRow): OperatorView {
     role: row.role as OperatorRole,
     active: row.active,
     mustChangePassword: row.mustChangePassword,
+    totpConfigured: row.totpSecretEnc !== null,
     lockedUntil: row.lockedUntil?.toISOString() ?? null,
     lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
@@ -62,15 +61,17 @@ export const invalidCredentials = () =>
  * Contas de operador do backoffice. Não há cadastro público: a primeira conta nasce
  * pelo script (`yarn admin:create-operator`) e as demais por um `operator`.
  *
- * Senha provisória e segredo TOTP saem só na resposta da criação/redefinição; depois
- * existem apenas como hash argon2id e segredo cifrado.
+ * A senha provisória sai só na resposta da criação/redefinição; depois existe apenas como
+ * hash argon2id. O segredo TOTP não passa por quem cria a conta: o operador cadastra o
+ * autenticador no primeiro login (`LoginService`).
  */
 export class OperatorService {
   constructor(
     private readonly db: Db,
-    private readonly cipher: TokenCipher,
-    private readonly totpIssuer: string,
-    /** Revoga as sessões abertas da conta (todas, ou todas menos `exceptSessionId`). */
+    /**
+     * Revoga as sessões abertas da conta (todas, ou todas menos `exceptSessionId`) e esquece
+     * os navegadores lembrados dela.
+     */
     private readonly revokeSessions: (
       operatorId: number,
       exceptSessionId?: number,
@@ -92,7 +93,7 @@ export class OperatorService {
 
   async create(input: CreateOperatorInput): Promise<IssuedAccess> {
     const data = createOperatorSchema.parse(input)
-    const access = await this.newAccess(data.email)
+    const access = await this.newAccess()
     try {
       const row = await this.db.adminOperator.create({
         data: {
@@ -100,7 +101,7 @@ export class OperatorService {
           name: data.name,
           role: data.role,
           passwordHash: access.passwordHash,
-          totpSecretEnc: access.totpSecretEnc,
+          totpSecretEnc: null,
           mustChangePassword: true,
         },
       })
@@ -175,15 +176,18 @@ export class OperatorService {
     return toOperatorView(updated)
   }
 
-  /** Nova senha provisória e novo TOTP (ex.: perdeu o celular). Derruba as sessões e desbloqueia. */
+  /**
+   * Nova senha provisória e TOTP apagado (ex.: perdeu o celular): o operador cadastra o
+   * autenticador de novo no próximo login. Derruba as sessões e desbloqueia.
+   */
   async resetAccess(id: number): Promise<IssuedAccess> {
-    const row = await this.get(id)
-    const access = await this.newAccess(row.email)
+    await this.get(id)
+    const access = await this.newAccess()
     const updated = await this.db.adminOperator.update({
       where: { id },
       data: {
         passwordHash: access.passwordHash,
-        totpSecretEnc: access.totpSecretEnc,
+        totpSecretEnc: null,
         lastTotpStep: 0,
         mustChangePassword: true,
         failedLogins: 0,
@@ -228,25 +232,21 @@ export class OperatorService {
     return toOperatorView(updated)
   }
 
-  private async newAccess(email: string) {
+  private async newAccess() {
     const temporaryPassword = generateTemporaryPassword()
-    const secret = generateTotpSecret()
     return {
       temporaryPassword,
       passwordHash: await hashPassword(temporaryPassword),
-      totpSecretEnc: this.cipher.encrypt(secret),
-      totpUri: totpUri({ secret, account: email, issuer: this.totpIssuer }),
     }
   }
 
   private issued(
     row: OperatorRow,
-    access: { temporaryPassword: string; totpUri: string },
+    access: { temporaryPassword: string },
   ): IssuedAccess {
     return {
       operator: toOperatorView(row),
       temporaryPassword: access.temporaryPassword,
-      totpUri: access.totpUri,
     }
   }
 }

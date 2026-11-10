@@ -16,6 +16,7 @@ export function operator(
     role: 'operator',
     active: true,
     mustChangePassword: false,
+    totpConfigured: true,
     lockedUntil: null,
     lastLoginAt: '2026-10-28T12:00:00.000Z',
     createdAt: '2026-10-01T12:00:00.000Z',

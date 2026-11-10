@@ -8,8 +8,8 @@ const USAGE = `Uso (no servidor: node dist/src/cli/create-operator.js no lugar d
 
 /**
  * `yarn admin:create-operator`: cria uma conta (o primeiro operador nasce aqui) ou, com
- * `--reset`, gera senha provisória e TOTP novos para quem perdeu o acesso. Senha e URI
- * só aparecem nesta saída.
+ * `--reset`, gera senha provisória nova e apaga o TOTP de quem perdeu o acesso (o operador
+ * cadastra o autenticador de novo no próximo login). A senha só aparece nesta saída.
  */
 export async function runCreateOperator(
   argv: string[],
@@ -51,6 +51,6 @@ export async function runCreateOperator(
   print(
     `Senha provisória (troca obrigatória no 1º login): ${issued.temporaryPassword}`,
   )
-  print(`TOTP (cadastre no app autenticador): ${issued.totpUri}`)
-  print('Estes valores não serão exibidos de novo.')
+  print('O autenticador é cadastrado pelo próprio operador no primeiro login.')
+  print('Esta senha não será exibida de novo.')
 }

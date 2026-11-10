@@ -10,7 +10,7 @@ Com `backoffice-ui`, dev e suporte enxergam o estado da plataforma, mas qualquer
   - **Varreduras**: rodar a reconciliação do Stripe ou dos SPAs e ver o resultado.
   - **Apps**: cadastrar app (chave de API e segredo de webhook mostrados uma única vez, com cópia); editar a configuração (nome, logo, URLs, escopos, produtos, trial, tema da página de instalação com pré-visualização); ativar ou desativar; rotacionar a chave de API e o segredo de webhook.
   - **Chave de assinatura do JWT**: rotacionar.
-  - **Operadores**: listar, criar (senha provisória e QR code do TOTP mostrados uma vez), trocar papel, ativar ou desativar, redefinir acesso.
+  - **Operadores**: listar, criar (senha provisória mostrada uma vez; o autenticador é cadastrado pelo operador no primeiro login, ver `backoffice-two-step-login`), trocar papel, ativar ou desativar, redefinir acesso.
 - Ações de alto impacto (rotação de chave de API, desativação de app, reenvio em lote, rotação da chave do JWT) exigem digitar o identificador do alvo para confirmar.
 - Toda ação pede um **motivo** em texto livre, enviado no header `X-Admin-Reason`. Ele é obrigatório nas ações de alto impacto e é gravado no registro de auditoria.
 - API, alterações aditivas:

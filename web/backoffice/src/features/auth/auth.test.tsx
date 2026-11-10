@@ -6,54 +6,216 @@ import { apiError, meHandler, operator, viewer } from '@/test/fixtures'
 import { currentUrl, renderApp, renderRoutes } from '@/test/render'
 import { server } from '@/test/server'
 
-async function fillLogin(user: ReturnType<typeof renderApp>['user']) {
+type User = ReturnType<typeof renderApp>['user']
+
+const SECRET = 'JBSWY3DPEHPK3PXP'
+const OTPAUTH = `otpauth://totp/CRMThink:dev@connectthink.com.br?secret=${SECRET}&issuer=CRMThink`
+const EXPIRES = '2026-10-29T00:00:00.000Z'
+
+async function fillCredentials(user: User) {
   await user.type(screen.getByLabelText('E-mail'), 'dev@connectthink.com.br')
   await user.type(screen.getByLabelText('Senha'), 'senha-definitiva-123')
-  await user.type(screen.getByLabelText('Código (6 dígitos)'), '123456')
-  await user.click(screen.getByRole('button', { name: 'Entrar' }))
+  await user.click(screen.getByRole('button', { name: 'Continuar' }))
+}
+
+async function fillCode(user: User, button = 'Entrar') {
+  await user.type(await screen.findByLabelText('Código (6 dígitos)'), '123456')
+  await user.click(screen.getByRole('button', { name: button }))
+}
+
+const askCode = (trustedDeviceDays = 30) =>
+  http.post('*/admin/auth/login', () =>
+    HttpResponse.json({ step: 'totp', challenge: 'c1', trustedDeviceDays }),
+  )
+
+/** `GET /admin/auth/me` que só passa a responder depois de `login()` ser chamado. */
+function sessionAfterLogin() {
+  let me: ReturnType<typeof operator> | null = null
+  return {
+    login: (who = operator()) => {
+      me = who
+      return who
+    },
+    handler: http.get('*/admin/auth/me', () =>
+      me
+        ? HttpResponse.json({
+            kind: 'operator',
+            actor: 'operator:1',
+            role: me.role,
+            operator: me,
+          })
+        : apiError(401, 'UNAUTHORIZED'),
+    ),
+  }
 }
 
 describe('login', () => {
-  it('sem sessão vai ao login e, ao entrar, volta ao endereço de origem', async () => {
-    let me: ReturnType<typeof operator> | null = null
+  it('sem sessão vai ao login, pede senha e depois o código, e volta ao endereço de origem', async () => {
+    const session = sessionAfterLogin()
+    const bodies: unknown[] = []
     server.use(
-      http.get('*/admin/auth/me', () =>
-        me
-          ? HttpResponse.json({
-              kind: 'operator',
-              actor: 'operator:1',
-              role: me.role,
-              operator: me,
-            })
-          : apiError(401, 'UNAUTHORIZED'),
-      ),
+      session.handler,
       http.post('*/admin/auth/login', async ({ request }) => {
-        expect(await request.json()).toEqual({
-          email: 'dev@connectthink.com.br',
-          password: 'senha-definitiva-123',
-          code: '123456',
-        })
-        me = operator()
+        bodies.push(await request.json())
         return HttpResponse.json({
-          operator: me,
-          expiresAt: '2026-10-29T00:00:00.000Z',
+          step: 'totp',
+          challenge: 'c1',
+          trustedDeviceDays: 30,
+        })
+      }),
+      http.post('*/admin/auth/totp', async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json({
+          step: 'authenticated',
+          operator: session.login(),
+          expiresAt: EXPIRES,
         })
       }),
     )
     const { router, user } = renderApp('/audit?actor=token%3Aabc')
-    await screen.findByRole('button', { name: 'Entrar' })
+    await screen.findByRole('button', { name: 'Continuar' })
     expect(currentUrl(router)).toBe(
       '/login?next=%2Faudit%3Factor%3Dtoken%253Aabc',
     )
 
-    await fillLogin(user)
+    await fillCredentials(user)
+    expect(screen.queryByLabelText('Senha')).toBeNull()
+    await fillCode(user)
+
     await waitFor(() =>
       expect(currentUrl(router)).toBe('/audit?actor=token%3Aabc'),
     )
     expect(await screen.findByText('Dev')).toBeInTheDocument()
+    expect(bodies).toEqual([
+      { email: 'dev@connectthink.com.br', password: 'senha-definitiva-123' },
+      { challenge: 'c1', code: '123456', rememberDevice: false },
+    ])
   })
 
-  it('falha mostra uma mensagem genérica', async () => {
+  it('"Lembrar este navegador" informa os dias e envia rememberDevice', async () => {
+    let body: Record<string, unknown> | null = null
+    server.use(
+      meHandler(null),
+      askCode(30),
+      http.post('*/admin/auth/totp', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return apiError(401, 'INVALID_CREDENTIALS')
+      }),
+    )
+    const { user } = renderApp('/login')
+    await fillCredentials(user)
+    const box = await screen.findByRole('checkbox', {
+      name: 'Lembrar este navegador por 30 dias',
+    })
+    expect(box).not.toBeChecked()
+    await user.click(box)
+    await fillCode(user)
+
+    await waitFor(() => expect(body).toMatchObject({ rememberDevice: true }))
+  })
+
+  it('com o recurso desligado (0 dias) não oferece a opção', async () => {
+    server.use(meHandler(null), askCode(0))
+    const { user } = renderApp('/login')
+    await fillCredentials(user)
+    await screen.findByLabelText('Código (6 dígitos)')
+    expect(screen.queryByRole('checkbox')).toBeNull()
+  })
+
+  it('navegador lembrado entra direto, sem pedir o código', async () => {
+    const session = sessionAfterLogin()
+    server.use(
+      session.handler,
+      http.post('*/admin/auth/login', () =>
+        HttpResponse.json({
+          step: 'authenticated',
+          operator: session.login(),
+          expiresAt: EXPIRES,
+        }),
+      ),
+    )
+    const { router, user } = renderApp('/login')
+    await fillCredentials(user)
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    expect(screen.queryByLabelText('Código (6 dígitos)')).toBeNull()
+  })
+
+  it('primeiro acesso mostra o QR code e o segredo, e o primeiro código conclui o cadastro', async () => {
+    const session = sessionAfterLogin()
+    let body: unknown = null
+    server.use(
+      session.handler,
+      http.post('*/admin/auth/login', () =>
+        HttpResponse.json({
+          step: 'totp-setup',
+          challenge: 'c9',
+          secret: SECRET,
+          otpauthUri: OTPAUTH,
+          trustedDeviceDays: 30,
+        }),
+      ),
+      http.post('*/admin/auth/totp', async ({ request }) => {
+        body = await request.json()
+        return HttpResponse.json({
+          step: 'authenticated',
+          operator: session.login(),
+          expiresAt: EXPIRES,
+        })
+      }),
+    )
+    const networkCalls: string[] = []
+    server.events.on('request:start', ({ request }) => {
+      networkCalls.push(new URL(request.url).pathname)
+    })
+    const { router, queryClient, user } = renderApp('/login')
+    await fillCredentials(user)
+
+    expect(
+      await screen.findByRole('img', {
+        name: 'QR code para o app autenticador',
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(SECRET)).toBeInTheDocument()
+    // Só a API de operador: o URI com o segredo nunca vai a um serviço de QR code.
+    expect(networkCalls.every(path => path.startsWith('/admin/'))).toBe(true)
+    expect(window.location.href).not.toContain(SECRET)
+
+    await fillCode(user, 'Confirmar e entrar')
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    expect(body).toEqual({
+      challenge: 'c9',
+      code: '123456',
+      rememberDevice: false,
+    })
+    // O segredo não fica no cache de consultas, no armazenamento nem na tela.
+    expect(JSON.stringify(queryClient.getQueryCache().getAll())).not.toContain(
+      SECRET,
+    )
+    expect(
+      JSON.stringify({ ...localStorage, ...sessionStorage }),
+    ).not.toContain(SECRET)
+    expect(document.body).not.toHaveTextContent(SECRET)
+  })
+
+  it('falha mostra uma mensagem genérica e limpa o código', async () => {
+    server.use(
+      meHandler(null),
+      askCode(),
+      http.post('*/admin/auth/totp', () =>
+        apiError(401, 'INVALID_CREDENTIALS'),
+      ),
+    )
+    const { user } = renderApp('/login')
+    await fillCredentials(user)
+    await fillCode(user)
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'E-mail, senha ou código inválidos.',
+    )
+    expect(screen.getByLabelText('Código (6 dígitos)')).toHaveValue('')
+  })
+
+  it('senha errada na primeira etapa mostra a mesma mensagem genérica', async () => {
     server.use(
       meHandler(null),
       http.post('*/admin/auth/login', () =>
@@ -61,11 +223,11 @@ describe('login', () => {
       ),
     )
     const { user } = renderApp('/login')
-    await fillLogin(user)
+    await fillCredentials(user)
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'E-mail, senha ou código inválidos.',
     )
-    expect(screen.getByLabelText('Código (6 dígitos)')).toHaveValue('')
+    expect(screen.getByLabelText('Senha')).toBeInTheDocument()
   })
 
   it('429 mostra o tempo de espera', async () => {
@@ -81,9 +243,48 @@ describe('login', () => {
       ),
     )
     const { user } = renderApp('/login')
-    await fillLogin(user)
+    await fillCredentials(user)
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Muitas tentativas. Tente de novo em 9 minutos.',
+    )
+  })
+
+  it('desafio vencido volta para e-mail e senha com o aviso', async () => {
+    server.use(
+      meHandler(null),
+      askCode(),
+      http.post('*/admin/auth/totp', () => apiError(401, 'CHALLENGE_EXPIRED')),
+    )
+    const { user } = renderApp('/login')
+    await fillCredentials(user)
+    await fillCode(user)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'O tempo para digitar o código acabou. Entre de novo.',
+    )
+    expect(screen.getByLabelText('Senha')).toHaveValue('')
+    expect(screen.queryByLabelText('Código (6 dígitos)')).toBeNull()
+  })
+
+  it('senha provisória, depois do código, leva à troca de senha', async () => {
+    const session = sessionAfterLogin()
+    server.use(
+      session.handler,
+      askCode(),
+      http.post('*/admin/auth/totp', () =>
+        HttpResponse.json({
+          step: 'authenticated',
+          operator: session.login(operator({ mustChangePassword: true })),
+          expiresAt: EXPIRES,
+        }),
+      ),
+    )
+    const { router, user } = renderApp('/login')
+    await fillCredentials(user)
+    await fillCode(user)
+
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe('/password'),
     )
   })
 

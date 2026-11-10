@@ -48,6 +48,7 @@ Booleanos aceitam `true`/`false`; inteiros, dígitos. Vazio conta como ausente (
 | `BACKOFFICE_ORIGINS` | não | — | Origens do backoffice, separadas por vírgula (ex.: `https://platform.crmthink.com.br,http://localhost:5173`). Mutações em `/admin/*` com sessão de operador exigem `Origin` desta lista; vazio recusa todas (`ORIGIN_NOT_ALLOWED`). Em cada ambiente, o próprio host da API (o backoffice é servido em `/backoffice` na mesma origem): `https://platform-staging.crmthink.com.br` em staging. Em dev com `yarn dev` do web, `http://localhost:5173` |
 | `ADMIN_SESSION_IDLE_MINUTES` | não | `30` | Sessão de operador expira após este tempo sem requisição |
 | `ADMIN_SESSION_MAX_HOURS` | não | `12` | Validade máxima da sessão de operador desde o login |
+| `ADMIN_TRUSTED_DEVICE_DAYS` | não | `30` | Dias em que "lembrar este navegador" dispensa o código do autenticador no login (a senha continua obrigatória). `0` desliga o recurso |
 | `ADMIN_COOKIE_INSECURE` | não | `false` | `true` tira o `Secure` do cookie de sessão (dev sem TLS). Recusado no boot fora de `NODE_ENV=development` |
 | `ADMIN_AUDIT_RETENTION_DAYS` | não | `365` | Registros de auditoria mais antigos que isto são apagados pela rotina diária. Mínimo `365` |
 | `CREDENTIAL_ROTATION_GRACE_HOURS` | não | `24` | Validade da chave de API e do segredo de webhook anteriores após a rotação |

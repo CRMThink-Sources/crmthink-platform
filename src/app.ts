@@ -120,6 +120,7 @@ export function createApp(
       sessions: container.adminSessions,
       operators: container.operators,
       audit: container.audit,
+      clock: container.clock,
       cookieSecure: container.env.backoffice.cookieSecure,
       origins: container.env.backoffice.origins,
     }),

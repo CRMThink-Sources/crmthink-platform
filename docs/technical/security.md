@@ -14,7 +14,7 @@ Código: `src/shared/crypto/*`, `src/modules/registry/http/auth.ts`,
 | Segredo de webhook          | `whsec_<32 bytes base64url>`            | Cifrado (`app.webhook_secret_enc`)                                | HMAC dos eventos e do instalador                                                                                                  |
 | Token de operador (scripts) | livre                                   | Variável `ADMIN_API_TOKENS` (lista)                               | `/admin/*` como papel `operator`; na auditoria aparece como `token:<8 hex do SHA-256>`. Recomendado um token por script ou rotina |
 | Senha de operador           | escolhida pela pessoa (≥ 12 caracteres) | Hash argon2id (`admin_operator.password_hash`, `m=19456,t=2,p=1`) | Login do backoffice                                                                                                               |
-| Segredo TOTP do operador    | 20 bytes, base32                        | Cifrado (`admin_operator.totp_secret_enc`)                        | 2º fator do login do backoffice                                                                                                   |
+| Segredo TOTP do operador    | 20 bytes, base32                        | Cifrado (`admin_operator.totp_secret_enc`; nulo até o 1º login)   | 2º fator do login do backoffice; cadastrado pelo próprio operador, nunca repassado por quem cria a conta                           |
 | Sessão do backoffice        | 32 bytes base64url                      | Só o SHA-256 (`admin_session.id_hash`)                            | Cookie `cp_admin_session` em `/admin/*`                                                                                           |
 
 Chave e segredo aparecem **uma única vez**, na resposta do cadastro ou da rotação. SHA-256
@@ -116,14 +116,29 @@ emitem cabeçalhos CORS (são servidor-a-servidor).
 Cada pessoa que opera a plataforma (dev e suporte) tem conta própria em `admin_operator`.
 Não existe cadastro público: a primeira conta nasce pelo comando `src/cli/create-operator.ts`
 (`node dist/src/cli/create-operator.js` no container; `yarn admin:create-operator` em dev); as demais,
-por um `operator` em `POST /admin/operators`. Senha provisória e URI `otpauth://` só aparecem
-na resposta da criação ou da redefinição de acesso.
+por um `operator` em `POST /admin/operators`. A senha provisória só aparece na resposta da
+criação ou da redefinição de acesso; a conta nasce **sem** segredo TOTP, e quem a cria nunca o vê.
 
-- **Login** (`POST /admin/auth/login`, `backoffice/application/login.ts`): e-mail, senha
-  (argon2id) e código TOTP (RFC 6238, 6 dígitos, 30 s, ±1 passo, `shared/crypto/totp.ts`). Um
-  código aceito não vale de novo (`last_totp_step`). Toda falha responde o mesmo
-  `INVALID_CREDENTIALS`; e-mail inexistente também roda uma verificação argon2 contra um hash
-  fixo, para o tempo de resposta não revelar quais contas existem.
+- **Login em duas etapas** (`backoffice/application/login.ts`). `POST /admin/auth/login` confere
+  e-mail e senha (argon2id) e devolve um desafio (256 bits aleatórios, só o hash vira chave no
+  Redis, válido por 5 min, de uso único, no máximo 5 códigos errados); `POST /admin/auth/totp`
+  confere o desafio e o código TOTP (RFC 6238, 6 dígitos, 30 s, ±1 passo, `shared/crypto/totp.ts`)
+  e só então abre a sessão. Um código aceito não vale de novo: o passo é reivindicado numa escrita
+  condicional (`last_totp_step`), então dois pedidos simultâneos com o mesmo código não passam os
+  dois. Toda falha de credencial responde o mesmo `INVALID_CREDENTIALS` (desafio vencido, usado
+  ou esgotado é `CHALLENGE_EXPIRED`); e-mail inexistente também roda uma verificação argon2 contra
+  um hash fixo, para o tempo de resposta não revelar quais contas existem.
+- **Cadastro do autenticador no primeiro acesso**: conta sem segredo recebe, na resposta do
+  `login`, um segredo novo e o `otpauth://` (a interface desenha o QR code localmente). O segredo
+  fica no desafio, cifrado com `TOKEN_ENCRYPTION_KEY`, e só é gravado na conta quando o primeiro
+  código válido chega; abandonar o cadastro não deixa nada na conta, e se dois cadastros ficarem
+  abertos vence o primeiro confirmado. Segredo e URI nunca vão para a auditoria nem para log.
+- **Navegador lembrado**: com `rememberDevice`, um cookie `cp_admin_device` (256 bits, `HttpOnly`,
+  `Secure`, `SameSite=Strict`, `Path=/admin`, validade fixa de `ADMIN_TRUSTED_DEVICE_DAYS`, só o
+  hash em `admin_trusted_device`) dispensa o código nos próximos logins **daquele navegador e
+  daquela conta**. A senha continua obrigatória, o limite por IP e o bloqueio da conta continuam
+  valendo, e o cookie não abre sessão sozinho. Trocar a senha, desativar a conta, trocar o papel,
+  redefinir o acesso ou `ADMIN_TRUSTED_DEVICE_DAYS=0` o invalidam; conta sem TOTP ignora o cookie.
 - **Limite de tentativas** (contadores no Redis): mais de 20 tentativas por IP em 15 min → 429
   `TOO_MANY_REQUESTS` com `Retry-After`; 5 falhas seguidas na mesma conta em 15 min → conta
   bloqueada por 15 min (`locked_until`), quando até credenciais corretas falham. Sucesso zera a
@@ -134,7 +149,8 @@ na resposta da criação ou da redefinição de acesso.
   `Secure` (fora só com `ADMIN_COOKIE_INSECURE=true`, aceito apenas em `NODE_ENV=development`),
   `SameSite=Strict` e `Path=/admin`. Expira após `ADMIN_SESSION_IDLE_MINUTES` sem uso e após
   `ADMIN_SESSION_MAX_HOURS` desde o login. Logout revoga; desativar a conta, trocar o papel ou
-  redefinir o acesso revogam todas as sessões dela; trocar a própria senha revoga as outras.
+  redefinir o acesso revogam todas as sessões dela (e os navegadores lembrados); trocar a própria
+  senha revoga as outras sessões e os navegadores lembrados.
 - **Proteção contra requisição forjada**: mutação com sessão exige `Origin` de
   `BACKOFFICE_ORIGINS` (403 `ORIGIN_NOT_ALLOWED`). Tokens de script não exigem `Origin`.
 - **Papéis** (`backoffice/http/policy.ts`, aplicados por `backoffice/http/gate.ts`): `viewer`
@@ -150,7 +166,8 @@ na resposta da criação ou da redefinição de acesso.
 inclusive as negadas por papel ou origem, com ator (`operator:<id>` ou `token:<prefixo>`),
 papel, ação (método e rota sem valores, ex.: `POST /admin/apps/:appCode/rotate-api-key`), alvo,
 status, código de erro, IP, user-agent e request id. Também registra os eventos de acesso:
-`auth.login_succeeded`, `auth.login_failed` (com o e-mail tentado e, só internamente, se a conta
+`auth.login_succeeded` (com `secondFactor: skipped_trusted_device` quando o navegador lembrado
+dispensou o código), `auth.totp_configured`, `auth.login_failed` (com o e-mail tentado e, só internamente, se a conta
 existe e o motivo), `auth.account_locked`, `auth.logout`, `auth.password_changed`,
 `auth.password_change_failed` e `auth.session_expired`. Requisição sem credencial válida (401)
 não gera registro.

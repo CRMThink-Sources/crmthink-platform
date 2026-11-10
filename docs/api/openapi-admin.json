@@ -1373,8 +1373,8 @@
         "tags": [
           "Operador"
         ],
-        "summary": "Entrar no backoffice (e-mail, senha e TOTP)",
-        "description": "Define o cookie de sessão `cp_admin_session` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/admin`). Qualquer falha responde `INVALID_CREDENTIALS`, sem dizer qual fator falhou. Após 5 falhas em 15 min a conta fica bloqueada por 15 min; mais de 20 tentativas por IP em 15 min respondem 429 com `Retry-After`. Com `Origin`, ele precisa estar em `BACKOFFICE_ORIGINS`.",
+        "summary": "Entrar no backoffice, 1ª etapa (e-mail e senha)",
+        "description": "Confere e-mail e senha e responde o próximo passo em `step`: `totp` (falta o código do autenticador), `totp-setup` (a conta ainda não tem autenticador: a resposta traz o segredo e o URI `otpauth://` para o QR code) ou `authenticated` (o navegador está lembrado e a sessão já abriu). Só `authenticated` define o cookie de sessão `cp_admin_session` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/admin`). O cookie `cp_admin_device`, quando válido para a conta, dispensa o código; a senha continua obrigatória. Qualquer falha responde `INVALID_CREDENTIALS`, sem dizer qual fator falhou. Após 5 falhas em 15 min a conta fica bloqueada por 15 min; mais de 20 tentativas por IP em 15 min (somando `/admin/auth/totp`) respondem 429 com `Retry-After`. Com `Origin`, ele precisa estar em `BACKOFFICE_ORIGINS`.",
         "security": [],
         "requestBody": {
           "required": true,
@@ -1388,11 +1388,11 @@
         },
         "responses": {
           "200": {
-            "description": "Operador e validade da sessão",
+            "description": "Próximo passo do login",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OperatorLoginResult"
+                  "$ref": "#/components/schemas/OperatorLoginStep"
                 }
               }
             }
@@ -1754,6 +1754,140 @@
                       "error": {
                         "code": "ORIGIN_NOT_ALLOWED",
                         "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/auth/totp": {
+      "post": {
+        "operationId": "operatorTotp",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Entrar no backoffice, 2ª etapa (código do autenticador)",
+        "description": "Recebe o desafio da 1ª etapa e o código de 6 dígitos. No `totp-setup`, o código prova que o app foi cadastrado e só então o segredo é gravado na conta. Define o cookie de sessão e, com `rememberDevice: true`, o cookie `cp_admin_device` pelo prazo de `ADMIN_TRUSTED_DEVICE_DAYS`. O desafio vale 5 minutos, é de uso único e aceita 5 códigos errados (`CHALLENGE_EXPIRED` depois disso). Um código já usado não vale de novo.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperatorTotpRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operador e validade da sessão",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorTotpResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `INVALID_CREDENTIALS`: Login do backoffice recusado: e-mail, senha ou código TOTP errados, conta inativa ou bloqueada. O motivo não é revelado.\n- `CHALLENGE_EXPIRED`: O desafio do login (entre a senha e o código do autenticador) venceu, já foi usado, esgotou as 5 tentativas ou não existe.",
+            "x-error-codes": [
+              "INVALID_CREDENTIALS",
+              "CHALLENGE_EXPIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INVALID_CREDENTIALS": {
+                    "value": {
+                      "error": {
+                        "code": "INVALID_CREDENTIALS",
+                        "message": "Login do backoffice recusado: e-mail, senha ou código TOTP errados, conta inativa ou bloqueada. O motivo não é revelado."
+                      }
+                    }
+                  },
+                  "CHALLENGE_EXPIRED": {
+                    "value": {
+                      "error": {
+                        "code": "CHALLENGE_EXPIRED",
+                        "message": "O desafio do login (entre a senha e o código do autenticador) venceu, já foi usado, esgotou as 5 tentativas ou não existe."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Muitas requisições\n- `TOO_MANY_REQUESTS`: Limite de tentativas de login por IP excedido (20 em 15 min).",
+            "x-error-codes": [
+              "TOO_MANY_REQUESTS"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "TOO_MANY_REQUESTS": {
+                    "value": {
+                      "error": {
+                        "code": "TOO_MANY_REQUESTS",
+                        "message": "Limite de tentativas de login por IP excedido (20 em 15 min)."
                       }
                     }
                   }
@@ -3265,7 +3399,7 @@
           "Operador"
         ],
         "summary": "Criar operador",
-        "description": "**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** O operador troca a senha no primeiro login.\n\n**Papel mínimo:** `operator`.",
+        "description": "**`temporaryPassword` só aparece nesta resposta.** O operador troca a senha e cadastra o app autenticador (QR code) no primeiro login; a conta nasce sem segredo TOTP.\n\n**Papel mínimo:** `operator`.",
         "security": [
           {
             "adminSession": []
@@ -3650,8 +3784,8 @@
         "tags": [
           "Operador"
         ],
-        "summary": "Redefinir senha e TOTP de um operador",
-        "description": "**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** Desbloqueia a conta e derruba as sessões dela.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
+        "summary": "Redefinir senha e autenticador de um operador",
+        "description": "**`temporaryPassword` só aparece nesta resposta.** Apaga o segredo TOTP (o operador cadastra o app de novo no próximo login), desbloqueia a conta e derruba as sessões e os navegadores lembrados dela.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
         "security": [
           {
             "adminSession": []
@@ -10975,16 +11109,11 @@
           "temporaryPassword": {
             "type": "string",
             "description": "Senha provisória. Só aparece nesta resposta."
-          },
-          "totpUri": {
-            "type": "string",
-            "description": "URI `otpauth://` para o app autenticador. Só aparece nesta resposta."
           }
         },
         "required": [
           "operator",
-          "temporaryPassword",
-          "totpUri"
+          "temporaryPassword"
         ],
         "additionalProperties": false
       },
@@ -11061,6 +11190,10 @@
             "type": "boolean",
             "description": "Senha provisória: só `POST /admin/auth/password` é permitido"
           },
+          "totpConfigured": {
+            "type": "boolean",
+            "description": "`false` até o operador cadastrar o app autenticador no primeiro login"
+          },
           "lockedUntil": {
             "anyOf": [
               {
@@ -11095,6 +11228,7 @@
           "role",
           "active",
           "mustChangePassword",
+          "totpConfigured",
           "lockedUntil",
           "lastLoginAt",
           "createdAt"
@@ -11126,21 +11260,105 @@
           "password": {
             "type": "string",
             "maxLength": 200
-          },
-          "code": {
-            "type": "string",
-            "maxLength": 10
           }
         },
         "required": [
           "email",
-          "password",
+          "password"
+        ]
+      },
+      "OperatorLoginStep": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "step": {
+                "type": "string",
+                "const": "totp"
+              },
+              "challenge": {
+                "type": "string",
+                "description": "Desafio de uso único, válido por 5 minutos"
+              },
+              "trustedDeviceDays": {
+                "type": "integer",
+                "description": "Dias em que \"lembrar este navegador\" dispensa o código; `0` quando o recurso está desligado"
+              }
+            },
+            "required": [
+              "step",
+              "challenge",
+              "trustedDeviceDays"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "step": {
+                "type": "string",
+                "const": "totp-setup"
+              },
+              "challenge": {
+                "type": "string",
+                "description": "Desafio de uso único, válido por 5 minutos"
+              },
+              "secret": {
+                "type": "string",
+                "description": "Segredo novo em base32, só nesta resposta. Só é gravado na conta depois do primeiro código válido."
+              },
+              "otpauthUri": {
+                "type": "string",
+                "description": "URI `otpauth://` do segredo, para o QR code do app autenticador"
+              },
+              "trustedDeviceDays": {
+                "type": "integer",
+                "description": "Dias em que \"lembrar este navegador\" dispensa o código; `0` quando o recurso está desligado"
+              }
+            },
+            "required": [
+              "step",
+              "challenge",
+              "secret",
+              "otpauthUri",
+              "trustedDeviceDays"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "$ref": "#/components/schemas/OperatorTotpResult"
+          }
+        ]
+      },
+      "OperatorTotpRequest": {
+        "type": "object",
+        "properties": {
+          "challenge": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 10
+          },
+          "rememberDevice": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "challenge",
           "code"
         ]
       },
-      "OperatorLoginResult": {
+      "OperatorTotpResult": {
         "type": "object",
         "properties": {
+          "step": {
+            "type": "string",
+            "const": "authenticated"
+          },
           "operator": {
             "$ref": "#/components/schemas/Operator"
           },
@@ -11151,6 +11369,7 @@
           }
         },
         "required": [
+          "step",
           "operator",
           "expiresAt"
         ],

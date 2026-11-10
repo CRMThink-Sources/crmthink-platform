@@ -1,29 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { createTokenCipher } from '@/shared/crypto/token-cipher'
-import { base32Decode } from '@/shared/crypto/totp'
 import { FakePrisma } from '@/test/fake-prisma'
-import { TEST_KEY } from '@/test/fakes'
 import { OperatorService } from './application/operators'
 import { needsRehash, verifyPassword } from './application/passwords'
 
 function setup() {
   const db = new FakePrisma()
-  const cipher = createTokenCipher(TEST_KEY)
   const revoked: Array<[number, number | undefined]> = []
-  const service = new OperatorService(
-    db.asDb(),
-    cipher,
-    'CRMThink Backoffice',
-    async (id, except) => {
-      revoked.push([id, except])
-    },
-  )
-  return { db, cipher, service, revoked }
+  const service = new OperatorService(db.asDb(), async (id, except) => {
+    revoked.push([id, except])
+  })
+  return { db, service, revoked }
 }
 
 describe('operadores', () => {
-  it('cria conta com senha provisória e TOTP, guardando só hash e segredo cifrado', async () => {
-    const { db, cipher, service } = setup()
+  it('cria conta com senha provisória e sem TOTP, guardando só o hash', async () => {
+    const { db, service } = setup()
     const issued = await service.create({
       email: '  Dev@ConnectThink.com.br ',
       name: 'Dev',
@@ -35,11 +26,10 @@ describe('operadores', () => {
       role: 'operator',
       active: true,
       mustChangePassword: true,
+      totpConfigured: false,
     })
     expect(issued.temporaryPassword.length).toBeGreaterThanOrEqual(12)
-    expect(issued.totpUri).toMatch(
-      /^otpauth:\/\/totp\/CRMThink%20Backoffice%3Adev%40connectthink\.com\.br\?secret=[A-Z2-7]{32}&/,
-    )
+    expect(Object.keys(issued)).not.toContain('totpUri')
     expect(Object.keys(issued.operator)).not.toContain('passwordHash')
 
     const row = db.rows('adminOperator')[0]!
@@ -48,10 +38,21 @@ describe('operadores', () => {
     expect(
       await verifyPassword(row.passwordHash, issued.temporaryPassword),
     ).toBe(true)
-    expect(row.totpSecretEnc.startsWith('v1:')).toBe(true)
-    const secret = new URL(issued.totpUri).searchParams.get('secret')!
-    expect(cipher.decrypt(row.totpSecretEnc)).toBe(secret)
-    expect(base32Decode(secret)).toHaveLength(20)
+    expect(row.totpSecretEnc).toBeNull()
+  })
+
+  it('a lista indica quem já cadastrou o autenticador', async () => {
+    const { db, service } = setup()
+    await service.create({ email: 'a@x.com', name: 'A', role: 'viewer' })
+    await service.create({ email: 'b@x.com', name: 'B', role: 'viewer' })
+    db.rows('adminOperator')[1]!.totpSecretEnc = 'v1:qualquer'
+
+    const list = await service.list()
+
+    expect(list.map(o => [o.email, o.totpConfigured])).toEqual([
+      ['a@x.com', false],
+      ['b@x.com', true],
+    ])
   })
 
   it('recusa e-mail repetido sem diferenciar maiúsculas', async () => {
@@ -130,7 +131,7 @@ describe('operadores', () => {
     })
   })
 
-  it('redefinir acesso gera senha e TOTP novos, desbloqueia e derruba sessões', async () => {
+  it('redefinir acesso gera senha nova, apaga o TOTP, desbloqueia e derruba sessões', async () => {
     const { db, service, revoked } = setup()
     const first = await service.create({
       email: 'suporte@connectthink.com.br',
@@ -143,17 +144,19 @@ describe('operadores', () => {
       failedLogins: 5,
       lockedUntil: new Date('2099-01-01'),
       lastTotpStep: 123,
+      totpSecretEnc: 'v1:segredo-antigo',
     })
 
     const reset = await service.resetAccess(first.operator.id)
 
     expect(reset.temporaryPassword).not.toBe(first.temporaryPassword)
-    expect(reset.totpUri).not.toBe(first.totpUri)
+    expect(Object.keys(reset)).not.toContain('totpUri')
     expect(row).toMatchObject({
       mustChangePassword: true,
       failedLogins: 0,
       lockedUntil: null,
       lastTotpStep: 0,
+      totpSecretEnc: null,
     })
     expect(
       await verifyPassword(row.passwordHash, first.temporaryPassword),
