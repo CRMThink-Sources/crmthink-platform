@@ -141,6 +141,22 @@ const modality = z.unknown().transform((raw): SubscriptionModality => {
   return 'manual'
 })
 
+export type ProductWrite = {
+  name: string
+  billingModel: 'standard' | 'per_unit' | 'one_time'
+  active: boolean
+}
+
+/** `amount` em centavos; o produto vem à parte (só na criação). */
+export type PlanWrite = {
+  name: string
+  amount: number
+  interval: PlanInterval | null
+  priceHomolog: string | null
+  priceProduction: string | null
+  active: boolean
+}
+
 export type SubscriptionWrite = Partial<{
   title: string
   installationSpaItemId: number
@@ -171,6 +187,7 @@ export type SubscriptionItemWrite = Partial<{
 export class SpaMappers {
   private readonly subscriptionStatusIds: Record<string, string>
   private readonly itemStatusIds: Record<string, string>
+  private readonly intervalIds: Record<string, string>
 
   constructor(
     private readonly config: SpaConfig,
@@ -180,6 +197,7 @@ export class SpaMappers {
   ) {
     this.subscriptionStatusIds = invertEnum(config.subscription.statusEnum)
     this.itemStatusIds = invertEnum(config.subscriptionItem.statusEnum)
+    this.intervalIds = invertEnum(config.plan.intervalEnum)
   }
 
   get installationParent(): string {
@@ -218,6 +236,21 @@ export class SpaMappers {
         ? 'one_time'
         : 'subscription',
       active: data[f.active] as boolean,
+    }
+  }
+
+  productFields(input: ProductWrite): Record<string, unknown> {
+    const f = this.config.product
+    const ids = f.billingModelIds
+    const billingModel = {
+      standard: ids.standard,
+      per_unit: ids.perUnit,
+      one_time: ids.oneTime,
+    }[input.billingModel]
+    return {
+      title: input.name,
+      [f.billingModel]: billingModel,
+      [f.active]: input.active ? 'Y' : 'N',
     }
   }
 
@@ -283,6 +316,22 @@ export class SpaMappers {
       isTrial: !production && !homolog,
       active: data[f.active] as boolean,
     }
+  }
+
+  /** O produto só é enviado na criação (`productId`); depois dela é imutável. */
+  planFields(input: PlanWrite, productId?: number): Record<string, unknown> {
+    const f = this.config.plan
+    const fields: Record<string, unknown> = {
+      title: input.name,
+      [f.value]: input.amount,
+      // Compra única não tem intervalo: vai vazio para limpar o campo.
+      [f.interval]: input.interval ? this.intervalIds[input.interval] : '',
+      [f.gatewayIdHomolog]: input.priceHomolog ?? '',
+      [f.gatewayIdProduction]: input.priceProduction ?? '',
+      [f.active]: input.active ? 'Y' : 'N',
+    }
+    if (productId !== undefined) fields[f.product] = productId
+    return fields
   }
 
   // ─── Assinatura (1142) ───

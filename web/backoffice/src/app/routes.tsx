@@ -5,6 +5,7 @@ import { AppDetailPage } from '@/features/app-detail/page'
 import { AppCreatePage, AppEditPage } from '@/features/apps/app-form-page'
 import { AppsPage } from '@/features/apps/page'
 import { AuditPage } from '@/features/audit/page'
+import { CatalogPage } from '@/features/catalog/page'
 import { EventsPage } from '@/features/events/page'
 import { InstallationDetailPage } from '@/features/installation-detail/page'
 import { InstallationsPage } from '@/features/installations/page'
@@ -71,6 +72,7 @@ export const appRoutes: RouteObject[] = [
       },
     ],
   },
+  { path: 'catalog', element: <CatalogPage />, handle: handle('Catálogo') },
   { path: 'audit', element: <AuditPage />, handle: handle('Auditoria') },
   { path: 'system', element: <SystemPage />, handle: handle('Sistema') },
   {

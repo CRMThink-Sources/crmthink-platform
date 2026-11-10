@@ -25,6 +25,12 @@ import {
   resendSchema,
   rotateSigningKeySchema,
 } from '@/modules/registry/http/admin-routes'
+import {
+  planPatchSchema,
+  planSchema,
+  productPatchSchema,
+  productSchema,
+} from '@/modules/billing/http/admin-catalog-routes'
 import { loginSchema, totpSchema } from '@/modules/backoffice/application/login'
 import {
   changePasswordSchema,
@@ -129,6 +135,10 @@ const req = {
   changePassword: named('ChangePasswordRequest', changePasswordSchema),
   createOperator: named('CreateOperatorRequest', createOperatorSchema),
   updateOperator: named('UpdateOperatorRequest', updateOperatorSchema),
+  catalogProduct: named('CatalogProductRequest', productSchema),
+  catalogProductPatch: named('CatalogProductPatchRequest', productPatchSchema),
+  catalogPlan: named('CatalogPlanRequest', planSchema),
+  catalogPlanPatch: named('CatalogPlanPatchRequest', planPatchSchema),
 }
 
 // Schemas de resposta com nome de componente.
@@ -190,6 +200,11 @@ const res = {
     r.adminInstallationDetailSchema,
   ),
   timeline: named('InstallationTimeline', r.timelinePageSchema),
+  catalogView: named('CatalogView', r.catalogViewSchema),
+  catalogProduct: named('CatalogProduct', r.catalogProductSchema),
+  catalogPlan: named('CatalogPlan', r.catalogPlanSchema),
+  productUsage: named('ProductUsage', r.productUsageSchema),
+  planUsage: named('PlanUsage', r.planUsageSchema),
 }
 
 const json = (description: string, schema: Named): ResponseDoc => ({
@@ -913,6 +928,150 @@ export const OPERATIONS: Operation[] = [
     pathParams: { appCode: 'Código do app' },
     responses: { 200: json('Novo segredo', res.webhookSecretRotated) },
     errors: ['APP_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/admin/catalog/products',
+    operationId: 'listCatalog',
+    tag: 'Operador',
+    summary: 'Listar produtos e planos do catálogo',
+    description:
+      'Leitura fresca do portal (sem cache), com itens inativos e mal cadastrados sinalizados (`valid`, `problems`). `writable` é `false` fora de produção.',
+    security: 'admin',
+    responses: { 200: json('Catálogo', res.catalogView) },
+  },
+  {
+    method: 'post',
+    path: '/admin/catalog/products',
+    operationId: 'createCatalogProduct',
+    tag: 'Operador',
+    summary: 'Criar produto',
+    description: 'Só em produção (`CATALOG_READ_ONLY` nos demais ambientes).',
+    security: 'admin',
+    body: { schema: req.catalogProduct },
+    responses: { 201: json('Produto criado', res.catalogProduct) },
+    errors: ['CATALOG_READ_ONLY', 'CATALOG_WRITE_FAILED'],
+  },
+  {
+    method: 'get',
+    path: '/admin/catalog/products/{id}/usage',
+    operationId: 'getCatalogProductUsage',
+    tag: 'Operador',
+    summary: 'Uso de um produto',
+    description: 'Apps vinculados e quantidade de planos do produto.',
+    security: 'admin',
+    pathParams: { id: 'Id do produto no SPA' },
+    responses: { 200: json('Uso do produto', res.productUsage) },
+    errors: ['PRODUCT_NOT_FOUND'],
+  },
+  {
+    method: 'patch',
+    path: '/admin/catalog/products/{id}',
+    operationId: 'updateCatalogProduct',
+    tag: 'Operador',
+    summary: 'Alterar produto',
+    description:
+      'Só os campos enviados mudam. Desativar (`active: false`) exige `X-Admin-Reason`. Produto com planos não muda de modelo de cobrança (`PRODUCT_IN_USE`).',
+    security: 'admin',
+    pathParams: { id: 'Id do produto no SPA' },
+    body: { schema: req.catalogProductPatch },
+    responses: { 200: json('Produto atualizado', res.catalogProduct) },
+    errors: [
+      'CATALOG_READ_ONLY',
+      'PRODUCT_NOT_FOUND',
+      'PRODUCT_IN_USE',
+      'CATALOG_WRITE_FAILED',
+    ],
+  },
+  {
+    method: 'delete',
+    path: '/admin/catalog/products/{id}',
+    operationId: 'deleteCatalogProduct',
+    tag: 'Operador',
+    summary: 'Excluir produto',
+    description:
+      'Produto vinculado a app ou com planos não se exclui (`PRODUCT_IN_USE`, com o uso em `details`): desative-o.',
+    security: 'admin',
+    pathParams: { id: 'Id do produto no SPA' },
+    responses: { 204: { description: 'Produto excluído' } },
+    errors: [
+      'CATALOG_READ_ONLY',
+      'PRODUCT_NOT_FOUND',
+      'PRODUCT_IN_USE',
+      'CATALOG_WRITE_FAILED',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/admin/catalog/products/{id}/plans',
+    operationId: 'createCatalogPlan',
+    tag: 'Operador',
+    summary: 'Criar plano de um produto',
+    description:
+      'Plano pago precisa de ao menos um id de preço do Stripe, que não pode estar em outro plano nem repetir entre os ambientes (`PRICE_ALREADY_USED`); `trial: true` exige os dois vazios. Produto de assinatura exige `interval`; o de compra única não tem.',
+    security: 'admin',
+    pathParams: { id: 'Id do produto no SPA' },
+    body: { schema: req.catalogPlan },
+    responses: { 201: json('Plano criado', res.catalogPlan) },
+    errors: [
+      'CATALOG_READ_ONLY',
+      'PRODUCT_NOT_FOUND',
+      'PLAN_INVALID_FOR_PRODUCT',
+      'PRICE_ALREADY_USED',
+      'CATALOG_WRITE_FAILED',
+    ],
+  },
+  {
+    method: 'get',
+    path: '/admin/catalog/plans/{id}/usage',
+    operationId: 'getCatalogPlanUsage',
+    tag: 'Operador',
+    summary: 'Uso de um plano',
+    description:
+      'Assinaturas (de todos os ambientes) e apps que o usam como plano de trial.',
+    security: 'admin',
+    pathParams: { id: 'Id do plano no SPA' },
+    responses: { 200: json('Uso do plano', res.planUsage) },
+    errors: ['PLAN_NOT_FOUND'],
+  },
+  {
+    method: 'patch',
+    path: '/admin/catalog/plans/{id}',
+    operationId: 'updateCatalogPlan',
+    tag: 'Operador',
+    summary: 'Alterar plano',
+    description:
+      'Só os campos enviados mudam. Desativar (`active: false`) exige `X-Admin-Reason`. Plano em uso não troca preço, trial nem intervalo (`PLAN_IN_USE`, com o uso em `details`).',
+    security: 'admin',
+    pathParams: { id: 'Id do plano no SPA' },
+    body: { schema: req.catalogPlanPatch },
+    responses: { 200: json('Plano atualizado', res.catalogPlan) },
+    errors: [
+      'CATALOG_READ_ONLY',
+      'PLAN_NOT_FOUND',
+      'PLAN_IN_USE',
+      'PLAN_INVALID_FOR_PRODUCT',
+      'PRICE_ALREADY_USED',
+      'CATALOG_WRITE_FAILED',
+    ],
+  },
+  {
+    method: 'delete',
+    path: '/admin/catalog/plans/{id}',
+    operationId: 'deleteCatalogPlan',
+    tag: 'Operador',
+    summary: 'Excluir plano',
+    description:
+      'Plano com assinatura ou usado como trial de um app não se exclui (`PLAN_IN_USE`, com o uso em `details`): desative-o.',
+    security: 'admin',
+    pathParams: { id: 'Id do plano no SPA' },
+    responses: { 204: { description: 'Plano excluído' } },
+    errors: [
+      'CATALOG_READ_ONLY',
+      'PLAN_NOT_FOUND',
+      'PLAN_IN_USE',
+      'CATALOG_WRITE_FAILED',
+    ],
   },
   {
     method: 'post',

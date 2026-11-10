@@ -242,15 +242,24 @@ export class BitrixRestClient implements BitrixCaller {
     await this.call('crm.item.delete', { entityTypeId, id })
   }
 
-  async itemFields(
-    entityTypeId: number,
-  ): Promise<
-    Record<string, { type?: string; items?: { ID: string; VALUE: string }[] }>
+  async itemFields(entityTypeId: number): Promise<
+    Record<
+      string,
+      {
+        type?: string
+        isRequired?: boolean
+        items?: { ID: string; VALUE: string }[]
+      }
+    >
   > {
     const result = await this.call<{
       fields?: Record<
         string,
-        { type?: string; items?: { ID: string; VALUE: string }[] }
+        {
+          type?: string
+          isRequired?: boolean
+          items?: { ID: string; VALUE: string }[]
+        }
       >
     }>('crm.item.fields', { entityTypeId, useOriginalUfNames: 'N' })
     return result?.fields ?? {}

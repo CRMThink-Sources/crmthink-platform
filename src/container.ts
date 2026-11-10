@@ -40,6 +40,7 @@ import {
   type PendingApplicationTokens,
 } from '@/modules/installations/infra/pending-application-tokens'
 import { BillingContext } from '@/modules/billing/application/billing-context'
+import { CatalogAdmin } from '@/modules/billing/application/catalog-admin'
 import { CheckoutService } from '@/modules/billing/application/checkout-service'
 import { ItemsService } from '@/modules/billing/application/items-service'
 import { ManualLifecycle } from '@/modules/billing/application/manual-lifecycle'
@@ -207,6 +208,15 @@ export function buildContainer(deps: ContainerDeps) {
     mappers,
     environment,
   )
+  const catalogAdmin = new CatalogAdmin({
+    crm,
+    config: spaConfig,
+    mappers,
+    catalog,
+    subscriptions: subscriptionRepo,
+    db,
+    environment: env.platformEnvironment,
+  })
   const billingContext = new BillingContext(
     installationDirectory,
     subscriptionRepo,
@@ -346,6 +356,7 @@ export function buildContainer(deps: ContainerDeps) {
     sessions,
     gateway,
     catalog,
+    catalogAdmin,
     plans,
     trials,
     purchases,

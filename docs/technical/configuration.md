@@ -18,7 +18,7 @@ Booleanos aceitam `true`/`false`; inteiros, dígitos. Vazio conta como ausente (
 | `LOG_LEVEL` | não | `info` | Nível do pino (`silent` nos testes) |
 | `LOKI_URL` | não | — | Com valor, envia logs ao Loki |
 | `PUBLIC_BASE_URL` | **sim** | — | URL pública (barra final removida). Base da página de instalação, do handler de eventos do Bitrix, do `servers` do `/openapi.json` e do `iss` do JWT |
-| `PLATFORM_ENVIRONMENT` | **sim** | — | `production` ou `homolog`. Cada instância só enxerga itens dos SPAs 1060/1142/1146 do próprio ambiente (o portal CRMThink é único); rótulo `env` dos logs |
+| `PLATFORM_ENVIRONMENT` | **sim** | — | `production` ou `homolog`. Cada instância só enxerga itens dos SPAs 1060/1142/1146 do próprio ambiente (o portal CRMThink é único); rótulo `env` dos logs. Só `production` escreve no catálogo (`/admin/catalog/*`); `homolog` só lê |
 
 ## Banco e Redis
 

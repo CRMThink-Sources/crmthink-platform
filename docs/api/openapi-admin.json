@@ -506,7 +506,7 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.\n- `TRIAL_CONFIG_INVALID`: `trialOnInstall` sem `trialDays` > 0 ou sem `trialPlanId`.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.\n- `TRIAL_CONFIG_INVALID`: `trialOnInstall` sem `trialDays` > 0 ou sem `trialPlanId`.",
             "x-error-codes": [
               "REASON_INVALID",
               "REASON_REQUIRED",
@@ -531,7 +531,7 @@
                     "value": {
                       "error": {
                         "code": "REASON_REQUIRED",
-                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado."
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
                       }
                     }
                   },
@@ -718,7 +718,7 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.",
             "x-error-codes": [
               "REASON_INVALID",
               "REASON_REQUIRED"
@@ -741,7 +741,7 @@
                     "value": {
                       "error": {
                         "code": "REASON_REQUIRED",
-                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado."
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
                       }
                     }
                   }
@@ -889,7 +889,7 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.",
             "x-error-codes": [
               "REASON_INVALID",
               "REASON_REQUIRED"
@@ -912,7 +912,7 @@
                     "value": {
                       "error": {
                         "code": "REASON_REQUIRED",
-                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado."
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
                       }
                     }
                   }
@@ -1060,7 +1060,7 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.",
             "x-error-codes": [
               "REASON_INVALID",
               "REASON_REQUIRED"
@@ -1083,7 +1083,7 @@
                     "value": {
                       "error": {
                         "code": "REASON_REQUIRED",
-                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado."
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
                       }
                     }
                   }
@@ -1898,6 +1898,1717 @@
         }
       }
     },
+    "/admin/catalog/plans/{id}": {
+      "patch": {
+        "operationId": "updateCatalogPlan",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Alterar plano",
+        "description": "Só os campos enviados mudam. Desativar (`active: false`) exige `X-Admin-Reason`. Plano em uso não troca preço, trial nem intervalo (`PLAN_IN_USE`, com o uso em `details`).\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto conforme o corpo:** exige `X-Admin-Reason` quando a chamada tem esse efeito (descrito acima).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do plano no SPA",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório quando a chamada tem efeito de alto impacto.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogPlanPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Plano atualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPlan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED",
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  },
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `PLAN_NOT_FOUND`: Plano inexistente ou de produto não vinculado ao app.",
+            "x-error-codes": [
+              "PLAN_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PLAN_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "PLAN_NOT_FOUND",
+                        "message": "Plano inexistente ou de produto não vinculado ao app."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `CATALOG_READ_ONLY`: O catálogo só é editado no ambiente de produção; fora dela é somente leitura.\n- `PLAN_IN_USE`: Plano em uso (assinaturas ou plano de trial de app): não se exclui nem troca preço, trial ou intervalo. `details` traz o uso.",
+            "x-error-codes": [
+              "CATALOG_READ_ONLY",
+              "PLAN_IN_USE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CATALOG_READ_ONLY": {
+                    "value": {
+                      "error": {
+                        "code": "CATALOG_READ_ONLY",
+                        "message": "O catálogo só é editado no ambiente de produção; fora dela é somente leitura."
+                      }
+                    }
+                  },
+                  "PLAN_IN_USE": {
+                    "value": {
+                      "error": {
+                        "code": "PLAN_IN_USE",
+                        "message": "Plano em uso (assinaturas ou plano de trial de app): não se exclui nem troca preço, trial ou intervalo. `details` traz o uso."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Não processável\n- `PLAN_INVALID_FOR_PRODUCT`: Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço.\n- `PRICE_ALREADY_USED`: O id de preço do Stripe já está em outro plano no mesmo ambiente, ou repete o do outro ambiente do próprio plano. `details` traz `{ planId, field }`: quem já o usa (`null` = o plano sendo criado) e o campo (`priceHomolog` ou `priceProduction`).",
+            "x-error-codes": [
+              "PLAN_INVALID_FOR_PRODUCT",
+              "PRICE_ALREADY_USED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PLAN_INVALID_FOR_PRODUCT": {
+                    "value": {
+                      "error": {
+                        "code": "PLAN_INVALID_FOR_PRODUCT",
+                        "message": "Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço."
+                      }
+                    }
+                  },
+                  "PRICE_ALREADY_USED": {
+                    "value": {
+                      "error": {
+                        "code": "PRICE_ALREADY_USED",
+                        "message": "O id de preço do Stripe já está em outro plano no mesmo ambiente, ou repete o do outro ambiente do próprio plano. `details` traz `{ planId, field }`: quem já o usa (`null` = o plano sendo criado) e o campo (`priceHomolog` ou `priceProduction`)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).",
+            "x-error-codes": [
+              "CATALOG_WRITE_FAILED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CATALOG_WRITE_FAILED": {
+                    "value": {
+                      "error": {
+                        "code": "CATALOG_WRITE_FAILED",
+                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCatalogPlan",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Excluir plano",
+        "description": "Plano com assinatura ou usado como trial de um app não se exclui (`PLAN_IN_USE`, com o uso em `details`): desative-o.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do plano no SPA",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": true,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Plano excluído"
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `PLAN_NOT_FOUND`: Plano inexistente ou de produto não vinculado ao app.",
+            "x-error-codes": [
+              "PLAN_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PLAN_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "PLAN_NOT_FOUND",
+                        "message": "Plano inexistente ou de produto não vinculado ao app."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `CATALOG_READ_ONLY`: O catálogo só é editado no ambiente de produção; fora dela é somente leitura.\n- `PLAN_IN_USE`: Plano em uso (assinaturas ou plano de trial de app): não se exclui nem troca preço, trial ou intervalo. `details` traz o uso.",
+            "x-error-codes": [
+              "CATALOG_READ_ONLY",
+              "PLAN_IN_USE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CATALOG_READ_ONLY": {
+                    "value": {
+                      "error": {
+                        "code": "CATALOG_READ_ONLY",
+                        "message": "O catálogo só é editado no ambiente de produção; fora dela é somente leitura."
+                      }
+                    }
+                  },
+                  "PLAN_IN_USE": {
+                    "value": {
+                      "error": {
+                        "code": "PLAN_IN_USE",
+                        "message": "Plano em uso (assinaturas ou plano de trial de app): não se exclui nem troca preço, trial ou intervalo. `details` traz o uso."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).",
+            "x-error-codes": [
+              "CATALOG_WRITE_FAILED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CATALOG_WRITE_FAILED": {
+                    "value": {
+                      "error": {
+                        "code": "CATALOG_WRITE_FAILED",
+                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/catalog/plans/{id}/usage": {
+      "get": {
+        "operationId": "getCatalogPlanUsage",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Uso de um plano",
+        "description": "Assinaturas (de todos os ambientes) e apps que o usam como plano de trial.\n\n**Papel mínimo:** `viewer` (leitura).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do plano no SPA",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Uso do plano",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanUsage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `PLAN_NOT_FOUND`: Plano inexistente ou de produto não vinculado ao app.",
+            "x-error-codes": [
+              "PLAN_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PLAN_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "PLAN_NOT_FOUND",
+                        "message": "Plano inexistente ou de produto não vinculado ao app."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/catalog/products": {
+      "get": {
+        "operationId": "listCatalog",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Listar produtos e planos do catálogo",
+        "description": "Leitura fresca do portal (sem cache), com itens inativos e mal cadastrados sinalizados (`valid`, `problems`). `writable` é `false` fora de produção.\n\n**Papel mínimo:** `viewer` (leitura).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catálogo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createCatalogProduct",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Criar produto",
+        "description": "Só em produção (`CATALOG_READ_ONLY` nos demais ambientes).\n\n**Papel mínimo:** `operator`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Opcional.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogProductRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Produto criado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogProduct"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `CATALOG_READ_ONLY`: O catálogo só é editado no ambiente de produção; fora dela é somente leitura.",
+            "x-error-codes": [
+              "CATALOG_READ_ONLY"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CATALOG_READ_ONLY": {
+                    "value": {
+                      "error": {
+                        "code": "CATALOG_READ_ONLY",
+                        "message": "O catálogo só é editado no ambiente de produção; fora dela é somente leitura."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).",
+            "x-error-codes": [
+              "CATALOG_WRITE_FAILED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CATALOG_WRITE_FAILED": {
+                    "value": {
+                      "error": {
+                        "code": "CATALOG_WRITE_FAILED",
+                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/catalog/products/{id}": {
+      "patch": {
+        "operationId": "updateCatalogProduct",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Alterar produto",
+        "description": "Só os campos enviados mudam. Desativar (`active: false`) exige `X-Admin-Reason`. Produto com planos não muda de modelo de cobrança (`PRODUCT_IN_USE`).\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto conforme o corpo:** exige `X-Admin-Reason` quando a chamada tem esse efeito (descrito acima).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto no SPA",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório quando a chamada tem efeito de alto impacto.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogProductPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Produto atualizado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogProduct"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED",
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  },
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `PRODUCT_NOT_FOUND`: Produto inexistente no catálogo.",
+            "x-error-codes": [
+              "PRODUCT_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PRODUCT_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "PRODUCT_NOT_FOUND",
+                        "message": "Produto inexistente no catálogo."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `CATALOG_READ_ONLY`: O catálogo só é editado no ambiente de produção; fora dela é somente leitura.\n- `PRODUCT_IN_USE`: Produto em uso (vinculado a app ou com planos): não se exclui nem muda de modelo de cobrança. `details` traz o uso.",
+            "x-error-codes": [
+              "CATALOG_READ_ONLY",
+              "PRODUCT_IN_USE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CATALOG_READ_ONLY": {
+                    "value": {
+                      "error": {
+                        "code": "CATALOG_READ_ONLY",
+                        "message": "O catálogo só é editado no ambiente de produção; fora dela é somente leitura."
+                      }
+                    }
+                  },
+                  "PRODUCT_IN_USE": {
+                    "value": {
+                      "error": {
+                        "code": "PRODUCT_IN_USE",
+                        "message": "Produto em uso (vinculado a app ou com planos): não se exclui nem muda de modelo de cobrança. `details` traz o uso."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).",
+            "x-error-codes": [
+              "CATALOG_WRITE_FAILED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CATALOG_WRITE_FAILED": {
+                    "value": {
+                      "error": {
+                        "code": "CATALOG_WRITE_FAILED",
+                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCatalogProduct",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Excluir produto",
+        "description": "Produto vinculado a app ou com planos não se exclui (`PRODUCT_IN_USE`, com o uso em `details`): desative-o.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto no SPA",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": true,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Produto excluído"
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `PRODUCT_NOT_FOUND`: Produto inexistente no catálogo.",
+            "x-error-codes": [
+              "PRODUCT_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PRODUCT_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "PRODUCT_NOT_FOUND",
+                        "message": "Produto inexistente no catálogo."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `CATALOG_READ_ONLY`: O catálogo só é editado no ambiente de produção; fora dela é somente leitura.\n- `PRODUCT_IN_USE`: Produto em uso (vinculado a app ou com planos): não se exclui nem muda de modelo de cobrança. `details` traz o uso.",
+            "x-error-codes": [
+              "CATALOG_READ_ONLY",
+              "PRODUCT_IN_USE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CATALOG_READ_ONLY": {
+                    "value": {
+                      "error": {
+                        "code": "CATALOG_READ_ONLY",
+                        "message": "O catálogo só é editado no ambiente de produção; fora dela é somente leitura."
+                      }
+                    }
+                  },
+                  "PRODUCT_IN_USE": {
+                    "value": {
+                      "error": {
+                        "code": "PRODUCT_IN_USE",
+                        "message": "Produto em uso (vinculado a app ou com planos): não se exclui nem muda de modelo de cobrança. `details` traz o uso."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).",
+            "x-error-codes": [
+              "CATALOG_WRITE_FAILED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CATALOG_WRITE_FAILED": {
+                    "value": {
+                      "error": {
+                        "code": "CATALOG_WRITE_FAILED",
+                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/catalog/products/{id}/plans": {
+      "post": {
+        "operationId": "createCatalogPlan",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Criar plano de um produto",
+        "description": "Plano pago precisa de ao menos um id de preço do Stripe, que não pode estar em outro plano nem repetir entre os ambientes (`PRICE_ALREADY_USED`); `trial: true` exige os dois vazios. Produto de assinatura exige `interval`; o de compra única não tem.\n\n**Papel mínimo:** `operator`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto no SPA",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Opcional.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogPlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Plano criado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPlan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `PRODUCT_NOT_FOUND`: Produto inexistente no catálogo.",
+            "x-error-codes": [
+              "PRODUCT_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PRODUCT_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "PRODUCT_NOT_FOUND",
+                        "message": "Produto inexistente no catálogo."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `CATALOG_READ_ONLY`: O catálogo só é editado no ambiente de produção; fora dela é somente leitura.",
+            "x-error-codes": [
+              "CATALOG_READ_ONLY"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CATALOG_READ_ONLY": {
+                    "value": {
+                      "error": {
+                        "code": "CATALOG_READ_ONLY",
+                        "message": "O catálogo só é editado no ambiente de produção; fora dela é somente leitura."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Não processável\n- `PLAN_INVALID_FOR_PRODUCT`: Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço.\n- `PRICE_ALREADY_USED`: O id de preço do Stripe já está em outro plano no mesmo ambiente, ou repete o do outro ambiente do próprio plano. `details` traz `{ planId, field }`: quem já o usa (`null` = o plano sendo criado) e o campo (`priceHomolog` ou `priceProduction`).",
+            "x-error-codes": [
+              "PLAN_INVALID_FOR_PRODUCT",
+              "PRICE_ALREADY_USED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PLAN_INVALID_FOR_PRODUCT": {
+                    "value": {
+                      "error": {
+                        "code": "PLAN_INVALID_FOR_PRODUCT",
+                        "message": "Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço."
+                      }
+                    }
+                  },
+                  "PRICE_ALREADY_USED": {
+                    "value": {
+                      "error": {
+                        "code": "PRICE_ALREADY_USED",
+                        "message": "O id de preço do Stripe já está em outro plano no mesmo ambiente, ou repete o do outro ambiente do próprio plano. `details` traz `{ planId, field }`: quem já o usa (`null` = o plano sendo criado) e o campo (`priceHomolog` ou `priceProduction`)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).",
+            "x-error-codes": [
+              "CATALOG_WRITE_FAILED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "CATALOG_WRITE_FAILED": {
+                    "value": {
+                      "error": {
+                        "code": "CATALOG_WRITE_FAILED",
+                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/catalog/products/{id}/usage": {
+      "get": {
+        "operationId": "getCatalogProductUsage",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Uso de um produto",
+        "description": "Apps vinculados e quantidade de planos do produto.\n\n**Papel mínimo:** `viewer` (leitura).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do produto no SPA",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Uso do produto",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductUsage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `PRODUCT_NOT_FOUND`: Produto inexistente no catálogo.",
+            "x-error-codes": [
+              "PRODUCT_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PRODUCT_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "PRODUCT_NOT_FOUND",
+                        "message": "Produto inexistente no catálogo."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/events": {
       "get": {
         "operationId": "listOutboxEvents",
@@ -2127,7 +3838,7 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
             "x-error-codes": [
               "REASON_INVALID",
               "REASON_REQUIRED",
@@ -2151,7 +3862,7 @@
                     "value": {
                       "error": {
                         "code": "REASON_REQUIRED",
-                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado."
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
                       }
                     }
                   },
@@ -3829,7 +5540,7 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.",
             "x-error-codes": [
               "REASON_INVALID",
               "REASON_REQUIRED"
@@ -3852,7 +5563,7 @@
                     "value": {
                       "error": {
                         "code": "REASON_REQUIRED",
-                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado."
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
                       }
                     }
                   }
@@ -4077,7 +5788,7 @@
             }
           },
           "400": {
-            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
             "x-error-codes": [
               "REASON_INVALID",
               "REASON_REQUIRED",
@@ -4101,7 +5812,7 @@
                     "value": {
                       "error": {
                         "code": "REASON_REQUIRED",
-                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado."
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
                       }
                     }
                   },
@@ -9721,6 +11432,379 @@
         ],
         "additionalProperties": false
       },
+      "CatalogPlan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Id do item no SPA de planos"
+          },
+          "productId": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Centavos"
+          },
+          "interval": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "monthly",
+                  "quarterly",
+                  "semiannual",
+                  "yearly"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isTrial": {
+            "type": "boolean",
+            "description": "Plano sem id de preço em nenhum ambiente é o de trial"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "priceHomolog": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "priceProduction": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "valid": {
+            "type": "boolean",
+            "description": "`false` quando o cadastro no portal está incompleto ou inconsistente"
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Motivos de `valid:false`, em pt-BR"
+          }
+        },
+        "required": [
+          "id",
+          "productId",
+          "name",
+          "amount",
+          "interval",
+          "isTrial",
+          "active",
+          "priceHomolog",
+          "priceProduction",
+          "valid",
+          "problems"
+        ],
+        "additionalProperties": false
+      },
+      "CatalogPlanPatchRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Centavos"
+          },
+          "interval": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "monthly",
+                  "quarterly",
+                  "semiannual",
+                  "yearly"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`null` em produto de compra única"
+          },
+          "trial": {
+            "type": "boolean",
+            "description": "`true` exige os dois ids de preço vazios: o trial é plano sem preço"
+          },
+          "priceHomolog": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(price_[A-Za-z0-9]+)?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "priceProduction": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(price_[A-Za-z0-9]+)?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CatalogPlanRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Centavos"
+          },
+          "interval": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "monthly",
+                  "quarterly",
+                  "semiannual",
+                  "yearly"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`null` em produto de compra única"
+          },
+          "trial": {
+            "type": "boolean",
+            "description": "`true` exige os dois ids de preço vazios: o trial é plano sem preço"
+          },
+          "priceHomolog": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(price_[A-Za-z0-9]+)?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "priceProduction": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(price_[A-Za-z0-9]+)?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "amount",
+          "interval",
+          "trial",
+          "priceHomolog",
+          "priceProduction",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "CatalogProduct": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Id do item no SPA de produtos"
+          },
+          "name": {
+            "type": "string"
+          },
+          "billingModel": {
+            "type": "string",
+            "description": "Id de enum cru do portal (ex.: `13605`); vazio se o produto não tem modelo"
+          },
+          "billingModelKey": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "per_unit",
+                  "one_time"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Valor simbólico aceito por `POST`/`PATCH` (`billingModel`); `null` quando o id cru não é um modelo conhecido"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "subscription",
+                  "one_time"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "apps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Apps vinculados ao produto"
+          },
+          "plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogPlan"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "billingModel",
+          "billingModelKey",
+          "kind",
+          "active",
+          "valid",
+          "problems",
+          "apps",
+          "plans"
+        ],
+        "additionalProperties": false
+      },
+      "CatalogProductPatchRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "billingModel": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "per_unit",
+              "one_time"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CatalogProductRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "billingModel": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "per_unit",
+              "one_time"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "billingModel",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "CatalogView": {
+        "type": "object",
+        "properties": {
+          "writable": {
+            "type": "boolean",
+            "description": "`true` só em produção: nos demais ambientes o catálogo é leitura"
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogProduct"
+            }
+          },
+          "orphanPlans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogPlan"
+            },
+            "description": "Planos cujo produto não existe: sempre `valid:false`"
+          }
+        },
+        "required": [
+          "writable",
+          "products",
+          "orphanPlans"
+        ],
+        "additionalProperties": false
+      },
       "ChangePasswordRequest": {
         "type": "object",
         "properties": {
@@ -11739,6 +13823,57 @@
         },
         "required": [
           "items"
+        ],
+        "additionalProperties": false
+      },
+      "PlanUsage": {
+        "type": "object",
+        "properties": {
+          "subscriptions": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "active": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "active"
+            ],
+            "additionalProperties": false
+          },
+          "trialOfApps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "subscriptions",
+          "trialOfApps"
+        ],
+        "additionalProperties": false
+      },
+      "ProductUsage": {
+        "type": "object",
+        "properties": {
+          "apps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "plans": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "apps",
+          "plans"
         ],
         "additionalProperties": false
       },
