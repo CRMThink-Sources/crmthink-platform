@@ -216,6 +216,51 @@ export const ERROR_CATALOG = {
     origin: 'installations/application/token-vault.ts',
   },
 
+  // Catálogo (backoffice)
+  CATALOG_READ_ONLY: {
+    status: 409,
+    meaning:
+      'O catálogo só é editado no ambiente de produção; fora dela é somente leitura.',
+    action: 'Editar produtos e planos pelo backoffice da produção.',
+    origin: 'billing/application/catalog-admin.ts',
+  },
+  PRODUCT_IN_USE: {
+    status: 409,
+    meaning:
+      'Produto em uso (vinculado a app ou com planos): não se exclui nem muda de modelo de cobrança. `details` traz o uso.',
+    action:
+      'Desativar o produto, ou criar um produto novo e desativar este; para excluir, primeiro excluir os planos e desvincular os apps.',
+    origin: 'billing/application/catalog-admin.ts',
+  },
+  PLAN_IN_USE: {
+    status: 409,
+    meaning:
+      'Plano em uso (assinaturas ou plano de trial de app): não se exclui nem troca preço, trial ou intervalo. `details` traz o uso.',
+    action: 'Criar um plano novo e desativar este.',
+    origin: 'billing/application/catalog-admin.ts',
+  },
+  PRODUCT_NOT_FOUND: {
+    status: 404,
+    meaning: 'Produto inexistente no catálogo.',
+    action: 'Usar um id de `GET /admin/catalog/products`.',
+    origin: 'billing/application/catalog-admin.ts',
+  },
+  PLAN_INVALID_FOR_PRODUCT: {
+    status: 422,
+    meaning:
+      'Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço.',
+    action: 'Corrigir o intervalo, a chave de trial ou os ids de preço.',
+    origin: 'billing/application/catalog-admin.ts',
+  },
+  CATALOG_WRITE_FAILED: {
+    status: 502,
+    meaning:
+      'O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.',
+    action:
+      'Conferir o item no portal (e excluir o criado pela metade, se houver); repetir.',
+    origin: 'billing/application/catalog-admin.ts',
+  },
+
   // Cobrança
   PLAN_NOT_FOUND: {
     status: 404,
