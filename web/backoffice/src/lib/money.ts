@@ -1,5 +1,6 @@
 /** Centavos → `199,00` (sem o símbolo; quem exibe põe `R$ `). */
 export function centsToReais(cents: number): string {
+  if (!Number.isFinite(cents)) return '0,00'
   const abs = Math.abs(Math.trunc(cents))
   const text = `${Math.floor(abs / 100)},${String(abs % 100).padStart(2, '0')}`
   return cents < 0 ? `-${text}` : text

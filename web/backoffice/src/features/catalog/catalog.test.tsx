@@ -156,6 +156,18 @@ describe('tela Catálogo', () => {
     expect(
       await screen.findByRole('button', { name: 'Novo produto' }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Novo plano neste produto' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Editar produto GPTMaker' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Editar plano Plano Mensal' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('columnheader', { name: 'Ações' }),
+    ).toBeInTheDocument()
   })
 
   it('writable:false mostra o aviso e nenhum botão de ação', async () => {
@@ -165,6 +177,10 @@ describe('tela Catálogo', () => {
       await screen.findByText(/Somente leitura fora da produção/),
     ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Novo produto' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Editar / })).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Novo plano neste produto' }),
+    ).toBeNull()
   })
 
   it('viewer não vê botões', async () => {
@@ -172,6 +188,10 @@ describe('tela Catálogo', () => {
 
     await screen.findByText('GPTMaker')
     expect(screen.queryByRole('button', { name: 'Novo produto' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Editar / })).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Novo plano neste produto' }),
+    ).toBeNull()
   })
 
   it('estado vazio', async () => {

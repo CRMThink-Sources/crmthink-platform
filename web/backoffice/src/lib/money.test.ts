@@ -7,8 +7,14 @@ describe('centsToReais', () => {
     [0, '0,00'],
     [5, '0,05'],
     [199000, '1990,00'],
+    [100, '1,00'],
+    [-150, '-1,50'],
   ])('%i vira %s', (cents, text) => {
     expect(centsToReais(cents)).toBe(text)
+  })
+
+  it('NaN não quebra: vira 0,00', () => {
+    expect(centsToReais(Number.NaN)).toBe('0,00')
   })
 })
 
@@ -20,14 +26,26 @@ describe('reaisToCents', () => {
     ['1.990,00', 199000],
     [' 10,05 ', 1005],
     ['0', 0],
+    ['19,99', 1999],
+    ['0,5', 50],
+    ['1.990', 199000],
   ])('%s vira %i', (text, cents) => {
     expect(reaisToCents(text)).toBe(cents)
   })
 
-  it.each([[''], ['  '], ['abc'], ['10,555'], ['-5'], ['1,2,3'], ['10.5.5']])(
-    '%j é inválido',
-    text => {
-      expect(reaisToCents(text)).toBeNull()
-    },
-  )
+  it.each([
+    [''],
+    ['  '],
+    ['abc'],
+    ['10,555'],
+    ['-5'],
+    ['1,2,3'],
+    ['10.5.5'],
+    ['1,234'],
+    ['1.99'],
+    [',5'],
+    ['199,'],
+  ])('%j é inválido', text => {
+    expect(reaisToCents(text)).toBeNull()
+  })
 })

@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import type { Schemas } from '@/api/client'
 import { PageHeader } from '@/components/filters'
-import { RoleGate } from '@/components/role-gate'
+import { useHasRole } from '@/components/role-gate'
 import { EmptyState, ErrorState, LoadingState } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,9 +16,18 @@ import {
 } from '@/components/ui/table'
 import { centsToReais } from '@/lib/money'
 import { catalogQuery } from './catalog-queries'
+import { PlanDialog } from './plan-dialog'
+import { ProductDialog } from './product-dialog'
 
 type Product = Schemas['CatalogProduct']
 type Plan = Schemas['CatalogPlan']
+
+type Dialog =
+  | { kind: 'product'; product?: Product }
+  | { kind: 'plan'; product: Product; plan?: Plan }
+  | null
+
+type Open = (dialog: NonNullable<Dialog>) => void
 
 const MODELS: Record<NonNullable<Product['billingModelKey']>, string> = {
   standard: 'Padrão',
@@ -66,7 +76,8 @@ function PriceStatus({ plan }: { plan: Plan }) {
   )
 }
 
-function PlanRow({ plan }: { plan: Plan }) {
+function PlanRow(props: { plan: Plan; onEdit?: () => void }) {
+  const { plan } = props
   return (
     <TableRow>
       <TableCell className="pl-8 whitespace-normal">
@@ -83,11 +94,24 @@ function PlanRow({ plan }: { plan: Plan }) {
       <TableCell>
         <PriceStatus plan={plan} />
       </TableCell>
+      <TableCell className="text-right">
+        {props.onEdit && (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Editar plano ${plan.name}`}
+            onClick={props.onEdit}
+          >
+            Editar
+          </Button>
+        )}
+      </TableCell>
     </TableRow>
   )
 }
 
-function ProductRows({ product }: { product: Product }) {
+function ProductRows(props: { product: Product; onOpen?: Open }) {
+  const { product, onOpen } = props
   const count = product.apps.length
   return (
     <>
@@ -111,9 +135,34 @@ function ProductRows({ product }: { product: Product }) {
         </TableCell>
         <TableCell />
         <TableCell />
+        <TableCell className="space-x-1 text-right whitespace-normal">
+          {onOpen && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={`Editar produto ${product.name}`}
+                onClick={() => onOpen({ kind: 'product', product })}
+              >
+                Editar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onOpen({ kind: 'plan', product })}
+              >
+                Novo plano neste produto
+              </Button>
+            </>
+          )}
+        </TableCell>
       </TableRow>
       {product.plans.map(plan => (
-        <PlanRow key={plan.id} plan={plan} />
+        <PlanRow
+          key={plan.id}
+          plan={plan}
+          onEdit={onOpen && (() => onOpen({ kind: 'plan', product, plan }))}
+        />
       ))}
     </>
   )
@@ -141,16 +190,21 @@ function OrphanPlans({ plans }: { plans: Plan[] }) {
 export function CatalogPage() {
   const catalog = useQuery(catalogQuery)
   const writable = catalog.data?.writable ?? false
+  const canWrite = useHasRole('operator') && writable
+  const [dialog, setDialog] = useState<Dialog>(null)
+  const closeDialog = (open: boolean) => {
+    if (!open) setDialog(null)
+  }
   return (
     <>
       <PageHeader
         title="Catálogo"
         description="Produtos e planos cobrados no portal CRMThink."
       >
-        {writable && (
-          <RoleGate role="operator">
-            <Button>Novo produto</Button>
-          </RoleGate>
+        {canWrite && (
+          <Button onClick={() => setDialog({ kind: 'product' })}>
+            Novo produto
+          </Button>
         )}
       </PageHeader>
       {catalog.isPending ? (
@@ -179,11 +233,18 @@ export function CatalogPage() {
                   <TableHead>Estado</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Preço no Stripe</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Ações</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {catalog.data.products.map(product => (
-                  <ProductRows key={product.id} product={product} />
+                  <ProductRows
+                    key={product.id}
+                    product={product}
+                    onOpen={canWrite ? setDialog : undefined}
+                  />
                 ))}
               </TableBody>
             </Table>
@@ -192,6 +253,19 @@ export function CatalogPage() {
             <OrphanPlans plans={catalog.data.orphanPlans} />
           )}
         </>
+      )}
+      <ProductDialog
+        open={dialog?.kind === 'product'}
+        onOpenChange={closeDialog}
+        product={dialog?.kind === 'product' ? dialog.product : undefined}
+      />
+      {dialog?.kind === 'plan' && (
+        <PlanDialog
+          open
+          onOpenChange={closeDialog}
+          product={dialog.product}
+          plan={dialog.plan}
+        />
       )}
     </>
   )
