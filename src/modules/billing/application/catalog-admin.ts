@@ -61,6 +61,16 @@ export type CatalogView = {
   orphanPlans: CatalogPlanView[]
 }
 export type ProductUsage = { apps: string[]; plans: number }
+/**
+ * `details` de `CATALOG_WRITE_FAILED` depois que o Bitrix aceitou a escrita: o item
+ * (`created` quando a falha veio depois de criá-lo) e os campos que não ficaram
+ * gravados (vazio quando a releitura nem chegou a conferir).
+ */
+export type CatalogWriteFailure = {
+  id: number
+  created: boolean
+  lost: string[]
+}
 export type PlanUsage = {
   subscriptions: { total: number; active: number }
   trialOfApps: string[]
@@ -238,7 +248,8 @@ export class CatalogAdmin {
     // Preencher um modelo vazio é livre; um id desconhecido pode ser fixado num modelo
     // do mesmo tipo (os planos seguem válidos). Trocar um modelo existente, não.
     const currentKind = this.kindOf(current)
-    const nextKind = patch.billingModel === 'one_time' ? 'one_time' : 'subscription'
+    const nextKind =
+      patch.billingModel === 'one_time' ? 'one_time' : 'subscription'
     const filling =
       currentKind === null ||
       (this.productView(current).view.billingModelKey === null &&
@@ -487,31 +498,27 @@ export class CatalogAdmin {
     const prefix = created
       ? `Item #${id} criado no Bitrix, mas`
       : `Item #${id} gravado no Bitrix, mas`
+    const failed = (message: string, lost: string[] = []) => {
+      const details: CatalogWriteFailure = { id, created, lost }
+      return upstream('CATALOG_WRITE_FAILED', message, details)
+    }
     let raw: Raw | null
     try {
       raw = await this.deps.crm.getItem(entityTypeId, id)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      throw upstream(
-        'CATALOG_WRITE_FAILED',
+      throw failed(
         `${prefix} a releitura falhou (${message}); confira o item no portal`,
       )
     }
-    if (!raw)
-      throw upstream(
-        'CATALOG_WRITE_FAILED',
-        `${prefix} a releitura não o achou`,
-      )
+    if (!raw) throw failed(`${prefix} a releitura não o achou`)
     const { product, plan } = this.deps.config
     const booleans = new Set([product.active, plan.active, 'opened'])
     const lost = Object.keys(sent).filter(
       key => !sameValue(sent[key], raw[key], booleans.has(key)),
     )
     if (lost.length)
-      throw upstream(
-        'CATALOG_WRITE_FAILED',
-        `${prefix} não gravou: ${lost.join(', ')}`,
-      )
+      throw failed(`${prefix} não gravou: ${lost.join(', ')}`, lost)
     return raw
   }
 

@@ -307,4 +307,43 @@ describe('rotas do catálogo: auditoria', () => {
       statusCode: 201,
     })
   })
+
+  it('criação que falha na releitura audita o id criado (502)', async () => {
+    const { h, dev } = await boot()
+    const c = h.config
+    const add = h.crm.addItem.bind(h.crm)
+    const ids: number[] = []
+    h.crm.addItem = async (entityTypeId, fields) => {
+      const { [c.plan.gatewayIdHomolog]: _p, title: _t, ...kept } = fields
+      const item = await add(entityTypeId, kept)
+      ids.push(Number(item.id))
+      return item
+    }
+    const product = await dev
+      .post('/admin/catalog/products')
+      .send({ name: 'Novo', billingModel: 'standard', active: true })
+    const plan = await dev.post('/admin/catalog/products/10/plans').send(paid)
+    for (const response of [product, plan]) {
+      expect(response.status).toBe(502)
+      expect(response.body.error.code).toBe('CATALOG_WRITE_FAILED')
+      expect(response.body.error.details.created).toBe(true)
+    }
+    await flush()
+    const rows = audit(h)
+    expect(
+      rows.find(r => r.action === 'POST /admin/catalog/products'),
+    ).toMatchObject({
+      targetType: 'product',
+      targetId: String(ids[0]),
+      statusCode: 502,
+      errorCode: 'CATALOG_WRITE_FAILED',
+    })
+    expect(
+      rows.find(r => r.action === 'POST /admin/catalog/products/:id/plans'),
+    ).toMatchObject({
+      targetType: 'plan',
+      targetId: String(ids[1]),
+      statusCode: 502,
+    })
+  })
 })

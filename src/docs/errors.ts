@@ -255,7 +255,7 @@ export const ERROR_CATALOG = {
   CATALOG_WRITE_FAILED: {
     status: 502,
     meaning:
-      'O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.',
+      'O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).',
     action:
       'Conferir o item no portal (e excluir o criado pela metade, se houver); repetir.',
     origin: 'billing/application/catalog-admin.ts',

@@ -1,7 +1,10 @@
 import { Router } from 'express'
 import z from 'zod'
-import { asyncHandler, intParam } from '@/shared/http/errors'
-import type { CatalogAdmin } from '../application/catalog-admin'
+import { HttpError, asyncHandler, intParam } from '@/shared/http/errors'
+import type {
+  CatalogAdmin,
+  CatalogWriteFailure,
+} from '../application/catalog-admin'
 
 export type CatalogAdminRoutesDeps = { catalog: CatalogAdmin }
 
@@ -14,6 +17,28 @@ const price = z
   .regex(/^(price_[A-Za-z0-9]+)?$/, 'Use um id de preço do Stripe (price_...)')
   .nullable()
   .transform(value => value || null)
+
+/**
+ * Criação que o Bitrix aceitou e a releitura reprovou (502): a auditoria registra o
+ * id do item criado, que só existe nos `details` do erro.
+ */
+async function auditCreated<T extends { id: number }>(
+  res: { locals: Record<string, unknown> },
+  create: () => Promise<T>,
+): Promise<T> {
+  try {
+    const created = await create()
+    res.locals.auditTargetId = String(created.id)
+    return created
+  } catch (error) {
+    if (error instanceof HttpError && error.code === 'CATALOG_WRITE_FAILED') {
+      const details = (error.details ?? {}) as Partial<CatalogWriteFailure>
+      if (details.created && typeof details.id === 'number')
+        res.locals.auditTargetId = String(details.id)
+    }
+    throw error
+  }
+}
 
 export const productSchema = z.strictObject({
   name,
@@ -63,10 +88,10 @@ export function catalogAdminRoutes(deps: CatalogAdminRoutesDeps): Router {
   router.post(
     '/admin/catalog/products',
     asyncHandler(async (req, res) => {
-      const created = await deps.catalog.createProduct(
-        productSchema.parse(req.body),
+      const body = productSchema.parse(req.body)
+      const created = await auditCreated(res, () =>
+        deps.catalog.createProduct(body),
       )
-      res.locals.auditTargetId = String(created.id)
       res.status(201).json(created)
     }),
   )
@@ -101,11 +126,11 @@ export function catalogAdminRoutes(deps: CatalogAdminRoutesDeps): Router {
   router.post(
     '/admin/catalog/products/:id/plans',
     asyncHandler(async (req, res) => {
-      const created = await deps.catalog.createPlan(
-        productId(req.params.id),
-        planSchema.parse(req.body),
+      const id = productId(req.params.id)
+      const body = planSchema.parse(req.body)
+      const created = await auditCreated(res, () =>
+        deps.catalog.createPlan(id, body),
       )
-      res.locals.auditTargetId = String(created.id)
       res.status(201).json(created)
     }),
   )

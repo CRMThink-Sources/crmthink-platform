@@ -529,11 +529,14 @@ describe('CatalogAdmin: releitura depois de gravar', () => {
       const { [c.plan.gatewayIdProduction]: _dropped, ...kept } = fields
       return update(entityTypeId, id, kept)
     }
-    await rejectsWith(
-      admin.updatePlan(502, { priceProduction: 'price_pro_new' }),
-      502,
-      'CATALOG_WRITE_FAILED',
-    )
+    const error = await admin
+      .updatePlan(502, { priceProduction: 'price_pro_new' })
+      .catch((e: unknown) => e)
+    expect(error).toMatchObject({
+      status: 502,
+      code: 'CATALOG_WRITE_FAILED',
+      details: { id: 502, created: false, lost: [c.plan.gatewayIdProduction] },
+    })
   })
 
   it('campo descartado na criação: o erro traz o id criado', async () => {
@@ -550,6 +553,9 @@ describe('CatalogAdmin: releitura depois de gravar', () => {
     expect(error).toMatchObject({ status: 502, code: 'CATALOG_WRITE_FAILED' })
     expect(created).toBeGreaterThan(0)
     expect((error as Error).message).toContain(`#${created}`)
+    expect(error).toMatchObject({
+      details: { id: created, created: true, lost: [c.plan.gatewayIdHomolog] },
+    })
   })
 
   /** Depois da primeira escrita, toda leitura de item falha (timeout, 5xx). */
@@ -585,6 +591,9 @@ describe('CatalogAdmin: releitura depois de gravar', () => {
     expect(error).toMatchObject({ status: 502, code: 'CATALOG_WRITE_FAILED' })
     expect(state.created).toBeGreaterThan(0)
     expect((error as Error).message).toContain(`#${state.created}`)
+    expect(error).toMatchObject({
+      details: { id: state.created, created: true, lost: [] },
+    })
   })
 
   it('releitura que falha depois de criar plano: 502 com o id criado', async () => {
@@ -594,6 +603,9 @@ describe('CatalogAdmin: releitura depois de gravar', () => {
     expect(error).toMatchObject({ status: 502, code: 'CATALOG_WRITE_FAILED' })
     expect(state.created).toBeGreaterThan(0)
     expect((error as Error).message).toContain(`#${state.created}`)
+    expect(error).toMatchObject({
+      details: { id: state.created, created: true, lost: [] },
+    })
   })
 
   it('releitura que falha depois de editar: 502, não 500', async () => {
@@ -602,7 +614,11 @@ describe('CatalogAdmin: releitura depois de gravar', () => {
     const error = await admin
       .updatePlan(502, { name: 'Pro+' })
       .catch((e: unknown) => e)
-    expect(error).toMatchObject({ status: 502, code: 'CATALOG_WRITE_FAILED' })
+    expect(error).toMatchObject({
+      status: 502,
+      code: 'CATALOG_WRITE_FAILED',
+      details: { id: 502, created: false, lost: [] },
+    })
     expect((error as Error).message).toContain('#502')
   })
 })

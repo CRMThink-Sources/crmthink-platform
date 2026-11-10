@@ -3260,7 +3260,7 @@ export interface operations {
             /**
              * @description Requisição inválida
              *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
-             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
              *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
              *     - `TRIAL_CONFIG_INVALID`: `trialOnInstall` sem `trialDays` > 0 ou sem `trialPlanId`.
              */
@@ -3351,7 +3351,7 @@ export interface operations {
             /**
              * @description Requisição inválida
              *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
-             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
              */
             400: {
                 headers: {
@@ -3428,7 +3428,7 @@ export interface operations {
             /**
              * @description Requisição inválida
              *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
-             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
              */
             400: {
                 headers: {
@@ -3505,7 +3505,7 @@ export interface operations {
             /**
              * @description Requisição inválida
              *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
-             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
              */
             400: {
                 headers: {
@@ -3948,7 +3948,7 @@ export interface operations {
             /**
              * @description Requisição inválida
              *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
-             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
              */
             400: {
                 headers: {
@@ -4011,7 +4011,7 @@ export interface operations {
             };
             /**
              * @description Falha em serviço externo
-             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.
+             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).
              */
             502: {
                 headers: {
@@ -4054,7 +4054,7 @@ export interface operations {
             /**
              * @description Requisição inválida
              *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
-             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
              *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
              */
             400: {
@@ -4130,7 +4130,7 @@ export interface operations {
             };
             /**
              * @description Falha em serviço externo
-             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.
+             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).
              */
             502: {
                 headers: {
@@ -4323,7 +4323,7 @@ export interface operations {
             };
             /**
              * @description Falha em serviço externo
-             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.
+             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).
              */
             502: {
                 headers: {
@@ -4360,7 +4360,7 @@ export interface operations {
             /**
              * @description Requisição inválida
              *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
-             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
              */
             400: {
                 headers: {
@@ -4423,7 +4423,7 @@ export interface operations {
             };
             /**
              * @description Falha em serviço externo
-             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.
+             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).
              */
             502: {
                 headers: {
@@ -4466,7 +4466,7 @@ export interface operations {
             /**
              * @description Requisição inválida
              *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
-             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
              *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
              */
             400: {
@@ -4530,7 +4530,7 @@ export interface operations {
             };
             /**
              * @description Falha em serviço externo
-             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.
+             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).
              */
             502: {
                 headers: {
@@ -4647,7 +4647,7 @@ export interface operations {
             };
             /**
              * @description Falha em serviço externo
-             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.
+             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).
              */
             502: {
                 headers: {
@@ -4819,7 +4819,7 @@ export interface operations {
             /**
              * @description Requisição inválida
              *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
-             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
              *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
              */
             400: {
@@ -5603,7 +5603,7 @@ export interface operations {
             /**
              * @description Requisição inválida
              *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
-             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
              */
             400: {
                 headers: {
@@ -5725,7 +5725,7 @@ export interface operations {
             /**
              * @description Requisição inválida
              *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
-             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
              *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
              */
             400: {

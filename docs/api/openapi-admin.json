@@ -2142,7 +2142,7 @@
             }
           },
           "502": {
-            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.",
+            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).",
             "x-error-codes": [
               "CATALOG_WRITE_FAILED"
             ],
@@ -2156,7 +2156,7 @@
                     "value": {
                       "error": {
                         "code": "CATALOG_WRITE_FAILED",
-                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado."
+                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou)."
                       }
                     }
                   }
@@ -2360,7 +2360,7 @@
             }
           },
           "502": {
-            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.",
+            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).",
             "x-error-codes": [
               "CATALOG_WRITE_FAILED"
             ],
@@ -2374,7 +2374,7 @@
                     "value": {
                       "error": {
                         "code": "CATALOG_WRITE_FAILED",
-                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado."
+                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou)."
                       }
                     }
                   }
@@ -2740,7 +2740,7 @@
             }
           },
           "502": {
-            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.",
+            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).",
             "x-error-codes": [
               "CATALOG_WRITE_FAILED"
             ],
@@ -2754,7 +2754,7 @@
                     "value": {
                       "error": {
                         "code": "CATALOG_WRITE_FAILED",
-                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado."
+                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou)."
                       }
                     }
                   }
@@ -2986,7 +2986,7 @@
             }
           },
           "502": {
-            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.",
+            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).",
             "x-error-codes": [
               "CATALOG_WRITE_FAILED"
             ],
@@ -3000,7 +3000,7 @@
                     "value": {
                       "error": {
                         "code": "CATALOG_WRITE_FAILED",
-                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado."
+                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou)."
                       }
                     }
                   }
@@ -3204,7 +3204,7 @@
             }
           },
           "502": {
-            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.",
+            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).",
             "x-error-codes": [
               "CATALOG_WRITE_FAILED"
             ],
@@ -3218,7 +3218,7 @@
                     "value": {
                       "error": {
                         "code": "CATALOG_WRITE_FAILED",
-                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado."
+                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou)."
                       }
                     }
                   }
@@ -3455,7 +3455,7 @@
             }
           },
           "502": {
-            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.",
+            "description": "Falha em serviço externo\n- `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou).",
             "x-error-codes": [
               "CATALOG_WRITE_FAILED"
             ],
@@ -3469,7 +3469,7 @@
                     "value": {
                       "error": {
                         "code": "CATALOG_WRITE_FAILED",
-                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado."
+                        "message": "O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Quando a escrita foi aceita, `details` traz `{ id, created, lost }`: o item (`created: true` se foi criado, e a auditoria registra esse id), e os campos que não ficaram gravados (vazio se a releitura falhou)."
                       }
                     }
                   }
