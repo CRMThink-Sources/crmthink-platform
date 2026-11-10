@@ -44,25 +44,31 @@ const plural = (n: number, one: string, many: string) =>
 
 /** O que usa o item, a partir dos `details` de `PLAN_IN_USE` / `PRODUCT_IN_USE`. */
 function usageLines(details: unknown): string[] {
-  const d = (details ?? {}) as {
-    subscriptions?: { total?: number; active?: number }
-    trialOfApps?: string[]
-    apps?: string[]
-    plans?: number
-  }
+  const d = (details && typeof details === 'object' ? details : {}) as Record<
+    string,
+    unknown
+  >
+  const strings = (value: unknown) =>
+    Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === 'string')
+      : []
+  const count = (value: unknown) => (typeof value === 'number' ? value : 0)
   const lines: string[] = []
-  if (d.subscriptions?.total)
+  const subs = (d.subscriptions ?? {}) as Record<string, unknown>
+  if (count(subs.total))
     lines.push(
-      `${plural(d.subscriptions.total, 'assinatura', 'assinaturas')}, ${plural(
-        d.subscriptions.active ?? 0,
+      `${plural(count(subs.total), 'assinatura', 'assinaturas')}, ${plural(
+        count(subs.active),
         'ativa',
         'ativas',
       )}`,
     )
-  if (d.trialOfApps?.length)
-    lines.push(`plano de trial de ${d.trialOfApps.join(', ')}`)
-  if (d.apps?.length) lines.push(`apps vinculados: ${d.apps.join(', ')}`)
-  if (d.plans) lines.push(plural(d.plans, 'plano', 'planos'))
+  const trialOfApps = strings(d.trialOfApps)
+  if (trialOfApps.length)
+    lines.push(`plano de trial de ${trialOfApps.join(', ')}`)
+  const apps = strings(d.apps)
+  if (apps.length) lines.push(`apps vinculados: ${apps.join(', ')}`)
+  if (count(d.plans)) lines.push(plural(count(d.plans), 'plano', 'planos'))
   return lines
 }
 

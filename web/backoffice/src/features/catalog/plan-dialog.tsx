@@ -33,13 +33,8 @@ const INTERVAL_LABELS: Record<Interval, string> = {
 const INTERVALS = Object.keys(INTERVAL_LABELS) as Interval[]
 
 const PRICE = /^price_[A-Za-z0-9]+$/
-const priceField = z
-  .string()
-  .trim()
-  .refine(
-    value => !value || PRICE.test(value),
-    'Use o formato price_ seguido de letras e números (ex.: price_1Abc23)',
-  )
+// O formato só vale com o campo à vista: no trial os preços ficam ocultos e são ignorados.
+const priceField = z.string().trim()
 
 function planSchema(oneTime: boolean) {
   return z
@@ -63,7 +58,16 @@ function planSchema(oneTime: boolean) {
     })
     .superRefine((values, ctx) => {
       // Plano pago sem nenhum preço seria lido como trial grátis: a API recusa (422).
-      if (!values.trial && !values.priceHomolog && !values.priceProduction)
+      if (values.trial) return
+      for (const path of ['priceHomolog', 'priceProduction'] as const)
+        if (values[path] && !PRICE.test(values[path]))
+          ctx.addIssue({
+            code: 'custom',
+            path: [path],
+            message:
+              'Use o formato price_ seguido de letras e números (ex.: price_1Abc23)',
+          })
+      if (!values.priceHomolog && !values.priceProduction)
         ctx.addIssue({
           code: 'custom',
           path: ['priceHomolog'],

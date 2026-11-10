@@ -397,6 +397,61 @@ describe('formulário de plano', () => {
     expect(seen.reason).toBe('Substituído')
   })
 
+  it('preço inválido digitado e depois ocultado pelo trial não trava o envio', async () => {
+    const { user } = open()
+    const seen = capture('post', '*/admin/catalog/products/100/plans')
+
+    await newPlan(user)
+    await user.type(screen.getByLabelText('Nome'), 'Trial')
+    await user.type(screen.getByLabelText('Valor de referência (R$)'), '0')
+    await user.type(
+      screen.getByLabelText('ID do preço no Stripe: homologação'),
+      'prod_1',
+    )
+    await user.click(save())
+    expect(await screen.findByText(/Use o formato price_/)).toBeInTheDocument()
+
+    await user.click(screen.getByLabelText('Plano de trial (sem cobrança)'))
+    await user.click(save())
+
+    await waitFor(() =>
+      expect(seen.body).toMatchObject({
+        trial: true,
+        priceHomolog: null,
+        priceProduction: null,
+      }),
+    )
+  })
+
+  it.each([
+    ['texto solto'],
+    [{ apps: 'x', trialOfApps: 'y', subscriptions: 'z' }],
+  ])(
+    '409 com details malformado (%j) mostra mensagem e orientação sem quebrar',
+    async details => {
+      const { user } = open()
+      capture('patch', '*/admin/catalog/plans/501', () =>
+        HttpResponse.json(
+          { error: { code: 'PLAN_IN_USE', message: 'Plano em uso', details } },
+          { status: 409 },
+        ),
+      )
+      await user.click(
+        await screen.findByRole('button', {
+          name: 'Editar plano Plano Mensal',
+        }),
+      )
+      const amount = screen.getByLabelText('Valor de referência (R$)')
+      await user.clear(amount)
+      await user.type(amount, '5')
+      await user.click(save())
+
+      const alert = await within(dialog()).findByRole('alert')
+      expect(alert).toHaveTextContent('Plano em uso')
+      expect(alert).toHaveTextContent('crie um plano novo e desative este')
+    },
+  )
+
   it('erro de validação da API cai no campo', async () => {
     const { user } = open()
     capture('post', '*/admin/catalog/products/100/plans', () =>
