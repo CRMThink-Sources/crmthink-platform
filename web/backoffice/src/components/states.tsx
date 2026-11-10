@@ -53,7 +53,12 @@ export function ErrorState(props: { error: unknown; onRetry?: () => void }) {
           <code className="font-mono text-xs">{code}</code> — {message}
         </span>
         {props.onRetry && (
-          <Button variant="outline" size="sm" onClick={props.onRetry}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={props.onRetry}
+          >
             <RotateCw /> Tentar novamente
           </Button>
         )}

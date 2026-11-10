@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import type { Schemas } from '@/api/client'
-import { meHandler, operator, viewer } from '@/test/fixtures'
+import { catalogHandler, meHandler, operator, viewer } from '@/test/fixtures'
 import { currentUrl, renderApp } from '@/test/render'
 import { server } from '@/test/server'
 
@@ -54,6 +54,7 @@ describe('cadastro de app', () => {
     }
     server.use(
       meHandler(operator()),
+      catalogHandler(),
       http.post('*/admin/apps', async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
         return HttpResponse.json(
@@ -98,9 +99,38 @@ describe('cadastro de app', () => {
     expect(document.body).not.toHaveTextContent(NEW_WEBHOOK_SECRET)
   })
 
+  it('os produtos marcados no seletor vão em productSpaIds', async () => {
+    let body: Record<string, unknown> | null = null
+    server.use(
+      meHandler(operator()),
+      catalogHandler(),
+      http.post('*/admin/apps', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json(
+          {
+            app: { ...APP, appCode: 'crmthink.novo' },
+            credentials: { apiKey: NEW_API_KEY, webhookSecret: 'w' },
+            notice: 'Guarde agora.',
+          } satisfies Schemas['AppCreated'],
+          { status: 201 },
+        )
+      }),
+      getApp({ ...APP, appCode: 'crmthink.novo' }),
+    )
+    const { user } = renderApp('/apps/new')
+    await fillRequired(user)
+    await user.click(await screen.findByRole('checkbox', { name: /GPTMaker/ }))
+    await user.click(screen.getByRole('checkbox', { name: /Extrator/ }))
+    await user.click(screen.getByRole('button', { name: 'Cadastrar app' }))
+
+    await screen.findByRole('dialog')
+    expect(body).toMatchObject({ productSpaIds: [10, 11] })
+  })
+
   it('erro da API no campo: VALIDATION_ERROR aparece abaixo do campo certo', async () => {
     server.use(
       meHandler(operator()),
+      catalogHandler(),
       http.post('*/admin/apps', () =>
         HttpResponse.json(
           {
@@ -141,6 +171,7 @@ describe('cadastro de app', () => {
     let posted = false
     server.use(
       meHandler(operator()),
+      catalogHandler(),
       http.post('*/admin/apps', () => {
         posted = true
         return HttpResponse.json({}, { status: 500 })
@@ -179,6 +210,7 @@ describe('edição de app', () => {
     let body: Record<string, unknown> | null = null
     server.use(
       meHandler(operator()),
+      catalogHandler(),
       getApp(),
       http.patch('*/admin/apps/crmthink.gptmaker', async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
@@ -205,10 +237,35 @@ describe('edição de app', () => {
     )
   })
 
+  it('produtos vêm marcados, não geram diff até mexer e o diff leva a lista nova', async () => {
+    let body: Record<string, unknown> | null = null
+    server.use(
+      meHandler(operator()),
+      catalogHandler(),
+      getApp(),
+      http.patch('*/admin/apps/crmthink.gptmaker', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json(APP)
+      }),
+    )
+    const { user } = renderApp('/apps/crmthink.gptmaker/edit')
+    const gpt = await screen.findByRole('checkbox', { name: /GPTMaker/ })
+    const extractor = screen.getByRole('checkbox', { name: /Extrator/ })
+    expect(gpt).toBeChecked()
+    expect(extractor).toBeChecked()
+    expect(screen.getByText('Nenhuma alteração ainda.')).toBeInTheDocument()
+
+    await user.click(extractor)
+    expect(screen.queryByText('Nenhuma alteração ainda.')).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+    await waitFor(() => expect(body).toEqual({ productSpaIds: [10] }))
+  })
+
   it('o client_secret só é enviado quando preenchido', async () => {
     let body: Record<string, unknown> | null = null
     server.use(
       meHandler(operator()),
+      catalogHandler(),
       getApp(),
       http.patch('*/admin/apps/crmthink.gptmaker', async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>
@@ -227,7 +284,7 @@ describe('edição de app', () => {
   })
 
   it('a pré-visualização do tema acompanha o formulário', async () => {
-    server.use(meHandler(operator()), getApp())
+    server.use(meHandler(operator()), catalogHandler(), getApp())
     const { user } = renderApp('/apps/crmthink.gptmaker/edit')
     const preview = await screen.findByLabelText(
       'Pré-visualização da página de instalação',

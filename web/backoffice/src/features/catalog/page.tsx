@@ -57,7 +57,7 @@ function Problems({ problems }: { problems: string[] }) {
   )
 }
 
-function StatusBadge({ active }: { active: boolean }) {
+export function StatusBadge({ active }: { active: boolean }) {
   return (
     <Badge variant={active ? 'secondary' : 'outline'}>
       {active ? 'Ativo' : 'Inativo'}

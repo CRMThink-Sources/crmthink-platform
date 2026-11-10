@@ -55,3 +55,38 @@ export const apiError = (status: number, code: string, message = code) =>
 export function page<T>(items: T[], nextCursor: string | null = null) {
   return { items, nextCursor }
 }
+
+export function catalogProduct(
+  overrides: Partial<Schemas['CatalogProduct']> = {},
+): Schemas['CatalogProduct'] {
+  return {
+    id: 10,
+    name: 'GPTMaker',
+    billingModel: '13605',
+    billingModelKey: 'standard',
+    kind: 'subscription',
+    active: true,
+    valid: true,
+    problems: [],
+    apps: [],
+    plans: [],
+    ...overrides,
+  }
+}
+
+/** `GET /admin/catalog/products`; o padrão tem os produtos 10 e 11 (usados pelos testes do app). */
+export function catalogHandler(
+  products: Schemas['CatalogProduct'][] = [
+    catalogProduct({ id: 10, name: 'GPTMaker' }),
+    catalogProduct({ id: 11, name: 'Extrator' }),
+  ],
+  writable = true,
+) {
+  return http.get('*/admin/catalog/products', () =>
+    HttpResponse.json({
+      writable,
+      products,
+      orphanPlans: [],
+    } satisfies Schemas['CatalogView']),
+  )
+}
