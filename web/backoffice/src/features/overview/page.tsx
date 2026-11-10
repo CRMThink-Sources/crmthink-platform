@@ -63,7 +63,7 @@ export function OverviewPage() {
   const overview = useQuery(overviewQuery)
   return (
     <>
-      <PageHeader title="Painel">
+      <PageHeader title="Painel" description="Resumo do estado da plataforma.">
         {overview.data && (
           <span className="text-xs text-muted-foreground">
             Calculado <DateTime value={overview.data.computedAt} />
@@ -121,7 +121,7 @@ function OverviewContent({ data }: { data: Overview }) {
             <CardTitle>Eventos por app</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
+            <Table bare>
               <TableHeader>
                 <TableRow>
                   <TableHead>App</TableHead>
@@ -172,7 +172,7 @@ function OverviewContent({ data }: { data: Overview }) {
             <CardTitle>Instalações por app e status</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
+            <Table bare>
               <TableHeader>
                 <TableRow>
                   <TableHead>App</TableHead>

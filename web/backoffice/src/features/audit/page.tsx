@@ -77,7 +77,10 @@ export function AuditPage() {
 
   return (
     <>
-      <PageHeader title="Auditoria" />
+      <PageHeader
+        title="Auditoria"
+        description="Registro de quem fez o quê no backoffice."
+      />
       <FilterBar>
         <TextFilter
           id="filter-actor"

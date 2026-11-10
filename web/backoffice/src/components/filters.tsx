@@ -151,10 +151,21 @@ export function describeFilters(
   return parts.length ? ` com ${parts.join(', ')}` : ''
 }
 
-export function PageHeader(props: { title: string; children?: ReactNode }) {
+export function PageHeader(props: {
+  title: string
+  description?: string
+  children?: ReactNode
+}) {
   return (
-    <div className="flex items-center justify-between gap-4 pb-4">
-      <h1 className="text-xl font-semibold">{props.title}</h1>
+    <div className="flex items-start justify-between gap-4 pb-4">
+      <div>
+        <h1 className="text-xl font-semibold">{props.title}</h1>
+        {props.description && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            {props.description}
+          </p>
+        )}
+      </div>
       {props.children}
     </div>
   )

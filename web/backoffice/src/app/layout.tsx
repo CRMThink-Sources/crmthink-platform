@@ -1,64 +1,24 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  Activity,
-  Boxes,
-  CreditCard,
-  KeyRound,
-  LayoutDashboard,
-  LogOut,
-  Monitor,
-  Moon,
-  ScrollText,
-  Send,
-  Settings,
-  Sun,
-  Users,
-} from 'lucide-react'
-import { Fragment } from 'react'
+import { Menu, Monitor, Moon, Sun } from 'lucide-react'
+import { Fragment, useState } from 'react'
 import {
   Link,
   Navigate,
-  NavLink,
   Outlet,
   useLocation,
   useMatches,
-  useNavigate,
   type UIMatch,
 } from 'react-router'
-import { api, call } from '@/api/client'
 import { ErrorState, LoadingState } from '@/components/states'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { useHasRole } from '@/components/role-gate'
-import { useTheme } from './theme'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { useMe } from '@/features/auth/session'
-import { cn } from '@/lib/utils'
-
-const NAV: Array<{
-  to: string
-  label: string
-  icon: typeof LayoutDashboard
-  end?: boolean
-  /** Item só para `operator`: o suporte não vê. */
-  operatorOnly?: boolean
-}> = [
-  { to: '/', label: 'Painel', icon: LayoutDashboard, end: true },
-  { to: '/installations', label: 'Instalações', icon: Boxes },
-  { to: '/events', label: 'Eventos', icon: Send },
-  { to: '/stripe-events', label: 'Eventos Stripe', icon: CreditCard },
-  { to: '/apps', label: 'Apps', icon: Activity },
-  { to: '/audit', label: 'Auditoria', icon: ScrollText },
-  { to: '/system', label: 'Sistema', icon: Settings, operatorOnly: true },
-  { to: '/operators', label: 'Operadores', icon: Users, operatorOnly: true },
-]
+import { Sidebar } from './sidebar'
+import { useTheme } from './theme'
 
 /** `handle.crumb` de cada rota: texto fixo ou função dos parâmetros. */
 export type RouteHandle = {
@@ -116,84 +76,49 @@ function ThemeToggle() {
   )
 }
 
-function UserMenu() {
-  const me = useMe()
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const logout = useMutation({
-    mutationFn: () => call(api.POST('/admin/auth/logout')),
-    onSettled: () => {
-      queryClient.clear()
-      navigate('/login', { replace: true })
-    },
-  })
-  if (me.data?.kind !== 'operator') return null
-  const { operator } = me.data
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="gap-2">
-          <span className="font-medium">{operator.name}</span>
-          <Badge variant="outline">{operator.role}</Badge>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="font-normal">
-          <div className="font-medium">{operator.name}</div>
-          <div className="text-xs text-muted-foreground">{operator.email}</div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => navigate('/password')}>
-          <KeyRound /> Trocar senha
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => logout.mutate()}>
-          <LogOut /> Sair
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-/** Moldura das telas autenticadas: barra lateral, cabeçalho e trilha. */
+/**
+ * Moldura das telas autenticadas: menu lateral fixo no desktop e em gaveta no celular, e
+ * uma barra fina com a trilha e o seletor de tema.
+ */
 export function AppLayout() {
-  const isOperator = useHasRole('operator')
-  const items = NAV.filter(item => !item.operatorOnly || isOperator)
+  const [open, setOpen] = useState(false)
   return (
-    <div className="grid min-h-svh grid-cols-[220px_1fr]">
-      <aside className="border-r bg-sidebar p-3 text-sidebar-foreground">
-        <div className="px-2 py-3 text-sm font-semibold">
-          Backoffice CRMThink
-        </div>
-        <nav className="grid gap-1" aria-label="Principal">
-          {items.map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent',
-                  isActive && 'bg-sidebar-accent font-medium',
-                )
-              }
-            >
-              <item.icon className="size-4" /> {item.label}
-            </NavLink>
-          ))}
-        </nav>
+    <div className="grid min-h-svh lg:grid-cols-[240px_1fr]">
+      <aside className="sticky top-0 hidden h-svh border-r bg-sidebar text-sidebar-foreground lg:block">
+        <Sidebar navLabel="Principal" />
       </aside>
       <div className="flex min-w-0 flex-col">
-        <header className="flex h-12 items-center justify-between border-b px-4">
+        <header className="flex h-12 items-center gap-2 border-b px-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            aria-label="Abrir menu"
+            onClick={() => setOpen(true)}
+          >
+            <Menu />
+          </Button>
           <Breadcrumbs />
           <div className="ml-auto flex items-center gap-1">
             <ThemeToggle />
-            <UserMenu />
           </div>
         </header>
         <main className="min-w-0 flex-1 p-4 md:p-6">
           <Outlet />
         </main>
       </div>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          side="left"
+          className="w-64 gap-0 bg-sidebar p-0 text-sidebar-foreground"
+        >
+          <SheetTitle className="sr-only">Menu</SheetTitle>
+          <SheetDescription className="sr-only">
+            Navegação do backoffice
+          </SheetDescription>
+          <Sidebar navLabel="Menu" onNavigate={() => setOpen(false)} />
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

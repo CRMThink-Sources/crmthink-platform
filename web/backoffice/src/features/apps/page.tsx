@@ -25,7 +25,10 @@ export function AppsPage() {
   const apps = useQuery(appsQuery)
   return (
     <>
-      <PageHeader title="Apps">
+      <PageHeader
+        title="Apps"
+        description="Apps cadastrados na plataforma: estado, trial e escopos."
+      >
         <RoleGate role="operator">
           <Button asChild>
             <Link to="/apps/new">Cadastrar app</Link>
@@ -43,7 +46,6 @@ export function AppsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>App</TableHead>
-              <TableHead>appCode</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Trial</TableHead>
               <TableHead>Escopos</TableHead>
@@ -52,16 +54,18 @@ export function AppsPage() {
           <TableBody>
             {apps.data.items.map(app => (
               <TableRow key={app.appCode}>
-                <TableCell>
+                <TableCell className="whitespace-normal">
                   <Link
                     to={`/apps/${encodeURIComponent(app.appCode)}`}
-                    className="font-medium hover:underline"
+                    className="font-medium break-all hover:underline"
                   >
                     {app.name}
                   </Link>
-                </TableCell>
-                <TableCell>
-                  <code className="text-xs">{app.appCode}</code>
+                  <p>
+                    <code className="text-xs text-muted-foreground">
+                      {app.appCode}
+                    </code>
+                  </p>
                 </TableCell>
                 <TableCell>
                   <Badge variant={app.active ? 'secondary' : 'outline'}>
