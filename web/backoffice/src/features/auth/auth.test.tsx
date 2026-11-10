@@ -461,6 +461,17 @@ describe('menu lateral', () => {
     expect(screen.getByRole('menuitem', { name: /Sair/ })).toBeInTheDocument()
   })
 
+  it('o nome no rodapé do menu encolhe em vez de empurrar o papel para fora', async () => {
+    server.use(meHandler(viewer()), anyData)
+    renderApp('/')
+    const aside = await screen.findByRole('complementary')
+
+    expect(within(aside).getByText('Suporte')).toHaveClass(
+      'min-w-0',
+      'truncate',
+    )
+  })
+
   it('a barra de cima guarda o tema e o menu usa só tokens do tema', async () => {
     server.use(meHandler(operator()), anyData)
     renderApp('/')

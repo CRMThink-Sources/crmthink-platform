@@ -121,7 +121,7 @@ function OverviewContent({ data }: { data: Overview }) {
             <CardTitle>Eventos por app</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
+            <Table bare>
               <TableHeader>
                 <TableRow>
                   <TableHead>App</TableHead>
@@ -172,7 +172,7 @@ function OverviewContent({ data }: { data: Overview }) {
             <CardTitle>Instalações por app e status</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
+            <Table bare>
               <TableHeader>
                 <TableRow>
                   <TableHead>App</TableHead>

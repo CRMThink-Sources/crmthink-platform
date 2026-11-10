@@ -35,6 +35,24 @@ describe('Table', () => {
     )
   })
 
+  it('com bare não desenha o cartão (para tabelas que já estão dentro de um)', () => {
+    const { container } = render(
+      <Table bare>
+        <TableBody>
+          <TableRow>
+            <TableCell>x</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    )
+
+    const wrapper = container.querySelector('[data-slot="table-container"]')
+    expect(wrapper).toHaveClass('overflow-x-auto')
+    expect(wrapper).not.toHaveClass('border')
+    expect(wrapper).not.toHaveClass('rounded-lg')
+    expect(wrapper).not.toHaveClass('bg-card')
+  })
+
   it('sem cor fixa: só tokens do tema', () => {
     const { container } = renderTable()
 

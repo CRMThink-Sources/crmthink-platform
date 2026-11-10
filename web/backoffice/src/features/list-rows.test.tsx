@@ -70,6 +70,15 @@ describe('lista de instalações', () => {
     )
   })
 
+  it('a primeira célula permite quebra de linha (o nowrap das células não vale nela)', async () => {
+    open()
+    const link = await screen.findByRole('link', {
+      name: 'acme.bitrix24.com.br',
+    })
+
+    expect(link.closest('td')).toHaveClass('whitespace-normal')
+  })
+
   it('domínio muito longo quebra em vez de estourar o cartão', async () => {
     open(installation({ domain: `${LONG}.bitrix24.com.br` }))
 
@@ -102,6 +111,13 @@ describe('lista de apps', () => {
     const code = within(link.closest('td')!).getByText('crmthink.gptmaker')
     expect(code.tagName).toBe('CODE')
     expect(code).toHaveClass('text-xs', 'text-muted-foreground')
+  })
+
+  it('a primeira célula permite quebra de linha (o nowrap das células não vale nela)', async () => {
+    open()
+    const link = await screen.findByRole('link', { name: 'GPTMaker' })
+
+    expect(link.closest('td')).toHaveClass('whitespace-normal')
   })
 
   it('nome muito longo quebra em vez de estourar o cartão', async () => {

@@ -101,7 +101,7 @@ export function InstallationsPage() {
             <TableBody>
               {list.data.items.map(item => (
                 <TableRow key={item.id}>
-                  <TableCell>
+                  <TableCell className="whitespace-normal">
                     <Link
                       to={`/installations/${item.id}`}
                       className="font-medium break-all hover:underline"

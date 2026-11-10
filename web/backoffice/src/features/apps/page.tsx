@@ -54,7 +54,7 @@ export function AppsPage() {
           <TableBody>
             {apps.data.items.map(app => (
               <TableRow key={app.appCode}>
-                <TableCell>
+                <TableCell className="whitespace-normal">
                   <Link
                     to={`/apps/${encodeURIComponent(app.appCode)}`}
                     className="font-medium break-all hover:underline"

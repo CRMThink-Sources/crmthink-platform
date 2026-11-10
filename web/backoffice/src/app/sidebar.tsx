@@ -67,7 +67,7 @@ function UserMenu() {
           >
             {operator.name.charAt(0).toUpperCase()}
           </span>
-          <span className="font-medium">{operator.name}</span>
+          <span className="min-w-0 truncate font-medium">{operator.name}</span>
           <Badge variant="outline" className="ml-auto">
             {operator.role}
           </Badge>
