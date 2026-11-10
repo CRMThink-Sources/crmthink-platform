@@ -252,6 +252,14 @@ export const ERROR_CATALOG = {
     action: 'Corrigir o intervalo, a chave de trial ou os ids de preço.',
     origin: 'billing/application/catalog-admin.ts',
   },
+  PRICE_ALREADY_USED: {
+    status: 422,
+    meaning:
+      'O id de preço do Stripe já está em outro plano no mesmo ambiente, ou repete o do outro ambiente do próprio plano. `details` traz `{ planId, field }`: quem já o usa (`null` = o plano sendo criado) e o campo (`priceHomolog` ou `priceProduction`).',
+    action:
+      'Conferir o id colado: cada plano tem o seu preço no Stripe, distinto entre homologação e produção.',
+    origin: 'billing/application/catalog-admin.ts',
+  },
   CATALOG_WRITE_FAILED: {
     status: 502,
     meaning:

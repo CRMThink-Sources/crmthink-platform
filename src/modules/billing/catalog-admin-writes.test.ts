@@ -365,6 +365,73 @@ describe('CatalogAdmin: plano em uso, edições livres', () => {
   })
 })
 
+describe('CatalogAdmin: id de preço não se repete', () => {
+  it('criar com preço de outro plano no mesmo ambiente: 422 com o plano e o campo', async () => {
+    const { h, admin } = await setup()
+    h.crm.calls = []
+    const error = await admin
+      .createPlan(10, { ...paid, priceHomolog: 'price_basic' })
+      .catch((e: unknown) => e)
+    expect(error).toMatchObject({
+      status: 422,
+      code: 'PRICE_ALREADY_USED',
+      details: { planId: 501, field: 'priceHomolog' },
+    })
+    expect(h.crm.calls).toEqual([])
+  })
+
+  it('criar com o mesmo id na homologação e na produção: 422', async () => {
+    const { h, admin } = await setup()
+    h.crm.calls = []
+    const error = await admin
+      .createPlan(10, {
+        ...paid,
+        priceHomolog: 'price_same',
+        priceProduction: 'price_same',
+      })
+      .catch((e: unknown) => e)
+    expect(error).toMatchObject({
+      status: 422,
+      code: 'PRICE_ALREADY_USED',
+      details: { planId: null, field: 'priceProduction' },
+    })
+    expect(h.crm.calls).toEqual([])
+  })
+
+  it('editar para o preço de outro plano ou para o do outro ambiente: 422', async () => {
+    const { h, admin } = await setup()
+    h.crm.calls = []
+    await expect(
+      admin.updatePlan(502, { priceProduction: 'price_basic_live' }),
+    ).rejects.toMatchObject({
+      status: 422,
+      code: 'PRICE_ALREADY_USED',
+      details: { planId: 501, field: 'priceProduction' },
+    })
+    await expect(
+      admin.updatePlan(502, { priceHomolog: 'price_pro_live' }),
+    ).rejects.toMatchObject({
+      status: 422,
+      code: 'PRICE_ALREADY_USED',
+      details: { planId: 502, field: 'priceHomolog' },
+    })
+    expect(h.crm.calls).toEqual([])
+  })
+
+  it('reenviar o próprio preço sem mudança não conflita', async () => {
+    const { admin } = await setup()
+    const view = await admin.updatePlan(501, {
+      name: 'Básico 2',
+      priceHomolog: 'price_basic',
+      priceProduction: 'price_basic_live',
+    })
+    expect(view).toMatchObject({
+      name: 'Básico 2',
+      priceHomolog: 'price_basic',
+    })
+  })
+})
+
 describe('CatalogAdmin: excluir plano', () => {
   it('plano com assinatura ou trial de app não se exclui; sem uso, sim', async () => {
     const { h, admin, c } = await setup()

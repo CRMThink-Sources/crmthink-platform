@@ -395,7 +395,7 @@ export interface paths {
         put?: never;
         /**
          * Criar plano de um produto
-         * @description Plano pago precisa de ao menos um id de preço do Stripe; `trial: true` exige os dois vazios. Produto de assinatura exige `interval`; o de compra única não tem.
+         * @description Plano pago precisa de ao menos um id de preço do Stripe, que não pode estar em outro plano nem repetir entre os ambientes (`PRICE_ALREADY_USED`); `trial: true` exige os dois vazios. Produto de assinatura exige `interval`; o de compra única não tem.
          *
          *     **Papel mínimo:** `operator`.
          */
@@ -4119,6 +4119,7 @@ export interface operations {
             /**
              * @description Não processável
              *     - `PLAN_INVALID_FOR_PRODUCT`: Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço.
+             *     - `PRICE_ALREADY_USED`: O id de preço do Stripe já está em outro plano no mesmo ambiente, ou repete o do outro ambiente do próprio plano. `details` traz `{ planId, field }`: quem já o usa (`null` = o plano sendo criado) e o campo (`priceHomolog` ou `priceProduction`).
              */
             422: {
                 headers: {
@@ -4636,6 +4637,7 @@ export interface operations {
             /**
              * @description Não processável
              *     - `PLAN_INVALID_FOR_PRODUCT`: Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço.
+             *     - `PRICE_ALREADY_USED`: O id de preço do Stripe já está em outro plano no mesmo ambiente, ou repete o do outro ambiente do próprio plano. `details` traz `{ planId, field }`: quem já o usa (`null` = o plano sendo criado) e o campo (`priceHomolog` ou `priceProduction`).
              */
             422: {
                 headers: {

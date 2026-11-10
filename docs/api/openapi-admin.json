@@ -2119,9 +2119,10 @@
             }
           },
           "422": {
-            "description": "Não processável\n- `PLAN_INVALID_FOR_PRODUCT`: Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço.",
+            "description": "Não processável\n- `PLAN_INVALID_FOR_PRODUCT`: Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço.\n- `PRICE_ALREADY_USED`: O id de preço do Stripe já está em outro plano no mesmo ambiente, ou repete o do outro ambiente do próprio plano. `details` traz `{ planId, field }`: quem já o usa (`null` = o plano sendo criado) e o campo (`priceHomolog` ou `priceProduction`).",
             "x-error-codes": [
-              "PLAN_INVALID_FOR_PRODUCT"
+              "PLAN_INVALID_FOR_PRODUCT",
+              "PRICE_ALREADY_USED"
             ],
             "content": {
               "application/json": {
@@ -2134,6 +2135,14 @@
                       "error": {
                         "code": "PLAN_INVALID_FOR_PRODUCT",
                         "message": "Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço."
+                      }
+                    }
+                  },
+                  "PRICE_ALREADY_USED": {
+                    "value": {
+                      "error": {
+                        "code": "PRICE_ALREADY_USED",
+                        "message": "O id de preço do Stripe já está em outro plano no mesmo ambiente, ou repete o do outro ambiente do próprio plano. `details` traz `{ planId, field }`: quem já o usa (`null` = o plano sendo criado) e o campo (`priceHomolog` ou `priceProduction`)."
                       }
                     }
                   }
@@ -3236,7 +3245,7 @@
           "Operador"
         ],
         "summary": "Criar plano de um produto",
-        "description": "Plano pago precisa de ao menos um id de preço do Stripe; `trial: true` exige os dois vazios. Produto de assinatura exige `interval`; o de compra única não tem.\n\n**Papel mínimo:** `operator`.",
+        "description": "Plano pago precisa de ao menos um id de preço do Stripe, que não pode estar em outro plano nem repetir entre os ambientes (`PRICE_ALREADY_USED`); `trial: true` exige os dois vazios. Produto de assinatura exige `interval`; o de compra única não tem.\n\n**Papel mínimo:** `operator`.",
         "security": [
           {
             "adminSession": []
@@ -3432,9 +3441,10 @@
             }
           },
           "422": {
-            "description": "Não processável\n- `PLAN_INVALID_FOR_PRODUCT`: Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço.",
+            "description": "Não processável\n- `PLAN_INVALID_FOR_PRODUCT`: Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço.\n- `PRICE_ALREADY_USED`: O id de preço do Stripe já está em outro plano no mesmo ambiente, ou repete o do outro ambiente do próprio plano. `details` traz `{ planId, field }`: quem já o usa (`null` = o plano sendo criado) e o campo (`priceHomolog` ou `priceProduction`).",
             "x-error-codes": [
-              "PLAN_INVALID_FOR_PRODUCT"
+              "PLAN_INVALID_FOR_PRODUCT",
+              "PRICE_ALREADY_USED"
             ],
             "content": {
               "application/json": {
@@ -3447,6 +3457,14 @@
                       "error": {
                         "code": "PLAN_INVALID_FOR_PRODUCT",
                         "message": "Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço."
+                      }
+                    }
+                  },
+                  "PRICE_ALREADY_USED": {
+                    "value": {
+                      "error": {
+                        "code": "PRICE_ALREADY_USED",
+                        "message": "O id de preço do Stripe já está em outro plano no mesmo ambiente, ou repete o do outro ambiente do próprio plano. `details` traz `{ planId, field }`: quem já o usa (`null` = o plano sendo criado) e o campo (`priceHomolog` ou `priceProduction`)."
                       }
                     }
                   }

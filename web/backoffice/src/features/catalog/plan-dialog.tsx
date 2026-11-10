@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import z from 'zod'
-import { api, call, type Schemas } from '@/api/client'
+import { ApiError, api, call, type Schemas } from '@/api/client'
 import { Input } from '@/components/ui/input'
 import {
   INVALIDATES,
@@ -105,6 +105,19 @@ function toPayload(values: Values, oneTime: boolean): Payload {
   }
 }
 
+/** `PRICE_ALREADY_USED` vai para o campo de preço citado nos `details`. */
+function priceInUse(
+  form: ReturnType<typeof useForm<Values>>,
+  error: Error,
+): boolean {
+  if (!(error instanceof ApiError) || error.code !== 'PRICE_ALREADY_USED')
+    return false
+  const field = (error.details as { field?: unknown } | undefined)?.field
+  if (field !== 'priceHomolog' && field !== 'priceProduction') return false
+  form.setError(field, { type: 'server', message: error.message })
+  return true
+}
+
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -168,6 +181,7 @@ function Body({ product, plan, onOpenChange }: Omit<Props, 'open'>) {
     success: result =>
       edit ? 'Plano atualizado' : `Plano ${result.name} criado`,
     onError: error => {
+      if (priceInUse(form, error)) return
       if (!applyFieldErrors(form, error, FIELDS)) setServerError(error)
     },
   })

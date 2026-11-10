@@ -233,6 +233,23 @@ describe('rotas do catálogo: escrita', () => {
     expect(response.body.error.code).toBe('PLAN_INVALID_FOR_PRODUCT')
   })
 
+  it('id de preço já usado: 422 PRICE_ALREADY_USED com plano e campo', async () => {
+    const { dev } = await boot()
+    const created = await dev
+      .post('/admin/catalog/products/10/plans')
+      .send({ ...paid, priceHomolog: 'price_pro' })
+    expect(created.status).toBe(422)
+    expect(created.body.error).toMatchObject({
+      code: 'PRICE_ALREADY_USED',
+      details: { planId: 502, field: 'priceHomolog' },
+    })
+    const edited = await dev
+      .patch('/admin/catalog/plans/501')
+      .send({ priceHomolog: 'price_pro' })
+    expect(edited.status).toBe(422)
+    expect(edited.body.error.code).toBe('PRICE_ALREADY_USED')
+  })
+
   it('PLAN_IN_USE e PRODUCT_IN_USE chegam como 409 com o uso', async () => {
     const { dev } = await boot()
     const plan = await dev

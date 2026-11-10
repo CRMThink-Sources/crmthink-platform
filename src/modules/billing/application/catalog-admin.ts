@@ -141,6 +141,18 @@ const planInUse = (message: string, usage: PlanUsage) =>
 const productInUse = (message: string, usage: ProductUsage) =>
   new HttpError(409, 'PRODUCT_IN_USE', message, usage)
 
+type PriceField = 'priceHomolog' | 'priceProduction'
+const PRICE_FIELDS: PriceField[] = ['priceHomolog', 'priceProduction']
+const PRICE_LABELS: Record<PriceField, string> = {
+  priceHomolog: 'homologação',
+  priceProduction: 'produção',
+}
+
+/** `details` de `PRICE_ALREADY_USED`: quem já usa o id (`null` = o plano sendo criado). */
+export type PriceConflict = { planId: number | null; field: PriceField }
+const priceUsed = (message: string, details: PriceConflict) =>
+  new HttpError(422, 'PRICE_ALREADY_USED', message, details)
+
 const usageText = (usage: PlanUsage) => {
   const parts: string[] = []
   const { total, active } = usage.subscriptions
@@ -303,6 +315,10 @@ export class CatalogAdmin {
       interval: true,
       trial: true,
     })
+    await this.assertPricesUnused(null, input, {
+      priceHomolog: true,
+      priceProduction: true,
+    })
     const fields = {
       ...this.deps.mappers.planFields(input, productId),
       ...CREATE_DEFAULTS,
@@ -379,6 +395,15 @@ export class CatalogAdmin {
           usage,
         )
     }
+
+    await this.assertPricesUnused(id, next, {
+      priceHomolog:
+        patch.priceHomolog !== undefined &&
+        patch.priceHomolog !== current.priceHomolog,
+      priceProduction:
+        patch.priceProduction !== undefined &&
+        patch.priceProduction !== current.priceProduction,
+    })
 
     const fields = pick(mappers.planFields(next), patch, {
       name: 'title',
@@ -469,6 +494,42 @@ export class CatalogAdmin {
       throw invalid('Produto de compra única não tem intervalo')
     if (kind === 'subscription' && !input.interval)
       throw invalid('Plano de assinatura exige intervalo')
+  }
+
+  /**
+   * Um id de preço do Stripe identifica um só plano (`planByPrice` acha o primeiro):
+   * ao gravar um preço novo, ele não pode estar em outro plano no mesmo ambiente nem
+   * repetir o do outro ambiente do próprio plano. Lê os planos na hora, sem cache.
+   */
+  private async assertPricesUnused(
+    id: number | null,
+    prices: Pick<PlanInput, PriceField>,
+    setting: Record<PriceField, boolean>,
+  ): Promise<void> {
+    const fields = PRICE_FIELDS.filter(field => setting[field] && prices[field])
+    if (!fields.length) return
+    if (prices.priceHomolog === prices.priceProduction)
+      throw priceUsed(
+        `Homologação e produção não podem usar o mesmo id de preço (${prices.priceHomolog})`,
+        { planId: id, field: fields[fields.length - 1]! },
+      )
+    const { crm, config } = this.deps
+    const codes: Record<PriceField, string> = {
+      priceHomolog: config.plan.gatewayIdHomolog,
+      priceProduction: config.plan.gatewayIdProduction,
+    }
+    const plans = await crm.listItems(config.entityTypes.plan, {})
+    for (const field of fields) {
+      const price = prices[field]!
+      const other = plans.find(
+        raw => Number(raw.id) !== id && text(raw[codes[field]]) === price,
+      )
+      if (other)
+        throw priceUsed(
+          `O id de preço ${price} já é usado pelo plano #${Number(other.id)} (${PRICE_LABELS[field]}): cada plano tem o seu`,
+          { planId: Number(other.id), field },
+        )
+    }
   }
 
   /** Erro do Bitrix numa escrita vira 502; erro da própria regra passa adiante. */

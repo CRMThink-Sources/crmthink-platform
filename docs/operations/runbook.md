@@ -212,6 +212,9 @@ CRMThink, com os planos aninhados em cada produto. API: `/admin/catalog/*`. `vie
   de trial) e segue a regra do trial, ou seja, 409 `PLAN_IN_USE` se o plano tem assinaturas ou é
   o plano de trial de um app (nesse caso, crie um plano novo). Produto
   de cobrança única recebe planos sem intervalo.
+- **Id de preço não se repete:** um id `price_...` não pode estar em dois planos no mesmo ambiente
+  nem ser o mesmo na homologação e na produção de um plano (422 `PRICE_ALREADY_USED`, com o plano
+  e o campo em `details`); reenviar o próprio preço sem mudança não conflita.
 - **502 `CATALOG_WRITE_FAILED`:** a escrita no portal não foi confirmada (o Bitrix descarta
   campos desconhecidos em silêncio, então o item é relido depois de criar ou editar).
   - **Ao criar:** a mensagem traz o id do item, que pode ter ficado **meio criado**: abra-o no SPA

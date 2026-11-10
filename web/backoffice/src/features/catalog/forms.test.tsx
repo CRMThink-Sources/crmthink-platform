@@ -551,6 +551,38 @@ describe('formulário de plano', () => {
     },
   )
 
+  it('422 PRICE_ALREADY_USED mostra a mensagem no campo de preço', async () => {
+    const { user } = open()
+    capture('patch', '*/admin/catalog/plans/501', () =>
+      HttpResponse.json(
+        {
+          error: {
+            code: 'PRICE_ALREADY_USED',
+            message: 'O id de preço price_dup já é usado pelo plano #502',
+            details: { planId: 502, field: 'priceProduction' },
+          },
+        },
+        { status: 422 },
+      ),
+    )
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Editar plano Plano Mensal' }),
+    )
+    const price = screen.getByLabelText('ID do preço no Stripe: produção')
+    await user.clear(price)
+    await user.type(price, 'price_dup')
+    await user.click(save())
+
+    expect(
+      await screen.findByText(
+        'O id de preço price_dup já é usado pelo plano #502',
+      ),
+    ).toBeInTheDocument()
+    expect(price).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
   it('erro de validação da API cai no campo', async () => {
     const { user } = open()
     capture('post', '*/admin/catalog/products/100/plans', () =>
