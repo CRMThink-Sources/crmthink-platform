@@ -53,12 +53,11 @@ type Pending =
   | { kind: 'reset'; operator: Operator }
   | null
 
-/** Senha provisória e QR code do TOTP, mostrados uma vez e só aqui. */
+/** Senha provisória, mostrada uma vez e só aqui. O autenticador (QR code) é cadastrado pelo próprio operador no primeiro login. */
 const revealOf = (title: string, issued: Issued): SecretReveal => ({
   title,
   secrets: [{ label: 'Senha provisória', value: issued.temporaryPassword }],
   notes: [{ label: 'E-mail de acesso', value: issued.operator.email }],
-  otpauthUri: issued.totpUri,
 })
 
 function CreateDialog(props: {
@@ -258,7 +257,7 @@ function ResetDialog(props: {
       }}
       title="Redefinir acesso"
       target={operator.email}
-      effect="Gera uma senha provisória e um TOTP novos, derruba as sessões abertas da conta e desfaz o bloqueio. Os dados novos aparecem uma única vez."
+      effect="Gera uma senha provisória nova e apaga o autenticador: a pessoa cadastra o app de novo no próximo login. Derruba as sessões abertas e os navegadores lembrados e desfaz o bloqueio. A senha aparece uma única vez."
       confirmLabel="Redefinir acesso"
       destructive
       confirmText={operator.email}
@@ -359,6 +358,11 @@ export function OperatorsPage() {
                     <Badge variant={operator.active ? 'secondary' : 'outline'}>
                       {operator.active ? 'Ativo' : 'Inativo'}
                     </Badge>
+                    {!operator.totpConfigured && (
+                      <Badge variant="outline" className="ml-2">
+                        Autenticador pendente
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     {locked ? (

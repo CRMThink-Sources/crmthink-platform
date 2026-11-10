@@ -178,8 +178,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Entrar no backoffice (e-mail, senha e TOTP)
-         * @description Define o cookie de sessão `cp_admin_session` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/admin`). Qualquer falha responde `INVALID_CREDENTIALS`, sem dizer qual fator falhou. Após 5 falhas em 15 min a conta fica bloqueada por 15 min; mais de 20 tentativas por IP em 15 min respondem 429 com `Retry-After`. Com `Origin`, ele precisa estar em `BACKOFFICE_ORIGINS`.
+         * Entrar no backoffice, 1ª etapa (e-mail e senha)
+         * @description Confere e-mail e senha e responde o próximo passo em `step`: `totp` (falta o código do autenticador), `totp-setup` (a conta ainda não tem autenticador: a resposta traz o segredo e o URI `otpauth://` para o QR code) ou `authenticated` (o navegador está lembrado e a sessão já abriu). Só `authenticated` define o cookie de sessão `cp_admin_session` (`HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/admin`). O cookie `cp_admin_device`, quando válido para a conta, dispensa o código; a senha continua obrigatória. Qualquer falha responde `INVALID_CREDENTIALS`, sem dizer qual fator falhou. Após 5 falhas em 15 min a conta fica bloqueada por 15 min; mais de 20 tentativas por IP em 15 min (somando `/admin/auth/totp`) respondem 429 com `Retry-After`. Com `Origin`, ele precisa estar em `BACKOFFICE_ORIGINS`.
          */
         post: operations["operatorLogin"];
         delete?: never;
@@ -244,6 +244,26 @@ export interface paths {
          *     **Papel mínimo:** qualquer sessão de operador.
          */
         post: operations["changeOwnPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/auth/totp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Entrar no backoffice, 2ª etapa (código do autenticador)
+         * @description Recebe o desafio da 1ª etapa e o código de 6 dígitos. No `totp-setup`, o código prova que o app foi cadastrado e só então o segredo é gravado na conta. Define o cookie de sessão e, com `rememberDevice: true`, o cookie `cp_admin_device` pelo prazo de `ADMIN_TRUSTED_DEVICE_DAYS`. O desafio vale 5 minutos, é de uso único e aceita 5 códigos errados (`CHALLENGE_EXPIRED` depois disso). Um código já usado não vale de novo.
+         */
+        post: operations["operatorTotp"];
         delete?: never;
         options?: never;
         head?: never;
@@ -439,7 +459,7 @@ export interface paths {
         put?: never;
         /**
          * Criar operador
-         * @description **`temporaryPassword` e `totpUri` só aparecem nesta resposta.** O operador troca a senha no primeiro login.
+         * @description **`temporaryPassword` só aparece nesta resposta.** O operador troca a senha e cadastra o app autenticador (QR code) no primeiro login; a conta nasce sem segredo TOTP.
          *
          *     **Papel mínimo:** `operator`.
          */
@@ -482,8 +502,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Redefinir senha e TOTP de um operador
-         * @description **`temporaryPassword` e `totpUri` só aparecem nesta resposta.** Desbloqueia a conta e derruba as sessões dela.
+         * Redefinir senha e autenticador de um operador
+         * @description **`temporaryPassword` só aparece nesta resposta.** Apaga o segredo TOTP (o operador cadastra o app de novo no próximo login), desbloqueia a conta e derruba as sessões e os navegadores lembrados dela.
          *
          *     **Papel mínimo:** `operator`.
          *
@@ -1999,8 +2019,6 @@ export interface components {
             operator: components["schemas"]["Operator"];
             /** @description Senha provisória. Só aparece nesta resposta. */
             temporaryPassword: string;
-            /** @description URI `otpauth://` para o app autenticador. Só aparece nesta resposta. */
-            totpUri: string;
         };
         Jwks: {
             keys: {
@@ -2024,6 +2042,8 @@ export interface components {
             active: boolean;
             /** @description Senha provisória: só `POST /admin/auth/password` é permitido */
             mustChangePassword: boolean;
+            /** @description `false` até o operador cadastrar o app autenticador no primeiro login */
+            totpConfigured: boolean;
             lockedUntil: string | null;
             lastLoginAt: string | null;
             /** Format: date-time */
@@ -2035,9 +2055,35 @@ export interface components {
         OperatorLoginRequest: {
             email: string;
             password: string;
-            code: string;
         };
-        OperatorLoginResult: {
+        OperatorLoginStep: {
+            /** @constant */
+            step: "totp";
+            /** @description Desafio de uso único, válido por 5 minutos */
+            challenge: string;
+            /** @description Dias em que "lembrar este navegador" dispensa o código; `0` quando o recurso está desligado */
+            trustedDeviceDays: number;
+        } | {
+            /** @constant */
+            step: "totp-setup";
+            /** @description Desafio de uso único, válido por 5 minutos */
+            challenge: string;
+            /** @description Segredo novo em base32, só nesta resposta. Só é gravado na conta depois do primeiro código válido. */
+            secret: string;
+            /** @description URI `otpauth://` do segredo, para o QR code do app autenticador */
+            otpauthUri: string;
+            /** @description Dias em que "lembrar este navegador" dispensa o código; `0` quando o recurso está desligado */
+            trustedDeviceDays: number;
+        } | components["schemas"]["OperatorTotpResult"];
+        OperatorTotpRequest: {
+            challenge: string;
+            code: string;
+            /** @default false */
+            rememberDevice?: boolean;
+        };
+        OperatorTotpResult: {
+            /** @constant */
+            step: "authenticated";
             operator: components["schemas"]["Operator"];
             /**
              * Format: date-time
@@ -3351,13 +3397,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Operador e validade da sessão */
+            /** @description Próximo passo do login */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OperatorLoginResult"];
+                    "application/json": components["schemas"]["OperatorLoginStep"];
                 };
             };
             /**
@@ -3549,6 +3595,79 @@ export interface operations {
              *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
              */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    operatorTotp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OperatorTotpRequest"];
+            };
+        };
+        responses: {
+            /** @description Operador e validade da sessão */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorTotpResult"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `INVALID_CREDENTIALS`: Login do backoffice recusado: e-mail, senha ou código TOTP errados, conta inativa ou bloqueada. O motivo não é revelado.
+             *     - `CHALLENGE_EXPIRED`: O desafio do login (entre a senha e o código do autenticador) venceu, já foi usado, esgotou as 5 tentativas ou não existe.
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Muitas requisições
+             *     - `TOO_MANY_REQUESTS`: Limite de tentativas de login por IP excedido (20 em 15 min).
+             */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
