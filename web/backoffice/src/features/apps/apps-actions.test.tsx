@@ -1,7 +1,13 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import type { Schemas } from '@/api/client'
-import { catalogHandler, meHandler, operator, viewer } from '@/test/fixtures'
+import {
+  catalogHandler,
+  catalogProduct,
+  meHandler,
+  operator,
+  viewer,
+} from '@/test/fixtures'
 import { currentUrl, renderApp } from '@/test/render'
 import { server } from '@/test/server'
 
@@ -126,6 +132,48 @@ describe('cadastro de app', () => {
     await screen.findByRole('dialog')
     expect(body).toMatchObject({ productSpaIds: [10, 11] })
   })
+
+  it.each([
+    ['clicando em Salvar', 'click'],
+    ['apertando Enter no nome', 'enter'],
+  ])(
+    'criar produto dentro do formulário, %s, não envia o app',
+    async (_label, how) => {
+      let appPosts = 0
+      let productPosts = 0
+      server.use(
+        meHandler(operator()),
+        catalogHandler(),
+        http.post('*/admin/apps', () => {
+          appPosts++
+          return HttpResponse.json({}, { status: 500 })
+        }),
+        http.post('*/admin/catalog/products', () => {
+          productPosts++
+          return HttpResponse.json(
+            { ...catalogProduct({ id: 20, name: 'Novo' }) },
+            { status: 201 },
+          )
+        }),
+      )
+      const { user } = renderApp('/apps/new')
+      await fillRequired(user)
+      await user.click(
+        await screen.findByRole('button', { name: 'Criar produto' }),
+      )
+      const dialog = await screen.findByRole('dialog')
+      await user.type(
+        within(dialog).getByLabelText('Nome'),
+        how === 'enter' ? 'Novo{Enter}' : 'Novo',
+      )
+      if (how === 'click')
+        await user.click(within(dialog).getByRole('button', { name: 'Salvar' }))
+
+      await waitFor(() => expect(productPosts).toBe(1))
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+      expect(appPosts).toBe(0)
+    },
+  )
 
   it('erro da API no campo: VALIDATION_ERROR aparece abaixo do campo certo', async () => {
     server.use(
