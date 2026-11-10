@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createTokenCipher } from '@/shared/crypto/token-cipher'
 import { MemoryJsonCache } from '@/shared/infra/cache'
+import { MemoryRateCounter } from '@/shared/infra/rate-counter'
 import { FakeClock, TEST_KEY } from '@/test/fakes'
 import {
   CHALLENGE_MAX_ATTEMPTS,
@@ -15,6 +16,7 @@ function setup() {
     cache,
     clock,
     createTokenCipher(TEST_KEY),
+    new MemoryRateCounter(clock),
   )
   return { clock, cache, challenges }
 }
@@ -25,10 +27,7 @@ describe('LoginChallenges', () => {
     const token = await challenges.create(7)
 
     expect(token.length).toBeGreaterThanOrEqual(43)
-    expect(await challenges.peek(token)).toEqual({
-      operatorId: 7,
-      attempts: 0,
-    })
+    expect(await challenges.peek(token)).toEqual({ operatorId: 7 })
   })
 
   it('vale por 5 minutos', async () => {
@@ -50,23 +49,47 @@ describe('LoginChallenges', () => {
     expect(await challenges.peek(token)).toBeNull()
   })
 
-  it('conta falhas e se apaga na quinta', async () => {
+  it('aceita 5 tentativas; a sexta apaga o desafio', async () => {
     const { challenges } = setup()
     const token = await challenges.create(7)
 
-    await challenges.fail(token)
-    expect((await challenges.peek(token))?.attempts).toBe(1)
-    for (let i = 1; i < CHALLENGE_MAX_ATTEMPTS; i++)
-      await challenges.fail(token)
+    for (let i = 0; i < CHALLENGE_MAX_ATTEMPTS; i++)
+      expect(await challenges.attempt(token)).toBe(true)
+    expect(await challenges.peek(token)).not.toBeNull()
 
+    expect(await challenges.attempt(token)).toBe(false)
     expect(await challenges.peek(token)).toBeNull()
+  })
+
+  it('tentativas simultâneas também respeitam o teto', async () => {
+    const { challenges } = setup()
+    const token = await challenges.create(7)
+
+    const results = await Promise.all(
+      Array.from({ length: 12 }, () => challenges.attempt(token)),
+    )
+
+    expect(results.filter(Boolean)).toHaveLength(CHALLENGE_MAX_ATTEMPTS)
+  })
+
+  it('só o primeiro pedido reivindica o desafio', async () => {
+    const { challenges } = setup()
+    const token = await challenges.create(7)
+
+    const results = await Promise.all([
+      challenges.claim(token),
+      challenges.claim(token),
+      challenges.claim(token),
+    ])
+
+    expect(results.filter(Boolean)).toHaveLength(1)
   })
 
   it('token desconhecido não existe', async () => {
     const { challenges } = setup()
 
     expect(await challenges.peek('desconhecido')).toBeNull()
-    await expect(challenges.fail('desconhecido')).resolves.toBeUndefined()
+    expect(await challenges.claim('desconhecido')).toBe(true)
   })
 
   it('o segredo do cadastro volta em claro mas fica cifrado no cache', async () => {

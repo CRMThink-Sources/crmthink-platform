@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { totpCode, totpStep } from '@/shared/crypto/totp'
 import { http } from '@/test/app'
 import {
   audit,
@@ -6,6 +7,7 @@ import {
   cookieOf,
   DEVICE_COOKIE,
   firstStep,
+  holdLookups,
   login,
   MINUTE,
   operator,
@@ -524,7 +526,7 @@ describe('limites e bloqueio nas duas etapas', () => {
     expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0)
   })
 
-  it('20 códigos errados em paralelo: a conta trava e nenhuma sessão abre', async () => {
+  it('19 códigos errados em paralelo: a conta trava e nenhuma sessão abre', async () => {
     const h = setup()
     const dev = await operator(h, 'dev@connectthink.com.br', 'operator')
     const open = await firstStep(h, dev)
@@ -539,6 +541,46 @@ describe('limites e bloqueio nas duas etapas', () => {
     expect(responses.every(r => setCookies(r).length === 0)).toBe(true)
     expect(h.db.rows('adminOperator')[0]!.lockedUntil).toBeInstanceOf(Date)
     expect(h.db.rows('adminSession')).toHaveLength(0)
+  })
+
+  it('rajada com um código certo no meio: o teto de 5 tentativas vale e nenhuma sessão abre', async () => {
+    const h = setup()
+    const dev = await operator(h, 'dev@connectthink.com.br', 'operator')
+    const open = await firstStep(h, dev)
+    const right = code(h, dev.secret!)
+    const bodies = Array.from({ length: 13 }, (_, i) => ({
+      challenge: open.body.challenge,
+      code: i === 7 ? right : '000000',
+    }))
+
+    holdLookups(h, bodies.length)
+    const responses = await Promise.all(bodies.map(body => secondStep(h, body)))
+
+    expect(responses.every(r => r.status !== 200)).toBe(true)
+    expect(h.db.rows('adminSession')).toHaveLength(0)
+    expect(h.db.rows('adminOperator')[0]!.lockedUntil).toBeInstanceOf(Date)
+  })
+
+  it('dois códigos certos de passos diferentes no mesmo desafio abrem no máximo uma sessão', async () => {
+    const h = setup()
+    const dev = await operator(h, 'dev@connectthink.com.br', 'operator')
+    const open = await firstStep(h, dev)
+    const step = totpStep(h.clock.now())
+
+    holdLookups(h, 2)
+    const responses = await Promise.all([
+      secondStep(h, {
+        challenge: open.body.challenge,
+        code: totpCode(dev.secret!, step - 1),
+      }),
+      secondStep(h, {
+        challenge: open.body.challenge,
+        code: totpCode(dev.secret!, step),
+      }),
+    ])
+
+    expect(responses.filter(r => r.status === 200)).toHaveLength(1)
+    expect(h.db.rows('adminSession')).toHaveLength(1)
   })
 
   it('dois códigos certos iguais em paralelo abrem no máximo uma sessão', async () => {

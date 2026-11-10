@@ -116,5 +116,35 @@ export async function login(h: Harness, account: TestOperator) {
   return cookieOf(second)
 }
 
+type OperatorModel = {
+  findUnique: (args: { where?: { id?: number } }) => Promise<unknown>
+}
+
+/**
+ * Segura as buscas de operador por id (as da 2ª etapa) até `parties` pedidos chegarem a
+ * elas, ou até 25 ms depois da primeira (pedidos que o servidor recusa antes da busca nunca
+ * chegam): força o pior intercalamento, em que todos passam pelas checagens iniciais antes
+ * de qualquer um registrar uma falha ou abrir a sessão.
+ */
+export function holdLookups(h: Harness, parties: number) {
+  const model = (h.db as unknown as { adminOperator: OperatorModel })
+    .adminOperator
+  const original = model.findUnique.bind(model)
+  let arrived = 0
+  let release: () => void = () => {}
+  const gate = new Promise<void>(resolve => {
+    release = resolve
+  })
+  model.findUnique = async args => {
+    if (args.where?.id !== undefined) {
+      arrived += 1
+      if (arrived === 1) setTimeout(release, 25)
+      if (arrived >= parties) release()
+      await gate
+    }
+    return original(args)
+  }
+}
+
 export const audit = (h: Harness) =>
   h.db.rows('adminAuditLog') as Array<Record<string, any>>

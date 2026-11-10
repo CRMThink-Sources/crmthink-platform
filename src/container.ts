@@ -291,7 +291,7 @@ export function buildContainer(deps: ContainerDeps) {
   const audit = new AdminAudit(db, clock, env.backoffice.auditRetentionDays)
   const adminSessions = new AdminSessions(db, clock, env.backoffice)
   const trustedDevices = new TrustedDevices(db, clock, env.backoffice)
-  const loginChallenges = new LoginChallenges(cache, clock, cipher)
+  const loginChallenges = new LoginChallenges(cache, clock, cipher, counters)
   const operators = new OperatorService(db, async (id, except) => {
     await adminSessions.revokeAll(id, except)
     await trustedDevices.revokeAll(id)

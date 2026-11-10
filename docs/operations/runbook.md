@@ -216,3 +216,12 @@ Cada pessoa entra com a própria conta (e-mail e senha, depois o código do app 
   navegador; a senha continua obrigatória. Para desligar o recurso, `ADMIN_TRUSTED_DEVICE_DAYS=0`.
   Trocar a senha, desativar a conta, trocar o papel ou redefinir o acesso esquecem os navegadores
   lembrados da conta.
+- **Rollback do login em duas etapas**: a migração `20261110000000_backoffice_two_step_login` torna
+  `admin_operator.totp_secret_enc` nulável. A imagem antiga trata a coluna como obrigatória e falha
+  ao ler uma linha com `NULL` (isso derruba até a listagem de operadores). Antes de subir a imagem
+  antiga, resolva as contas sem autenticador (criadas ou redefinidas depois do deploy):
+  `SELECT id, email FROM admin_operator WHERE totp_secret_enc IS NULL;` e, para cada uma, ou
+  `DELETE FROM admin_operator WHERE id = <id>` (conta que nunca entrou) ou grave um segredo
+  qualquer com o CLI antigo depois do rollback (`--reset`) — nesse caso o `UPDATE` a seguir, só para
+  destravar a leitura, é necessário antes: `UPDATE admin_operator SET totp_secret_enc = 'v1:invalido'
+  WHERE totp_secret_enc IS NULL;`. A conta volta a entrar só depois do `--reset` com a imagem antiga.

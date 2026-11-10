@@ -194,6 +194,10 @@ export class LoginService {
     const body = totpSchema.parse(input)
     const challenge = await this.challenges.peek(body.challenge)
     if (!challenge) throw challengeExpired()
+    // Conta a tentativa antes de conferir o código: um teto que só contasse as falhas
+    // deixaria uma rajada de pedidos simultâneos passar dele.
+    if (!(await this.challenges.attempt(body.challenge)))
+      throw challengeExpired()
 
     const operator = await this.db.adminOperator.findUnique({
       where: { id: challenge.operatorId },
@@ -229,9 +233,10 @@ export class LoginService {
       operator.lastTotpStep,
     )
     if (step === null) {
-      await this.challenges.fail(body.challenge)
       return this.fail(operator, operator.email, 'bad_totp', meta)
     }
+    // Uso único: de pedidos simultâneos com este desafio, só o primeiro segue.
+    if (!(await this.challenges.claim(body.challenge))) throw challengeExpired()
 
     // Reivindica o passo (e, no cadastro, o segredo) numa escrita condicional: dois pedidos
     // com o mesmo código, ou dois cadastros abertos, não passam os dois.
@@ -239,6 +244,8 @@ export class LoginService {
       where: {
         id: operator.id,
         lastTotpStep: { lt: step },
+        // Uma trava que caiu depois da checagem inicial não é desfeita por este código.
+        OR: [{ lockedUntil: null }, { lockedUntil: { lte: now } }],
         ...(setup ? { totpSecretEnc: null } : {}),
       },
       data: {
@@ -254,7 +261,6 @@ export class LoginService {
         await this.challenges.consume(body.challenge)
         throw challengeExpired()
       }
-      await this.challenges.fail(body.challenge)
       return this.fail(operator, operator.email, 'bad_totp', meta)
     }
 
