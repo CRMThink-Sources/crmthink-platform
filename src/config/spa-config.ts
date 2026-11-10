@@ -29,6 +29,14 @@ const spaConfigSchema = z.object({
     active: z.string(),
     /** IDs de enum de `billingModel` que significam "compra única". Os demais são assinatura. */
     oneTimeBillingModelIds: z.array(z.string()),
+    /** IDs de enum de `billingModel`: Padrão, Por unidade e Compra única. */
+    billingModelIds: z
+      .object({
+        standard: z.string(),
+        perUnit: z.string(),
+        oneTime: z.string(),
+      })
+      .default({ standard: '13605', perUnit: '13607', oneTime: '14455' }),
   }),
   plan: z.object({
     product: z.string(),
@@ -106,6 +114,7 @@ export const DEFAULT_SPA_CONFIG: SpaConfig = {
     active: 'ufCrm87Active',
     // 13605 Padrão, 13607 Por unidade → assinatura; 14455 Compra única → pacote.
     oneTimeBillingModelIds: ['14455'],
+    billingModelIds: { standard: '13605', perUnit: '13607', oneTime: '14455' },
   },
   plan: {
     product: 'ufCrm89Product',
