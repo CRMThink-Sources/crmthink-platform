@@ -227,7 +227,10 @@ export function EventsPage() {
   const { cursor, ...filters } = state
   return (
     <>
-      <PageHeader title="Eventos enviados aos apps">
+      <PageHeader
+        title="Eventos enviados aos apps"
+        description="Entregas de eventos aos apps, com reenvio dos que falharam."
+      >
         <ResendAllButton filters={filters} />
       </PageHeader>
       <FilterBar>

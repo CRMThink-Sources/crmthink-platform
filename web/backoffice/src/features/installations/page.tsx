@@ -49,7 +49,10 @@ export function InstallationsPage() {
 
   return (
     <>
-      <PageHeader title="Instalações" />
+      <PageHeader
+        title="Instalações"
+        description="Portais Bitrix24 com o app instalado: status, token e data da instalação."
+      />
       <FilterBar>
         <TextFilter
           id="filter-q"

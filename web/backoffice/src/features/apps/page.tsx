@@ -25,7 +25,10 @@ export function AppsPage() {
   const apps = useQuery(appsQuery)
   return (
     <>
-      <PageHeader title="Apps">
+      <PageHeader
+        title="Apps"
+        description="Apps cadastrados na plataforma: estado, trial e escopos."
+      >
         <RoleGate role="operator">
           <Button asChild>
             <Link to="/apps/new">Cadastrar app</Link>

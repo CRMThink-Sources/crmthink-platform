@@ -5,7 +5,37 @@ import { DateTime } from '@/components/date-time'
 import { EmptyState, ErrorState, LoadingState } from '@/components/states'
 import { StatusBadge } from '@/components/status-badge'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { PageHeader } from '@/components/filters'
 import { formatDateTime, formatRelative } from '@/lib/format'
+
+describe('PageHeader', () => {
+  it('mostra a descrição logo abaixo do título', () => {
+    render(<PageHeader title="Apps" description="Texto de apoio." />)
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Apps')
+    expect(screen.getByText('Texto de apoio.')).toHaveClass(
+      'text-muted-foreground',
+    )
+  })
+
+  it('sem descrição não cria parágrafo', () => {
+    const { container } = render(<PageHeader title="Apps" />)
+
+    expect(container.querySelector('p')).toBeNull()
+  })
+
+  it('mantém as ações à direita', () => {
+    render(
+      <PageHeader title="Apps" description="x">
+        <button>Cadastrar</button>
+      </PageHeader>,
+    )
+
+    expect(
+      screen.getByRole('button', { name: 'Cadastrar' }),
+    ).toBeInTheDocument()
+  })
+})
 
 describe('formatação de datas', () => {
   it('mostra no fuso de São Paulo, independente do fuso da máquina', () => {

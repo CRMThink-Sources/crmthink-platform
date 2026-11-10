@@ -149,7 +149,10 @@ export function StripeEventsPage() {
 
   return (
     <>
-      <PageHeader title="Eventos Stripe" />
+      <PageHeader
+        title="Eventos Stripe"
+        description="Eventos recebidos do Stripe e o resultado do processamento."
+      />
       <FilterBar>
         <SelectFilter
           id="filter-status"

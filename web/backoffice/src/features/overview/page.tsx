@@ -63,7 +63,7 @@ export function OverviewPage() {
   const overview = useQuery(overviewQuery)
   return (
     <>
-      <PageHeader title="Painel">
+      <PageHeader title="Painel" description="Resumo do estado da plataforma.">
         {overview.data && (
           <span className="text-xs text-muted-foreground">
             Calculado <DateTime value={overview.data.computedAt} />
