@@ -189,6 +189,19 @@ apague registros; a rotina `purge-admin-audit` apaga só o que passou de
 `error` e para `admin_audit_write_failures_total`. Consulta: `GET /admin/audit` (filtros por
 ator, ação, alvo, resultado e período).
 
+### Catálogo de produtos e planos
+
+`/admin/catalog/*` (`billing/http/admin-catalog-routes.ts`) é uma **escrita no catálogo de cobrança
+do portal Bitrix** (SPAs 1134 e 1138): `viewer` lê, só `operator` escreve. Excluir e desativar
+(`active:false`) são de alto impacto e exigem `X-Admin-Reason`. Toda escrita é auditada com alvo
+`product` ou `plan` e o id. Escrita só com `PLATFORM_ENVIRONMENT=production` (409
+`CATALOG_READ_ONLY` nos demais), porque os ambientes dividem o portal mas não o banco. Após gravar,
+o item é relido para confirmar os campos (502 `CATALOG_WRITE_FAILED` se não bater).
+
+Fica de fora: a auditoria guarda o corpo mascarado e o motivo, **sem antes/depois** do item. O id
+de preço Stripe é só um identificador (`price_...`), não um segredo; a plataforma não cria nem
+altera preços no Stripe.
+
 ## O que nunca vai para o log
 
 O logger (pino) censura por caminho (`REDACT_PATHS`): `authorization`, `cookie`, `token`,
