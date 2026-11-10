@@ -1,5 +1,5 @@
 import { screen, waitFor } from '@testing-library/react'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import type { Schemas } from '@/api/client'
 import { meHandler, operator } from '@/test/fixtures'
 import { renderApp } from '@/test/render'
@@ -205,5 +205,47 @@ describe('excluir e desativar', () => {
     expect(
       screen.getByRole('button', { name: 'Desativar plano Órfão' }),
     ).toBeVisible()
+  })
+
+  it('falha ao consultar o uso não oferece excluir nem pede confirmação', async () => {
+    const { user } = open()
+    const seen = capture('delete', '*/admin/catalog/plans/501')
+    server.use(
+      http.get('*/admin/catalog/plans/501/usage', () =>
+        HttpResponse.json(
+          { error: { code: 'INTERNAL_ERROR', message: 'Falhou' } },
+          { status: 500 },
+        ),
+      ),
+    )
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Excluir plano Plano Mensal' }),
+    )
+    expect(
+      await screen.findByText(/Não foi possível verificar o uso/),
+    ).toBeVisible()
+    expect(screen.getByText(/INTERNAL_ERROR/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Excluir' })).toBeNull()
+    expect(screen.queryByLabelText(/Digite/)).toBeNull()
+    expect(seen.called).toBe(false)
+  })
+
+  it('enquanto o uso carrega mostra Verificando sem Excluir nem Desativar', async () => {
+    const { user } = open()
+    server.use(
+      http.get('*/admin/catalog/plans/501/usage', async () => {
+        await delay('infinite')
+        return HttpResponse.json(NONE)
+      }),
+    )
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Excluir plano Plano Mensal' }),
+    )
+    expect(await screen.findByText(/Verificando/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Excluir' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Desativar' })).toBeNull()
+    expect(screen.queryByLabelText(/Digite/)).toBeNull()
   })
 })
