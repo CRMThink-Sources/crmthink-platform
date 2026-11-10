@@ -11428,7 +11428,7 @@
             "type": "string"
           },
           "amount": {
-            "type": "number",
+            "type": "integer",
             "description": "Centavos"
           },
           "interval": {
@@ -11638,7 +11638,23 @@
           },
           "billingModel": {
             "type": "string",
-            "description": "`standard`, `per_unit`, `one_time` ou vazio se mal cadastrado"
+            "description": "Id de enum cru do portal (ex.: `13605`); vazio se o produto não tem modelo"
+          },
+          "billingModelKey": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "standard",
+                  "per_unit",
+                  "one_time"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Valor simbólico aceito por `POST`/`PATCH` (`billingModel`); `null` quando o id cru não é um modelo conhecido"
           },
           "kind": {
             "anyOf": [
@@ -11684,6 +11700,7 @@
           "id",
           "name",
           "billingModel",
+          "billingModelKey",
           "kind",
           "active",
           "valid",

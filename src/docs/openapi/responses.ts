@@ -644,7 +644,7 @@ export const catalogPlanSchema = z.strictObject({
   id: z.number().int().describe('Id do item no SPA de planos'),
   productId: z.number().int(),
   name: z.string(),
-  amount: z.number().describe('Centavos'),
+  amount: z.number().int().describe('Centavos'),
   interval: z.enum(['monthly', 'quarterly', 'semiannual', 'yearly']).nullable(),
   isTrial: z
     .boolean()
@@ -665,7 +665,15 @@ export const catalogProductSchema = z.strictObject({
   name: z.string(),
   billingModel: z
     .string()
-    .describe('`standard`, `per_unit`, `one_time` ou vazio se mal cadastrado'),
+    .describe(
+      'Id de enum cru do portal (ex.: `13605`); vazio se o produto não tem modelo',
+    ),
+  billingModelKey: z
+    .enum(['standard', 'per_unit', 'one_time'])
+    .nullable()
+    .describe(
+      'Valor simbólico aceito por `POST`/`PATCH` (`billingModel`); `null` quando o id cru não é um modelo conhecido',
+    ),
   kind: z.enum(['subscription', 'one_time']).nullable(),
   active: z.boolean(),
   valid: z.boolean(),

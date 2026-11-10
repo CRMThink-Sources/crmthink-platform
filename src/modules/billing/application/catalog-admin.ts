@@ -22,6 +22,8 @@ import type { SubscriptionRepository } from '../infra/spa/subscription-repositor
 /** `trial: true` exige os dois preços nulos: é a ausência de preço que faz o trial. */
 export type PlanInput = PlanWrite & { trial: boolean }
 
+export type BillingModelKey = ProductWrite['billingModel']
+
 export type CatalogPlanView = {
   id: number
   productId: number
@@ -40,7 +42,10 @@ export type CatalogPlanView = {
 export type CatalogProductView = {
   id: number
   name: string
+  /** Id de enum cru do portal. */
   billingModel: string
+  /** Valor simbólico aceito por criar/editar; `null` se o id não é nenhum dos conhecidos. */
+  billingModelKey: BillingModelKey | null
   kind: 'subscription' | 'one_time' | null
   active: boolean
   valid: boolean
@@ -531,12 +536,22 @@ export class CatalogAdmin {
     product: Product | null
   } {
     const f = this.deps.config.product
+    const rawModel = isBlank(raw[f.billingModel])
+      ? ''
+      : String(raw[f.billingModel])
+    const ids = f.billingModelIds
     const base = {
       id: Number(raw.id),
       name: typeof raw.title === 'string' ? raw.title : '',
-      billingModel: isBlank(raw[f.billingModel])
-        ? ''
-        : String(raw[f.billingModel]),
+      billingModel: rawModel,
+      billingModelKey:
+        rawModel === ids.standard
+          ? ('standard' as const)
+          : rawModel === ids.perUnit
+            ? ('per_unit' as const)
+            : rawModel === ids.oneTime
+              ? ('one_time' as const)
+              : null,
       active: isYes(raw[f.active]),
     }
     try {

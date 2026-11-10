@@ -52,6 +52,42 @@ describe('CatalogAdmin: leitura', () => {
     })
   })
 
+  it('billingModelKey traduz o id cru e é null quando desconhecido', async () => {
+    const h = production()
+    await seedGptMaker(h)
+    const c = h.config
+    h.crm.seed(c.entityTypes.product, {
+      id: 12,
+      title: 'Por unidade',
+      [c.product.billingModel]: '13607',
+      [c.product.active]: 'Y',
+    })
+    h.crm.seed(c.entityTypes.product, {
+      id: 14,
+      title: 'Compra única',
+      [c.product.billingModel]: c.product.billingModelIds.oneTime,
+      [c.product.active]: 'Y',
+    })
+    h.crm.seed(c.entityTypes.product, {
+      id: 13,
+      title: 'Desconhecido',
+      [c.product.billingModel]: '77777',
+      [c.product.active]: 'Y',
+    })
+    const view = await h.container.catalogAdmin.list()
+    const key = (id: number) => view.products.find(p => p.id === id)!
+    expect(key(10)).toMatchObject({
+      billingModel: '13605',
+      billingModelKey: 'standard',
+    })
+    expect(key(12).billingModelKey).toBe('per_unit')
+    expect(key(14).billingModelKey).toBe('one_time')
+    expect(key(13)).toMatchObject({
+      billingModel: '77777',
+      billingModelKey: null,
+    })
+  })
+
   it('writable é falso fora de produção', async () => {
     const h = createHarness()
     expect((await h.container.catalogAdmin.list()).writable).toBe(false)

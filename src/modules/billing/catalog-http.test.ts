@@ -113,6 +113,7 @@ describe('rotas do catálogo: escrita', () => {
     expect(created.body).toMatchObject({
       name: 'Novo produto',
       billingModel: '13605',
+      billingModelKey: 'standard',
       active: true,
       plans: [],
     })
@@ -288,5 +289,22 @@ describe('rotas do catálogo: auditoria', () => {
     expect(
       rows.find(r => r.action === 'PATCH /admin/catalog/products/:id'),
     ).toMatchObject({ targetType: 'product', targetId: '11' })
+  })
+
+  it('criar plano audita o plano criado (targetType plan, id novo)', async () => {
+    const { h, dev } = await boot()
+    const created = await dev
+      .post('/admin/catalog/products/10/plans')
+      .send(paid)
+    expect(created.status).toBe(201)
+    await flush()
+    const row = audit(h).find(
+      r => r.action === 'POST /admin/catalog/products/:id/plans',
+    )!
+    expect(row).toMatchObject({
+      targetType: 'plan',
+      targetId: String(created.body.id),
+      statusCode: 201,
+    })
   })
 })
