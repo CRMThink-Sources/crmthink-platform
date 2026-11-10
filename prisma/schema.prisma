@@ -296,7 +296,8 @@ model AdminOperator {
   active             Boolean   @default(true)
   /// argon2id (formato PHC, com os parâmetros).
   passwordHash       String    @map("password_hash") @db.VarChar(255)
-  totpSecretEnc      String    @map("totp_secret_enc") @db.Text
+  /// Nulo até o operador cadastrar o autenticador no primeiro login.
+  totpSecretEnc      String?   @map("totp_secret_enc") @db.Text
   /// Último passo TOTP aceito: um código não vale duas vezes.
   lastTotpStep       Int       @default(0) @map("last_totp_step")
   /// Senha provisória (script ou redefinição): a sessão só permite trocar a senha.
@@ -307,7 +308,8 @@ model AdminOperator {
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  sessions AdminSession[]
+  sessions       AdminSession[]
+  trustedDevices AdminTrustedDevice[]
 
   @@map("admin_operator")
 }
@@ -329,6 +331,25 @@ model AdminSession {
 
   @@index([operatorId, revokedAt])
   @@map("admin_session")
+}
+
+/// Navegador lembrado: dispensa o código TOTP no login (a senha continua obrigatória).
+model AdminTrustedDevice {
+  id         Int       @id @default(autoincrement())
+  /// SHA-256 (hex) do valor do cookie. O valor em si nunca é gravado.
+  idHash     String    @unique @map("id_hash") @db.VarChar(64)
+  operatorId Int       @map("operator_id")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastUsedAt DateTime  @default(now()) @map("last_used_at")
+  /// Validade fixa (`ADMIN_TRUSTED_DEVICE_DAYS` desde que foi lembrado).
+  expiresAt  DateTime  @map("expires_at")
+  revokedAt  DateTime? @map("revoked_at")
+  userAgent  String?   @map("user_agent") @db.VarChar(500)
+
+  operator AdminOperator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@index([operatorId, revokedAt])
+  @@map("admin_trusted_device")
 }
 
 /// Trilha de auditoria: só inserção. Nunca guarda senha, código TOTP, segredo ou corpo cru.

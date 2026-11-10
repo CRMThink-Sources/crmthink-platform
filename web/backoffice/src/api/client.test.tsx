@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { api, ApiError, call } from '@/api/client'
+import { api, ApiError, call, setAuthEvents } from '@/api/client'
 import { currentUrl, renderRoutes } from '@/test/render'
 import { server } from '@/test/server'
 
@@ -32,6 +32,36 @@ describe('cliente da API', () => {
     const { router } = renderRoutes(routes, '/installations?q=acme')
     await screen.findByText('tela de login')
     expect(currentUrl(router)).toBe('/login?next=%2Finstallations%3Fq%3Dacme')
+  })
+
+  it('401 da 2ª etapa do login (código errado) não é tratado como sessão expirada', async () => {
+    server.use(
+      http.post('*/admin/auth/totp', () =>
+        HttpResponse.json(
+          { error: { code: 'INVALID_CREDENTIALS', message: 'Credenciais' } },
+          { status: 401 },
+        ),
+      ),
+    )
+    let unauthorized = 0
+    setAuthEvents({
+      onUnauthorized: () => {
+        unauthorized += 1
+      },
+      onPasswordChangeRequired: () => {},
+    })
+    try {
+      await expect(
+        call(
+          api.POST('/admin/auth/totp', {
+            body: { challenge: 'c', code: '000000', rememberDevice: false },
+          }),
+        ),
+      ).rejects.toBeInstanceOf(ApiError)
+      expect(unauthorized).toBe(0)
+    } finally {
+      setAuthEvents(null)
+    }
   })
 
   it('403 PASSWORD_CHANGE_REQUIRED vai à troca de senha', async () => {

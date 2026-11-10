@@ -8,6 +8,13 @@ import { server } from '@/test/server'
 
 const DEV = operator()
 const SUPORTE = viewer()
+const PENDENTE = operator({
+  id: 4,
+  email: 'pendente@connectthink.com.br',
+  name: 'Pendente',
+  role: 'viewer',
+  totpConfigured: false,
+})
 const BLOQUEADO = operator({
   id: 3,
   email: 'bloqueado@connectthink.com.br',
@@ -22,8 +29,6 @@ const listHandler = (items: Schemas['Operator'][]) =>
 const ISSUED = (who: Schemas['Operator']): Schemas['IssuedOperatorAccess'] => ({
   operator: who,
   temporaryPassword: 'Provisoria-123456',
-  totpUri:
-    'otpauth://totp/CRMThink:suporte@connectthink.com.br?secret=JBSWY3DPEHPK3PXP&issuer=CRMThink',
 })
 
 async function openMenu(
@@ -50,7 +55,20 @@ describe('tela Operadores', () => {
     expect(within(own).getByText('(você)')).toBeInTheDocument()
   })
 
-  it('redefinir acesso: exige o e-mail e o motivo e mostra senha e QR code uma vez, gerado localmente', async () => {
+  it('mostra "Autenticador pendente" só para quem ainda não cadastrou o app', async () => {
+    server.use(meHandler(DEV), listHandler([DEV, PENDENTE]))
+    renderApp('/operators')
+    const pending = (
+      await screen.findByText('pendente@connectthink.com.br')
+    ).closest('tr')!
+    expect(
+      within(pending).getByText('Autenticador pendente'),
+    ).toBeInTheDocument()
+    const own = screen.getByText('dev@connectthink.com.br').closest('tr')!
+    expect(within(own).queryByText('Autenticador pendente')).toBeNull()
+  })
+
+  it('redefinir acesso: exige o e-mail e o motivo e mostra só a senha provisória, uma vez', async () => {
     let reason: string | null = null
     server.use(
       meHandler(DEV),
@@ -79,14 +97,11 @@ describe('tela Operadores', () => {
 
     expect(await screen.findByText('Provisoria-123456')).toBeInTheDocument()
     expect(reason).toBe('perdeu o celular')
-    expect(
-      screen.getByRole('img', { name: 'QR code para o app autenticador' }),
-    ).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: /QR code/ })).toBeNull()
     await user.click(screen.getByRole('button', { name: 'Guardei' }))
     await waitFor(() =>
       expect(screen.queryByText('Provisoria-123456')).toBeNull(),
     )
-    expect(document.body).not.toHaveTextContent('JBSWY3DPEHPK3PXP')
   })
 
   it('na própria linha não há Trocar papel nem Desativar', async () => {
@@ -172,7 +187,7 @@ describe('tela Operadores', () => {
     await waitFor(() => expect(bodies[1]).toEqual({ active: false }))
   })
 
-  it('criar operador mostra a senha provisória e o QR code uma vez', async () => {
+  it('criar operador mostra só a senha provisória, uma vez', async () => {
     let body: Record<string, unknown> | null = null
     const novo = operator({
       id: 7,
@@ -208,7 +223,7 @@ describe('tela Operadores', () => {
       email: 'novo@connectthink.com.br',
       role: 'viewer',
     })
-    expect(screen.getByRole('img', { name: /QR code/ })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: /QR code/ })).toBeNull()
   })
 
   it('suporte vê "Sem permissão" e nenhuma conta', async () => {

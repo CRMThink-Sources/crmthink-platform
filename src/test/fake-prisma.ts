@@ -242,6 +242,25 @@ const MODELS: Record<string, ModelSpec> = {
       },
     },
   },
+  adminTrustedDevice: {
+    pk: ['id'],
+    autoincrement: 'id',
+    unique: [['idHash']],
+    defaults: () => ({
+      createdAt: now(),
+      lastUsedAt: now(),
+      revokedAt: null,
+      userAgent: null,
+    }),
+    relations: {
+      operator: {
+        model: 'adminOperator',
+        local: 'operatorId',
+        foreign: 'id',
+        many: false,
+      },
+    },
+  },
   adminAuditLog: {
     pk: ['id'],
     autoincrement: 'id',

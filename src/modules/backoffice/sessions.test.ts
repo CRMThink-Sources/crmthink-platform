@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createTokenCipher } from '@/shared/crypto/token-cipher'
 import { FakePrisma } from '@/test/fake-prisma'
-import { FakeClock, TEST_KEY } from '@/test/fakes'
+import { FakeClock } from '@/test/fakes'
 import { OperatorService } from './application/operators'
 import { AdminSessions, hashSessionToken } from './application/sessions'
 import { runCreateOperator } from './application/create-operator-cli'
@@ -16,11 +15,8 @@ function setup() {
     sessionIdleMs: 30 * MINUTE,
     sessionMaxMs: 12 * 60 * MINUTE,
   })
-  const operators = new OperatorService(
-    db.asDb(),
-    createTokenCipher(TEST_KEY),
-    'CRMThink Backoffice',
-    (id, except) => sessions.revokeAll(id, except),
+  const operators = new OperatorService(db.asDb(), (id, except) =>
+    sessions.revokeAll(id, except),
   )
   return { db, clock, sessions, operators }
 }
@@ -124,7 +120,7 @@ describe('sessões do backoffice', () => {
 })
 
 describe('yarn admin:create-operator', () => {
-  it('cria o operador e mostra senha e URI uma vez', async () => {
+  it('cria o operador e mostra só a senha provisória, uma vez', async () => {
     const ctx = setup()
     const lines: string[] = []
     await runCreateOperator(
@@ -144,7 +140,7 @@ describe('yarn admin:create-operator', () => {
       role: 'operator',
     })
     expect(lines.join('\n')).toMatch(/Senha provisória .*: \S{12,}/)
-    expect(lines.join('\n')).toContain('otpauth://totp/')
+    expect(lines.join('\n')).not.toMatch(/otpauth/i)
   })
 
   it('--reset redefine o acesso de quem existe', async () => {

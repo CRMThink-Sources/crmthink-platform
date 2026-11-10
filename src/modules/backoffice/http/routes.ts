@@ -1,5 +1,6 @@
-import { Router } from 'express'
+import { Router, type Request } from 'express'
 import { ZodError } from 'zod'
+import type { Clock } from '@/shared/clock'
 import {
   asyncHandler,
   forbidden,
@@ -17,7 +18,12 @@ import {
 } from '../application/operators'
 import type { AdminSessions } from '../application/sessions'
 import { currentActor, currentOperator } from './actor'
-import { clearSessionCookie, setSessionCookie } from './cookies'
+import {
+  clearSessionCookie,
+  readDeviceCookie,
+  setDeviceCookie,
+  setSessionCookie,
+} from './cookies'
 import { requestMeta } from './gate'
 
 export type BackofficeRoutesDeps = {
@@ -25,6 +31,7 @@ export type BackofficeRoutesDeps = {
   sessions: AdminSessions
   operators: OperatorService
   audit: AdminAudit
+  clock: Clock
   cookieSecure: boolean
   origins: string[]
 }
@@ -36,20 +43,62 @@ export type BackofficeRoutesDeps = {
 export function backofficeRoutes(deps: BackofficeRoutesDeps): Router {
   const router = Router()
 
+  // Navegador: só das origens do backoffice. Sem `Origin` (curl) segue.
+  const requireAllowedOrigin = (req: Request) => {
+    const origin = req.headers.origin?.replace(/\/+$/, '')
+    if (origin && !deps.origins.includes(origin)) {
+      throw forbidden(
+        'ORIGIN_NOT_ALLOWED',
+        'Origem da requisição não permitida',
+      )
+    }
+  }
+
   router.post(
     '/admin/auth/login',
     asyncHandler(async (req, res) => {
-      // Navegador: só das origens do backoffice. Sem `Origin` (curl) segue.
-      const origin = req.headers.origin?.replace(/\/+$/, '')
-      if (origin && !deps.origins.includes(origin)) {
-        throw forbidden(
-          'ORIGIN_NOT_ALLOWED',
-          'Origem da requisição não permitida',
+      requireAllowedOrigin(req)
+      const result = await deps.login.login(
+        req.body,
+        requestMeta(req, res),
+        readDeviceCookie(req),
+      )
+      if (result.step !== 'authenticated') {
+        res.json(result)
+        return
+      }
+      setSessionCookie(res, result.token, deps.cookieSecure)
+      res.json({
+        step: result.step,
+        operator: result.operator,
+        expiresAt: result.expiresAt,
+      })
+    }),
+  )
+
+  router.post(
+    '/admin/auth/totp',
+    asyncHandler(async (req, res) => {
+      requireAllowedOrigin(req)
+      const result = await deps.login.verifyCode(
+        req.body,
+        requestMeta(req, res),
+      )
+      setSessionCookie(res, result.token, deps.cookieSecure)
+      if (result.device) {
+        setDeviceCookie(
+          res,
+          result.device.token,
+          result.device.expiresAt,
+          deps.clock.now(),
+          deps.cookieSecure,
         )
       }
-      const result = await deps.login.login(req.body, requestMeta(req, res))
-      setSessionCookie(res, result.token, deps.cookieSecure)
-      res.json({ operator: result.operator, expiresAt: result.expiresAt })
+      res.json({
+        step: 'authenticated',
+        operator: result.operator,
+        expiresAt: result.expiresAt,
+      })
     }),
   )
 

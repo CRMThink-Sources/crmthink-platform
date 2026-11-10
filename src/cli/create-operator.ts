@@ -8,11 +8,10 @@
  */
 import { env } from '@/config/env'
 import { systemClock } from '@/shared/clock'
-import { createTokenCipher } from '@/shared/crypto/token-cipher'
 import { createPrismaClient } from '@/shared/infra/prisma'
-import { totpIssuer } from '@/modules/backoffice/domain/operator'
 import { OperatorService } from '@/modules/backoffice/application/operators'
 import { AdminSessions } from '@/modules/backoffice/application/sessions'
+import { TrustedDevices } from '@/modules/backoffice/application/trusted-devices'
 import { runCreateOperator } from '@/modules/backoffice/application/create-operator-cli'
 
 async function main(): Promise<void> {
@@ -20,12 +19,11 @@ async function main(): Promise<void> {
   const db = createPrismaClient(config.databaseUrl)
   try {
     const sessions = new AdminSessions(db, systemClock, config.backoffice)
-    const operators = new OperatorService(
-      db,
-      createTokenCipher(config.tokenEncryptionKey),
-      totpIssuer(config.platformEnvironment),
-      (id, except) => sessions.revokeAll(id, except),
-    )
+    const devices = new TrustedDevices(db, systemClock, config.backoffice)
+    const operators = new OperatorService(db, async (id, except) => {
+      await sessions.revokeAll(id, except)
+      await devices.revokeAll(id)
+    })
     await runCreateOperator(process.argv.slice(2), operators, line =>
       console.log(line),
     )

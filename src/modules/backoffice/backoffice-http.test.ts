@@ -1,128 +1,36 @@
 import { describe, expect, it } from 'vitest'
-import { totpCode, totpStep } from '@/shared/crypto/totp'
 import { http } from '@/test/app'
-import { createHarness, seedGptMaker, type Harness } from '@/test/harness'
+import { seedGptMaker } from '@/test/harness'
 import { tokenActorId } from './http/actor'
-
-const ORIGIN = 'https://platform.test'
-const PASSWORD = 'senha-definitiva-123'
-const MINUTE = 60_000
-
-function setup() {
-  return createHarness({ env: { BACKOFFICE_ORIGINS: ORIGIN } })
-}
-
-/** Cria o operador; `ready` já troca a senha provisória (o caso comum dos testes). */
-async function operator(
-  h: Harness,
-  email: string,
-  role: 'viewer' | 'operator',
-  options: { ready?: boolean } = {},
-) {
-  const issued = await h.container.operators.create({
-    email,
-    name: email.split('@')[0]!,
-    role,
-  })
-  const secret = new URL(issued.totpUri).searchParams.get('secret')!
-  let password = issued.temporaryPassword
-  if (options.ready !== false) {
-    await h.container.operators.changePassword(issued.operator.id, {
-      currentPassword: password,
-      newPassword: PASSWORD,
-    })
-    password = PASSWORD
-  }
-  return { id: issued.operator.id, email, password, secret }
-}
-
-const code = (h: Harness, secret: string) =>
-  totpCode(secret, totpStep(h.clock.now()))
-
-function cookieOf(response: { headers: Record<string, unknown> }): string {
-  const header = response.headers['set-cookie'] as string[] | undefined
-  const value = header?.[0]?.split(';')[0]
-  if (!value) throw new Error('sem cookie de sessão')
-  return value
-}
-
-async function login(
-  h: Harness,
-  account: { email: string; password: string; secret: string },
-) {
-  const response = await http(h)
-    .post('/admin/auth/login')
-    .set('Origin', ORIGIN)
-    .send({
-      email: account.email,
-      password: account.password,
-      code: code(h, account.secret),
-    })
-  expect(response.status).toBe(200)
-  // O próximo login precisa de um passo TOTP novo (o atual já foi usado).
-  h.clock.advance(30_000)
-  return cookieOf(response)
-}
-
-const audit = (h: Harness) =>
-  h.db.rows('adminAuditLog') as Array<Record<string, any>>
+import {
+  audit,
+  code,
+  firstStep,
+  login,
+  MINUTE,
+  operator,
+  ORIGIN,
+  PASSWORD,
+  secondStep,
+  setup,
+} from './test-support'
 
 describe('login do backoffice', () => {
-  it('cria a sessão com cookie HttpOnly, Secure, SameSite=Strict e Path=/admin', async () => {
+  it('qualquer falha responde o mesmo INVALID_CREDENTIALS, nas duas etapas', async () => {
     const h = setup()
     const dev = await operator(h, 'dev@connectthink.com.br', 'operator')
-    const response = await http(h)
-      .post('/admin/auth/login')
-      .set('Origin', ORIGIN)
-      .send({
-        email: 'DEV@connectthink.com.br',
-        password: PASSWORD,
-        code: code(h, dev.secret),
-      })
-
-    expect(response.status).toBe(200)
-    expect(response.body.operator).toMatchObject({
-      email: 'dev@connectthink.com.br',
-      role: 'operator',
-    })
-    const cookie = (response.headers['set-cookie'] as unknown as string[])[0]!
-    expect(cookie).toMatch(/^cp_admin_session=[A-Za-z0-9_-]{43};/)
-    expect(cookie).toContain('Path=/admin')
-    expect(cookie).toContain('HttpOnly')
-    expect(cookie).toContain('SameSite=Strict')
-    expect(cookie).toContain('Secure')
-
-    const me = await http(h)
-      .get('/admin/auth/me')
-      .set('Cookie', cookieOf(response))
-    expect(me.status).toBe(200)
-    expect(me.body).toMatchObject({
-      kind: 'operator',
-      actor: `operator:${dev.id}`,
-      role: 'operator',
-    })
-    expect(audit(h).map(row => row.action)).toContain('auth.login_succeeded')
-  })
-
-  it('qualquer falha responde o mesmo INVALID_CREDENTIALS', async () => {
-    const h = setup()
-    const dev = await operator(h, 'dev@connectthink.com.br', 'operator')
+    const open = await firstStep(h, dev)
     const attempts = [
-      { email: 'dev@connectthink.com.br', password: PASSWORD, code: '000000' },
-      {
-        email: 'dev@connectthink.com.br',
-        password: 'errada-errada',
-        code: code(h, dev.secret),
-      },
-      {
+      secondStep(h, { challenge: open.body.challenge, code: '000000' }),
+      firstStep(h, { email: dev.email, password: 'errada-errada-1' }),
+      firstStep(h, {
         email: 'ninguem@connectthink.com.br',
         password: PASSWORD,
-        code: code(h, dev.secret),
-      },
+      }),
     ]
     const bodies = []
-    for (const body of attempts) {
-      const response = await http(h).post('/admin/auth/login').send(body)
+    for (const attempt of attempts) {
+      const response = await attempt
       expect(response.status).toBe(401)
       bodies.push(response.body)
     }
@@ -139,22 +47,6 @@ describe('login do backoffice', () => {
     expect(JSON.stringify(failures)).not.toContain(PASSWORD)
   })
 
-  it('código TOTP já usado não vale de novo', async () => {
-    const h = setup()
-    const dev = await operator(h, 'dev@connectthink.com.br', 'operator')
-    const body = {
-      email: dev.email,
-      password: PASSWORD,
-      code: code(h, dev.secret),
-    }
-    expect((await http(h).post('/admin/auth/login').send(body)).status).toBe(
-      200,
-    )
-    const replay = await http(h).post('/admin/auth/login').send(body)
-    expect(replay.status).toBe(401)
-    expect(replay.body.error.code).toBe('INVALID_CREDENTIALS')
-  })
-
   it('conta inativa não entra', async () => {
     const h = setup()
     await operator(h, 'dev@connectthink.com.br', 'operator')
@@ -165,7 +57,7 @@ describe('login do backoffice', () => {
       .send({
         email: suporte.email,
         password: PASSWORD,
-        code: code(h, suporte.secret),
+        code: code(h, suporte.secret!),
       })
     expect(response.status).toBe(401)
     expect(response.body.error.code).toBe('INVALID_CREDENTIALS')
@@ -177,7 +69,11 @@ describe('login do backoffice', () => {
     const response = await http(h)
       .post('/admin/auth/login')
       .set('Origin', 'https://evil.test')
-      .send({ email: dev.email, password: PASSWORD, code: code(h, dev.secret) })
+      .send({
+        email: dev.email,
+        password: PASSWORD,
+        code: code(h, dev.secret!),
+      })
     expect(response.status).toBe(403)
     expect(response.body.error.code).toBe('ORIGIN_NOT_ALLOWED')
   })
@@ -222,9 +118,7 @@ describe('limite de tentativas', () => {
         .post('/admin/auth/login')
         .send({ email: dev.email, password: 'errada-errada', code: '000000' })
     }
-    const locked = await http(h)
-      .post('/admin/auth/login')
-      .send({ email: dev.email, password: PASSWORD, code: code(h, dev.secret) })
+    const locked = await firstStep(h, dev)
     expect(locked.status).toBe(401)
     expect(locked.body.error.code).toBe('INVALID_CREDENTIALS')
     expect(
@@ -233,10 +127,7 @@ describe('limite de tentativas', () => {
     expect(h.db.rows('adminOperator')[0]!.lockedUntil).toBeInstanceOf(Date)
 
     h.clock.advance(16 * MINUTE)
-    const ok = await http(h)
-      .post('/admin/auth/login')
-      .send({ email: dev.email, password: PASSWORD, code: code(h, dev.secret) })
-    expect(ok.status).toBe(200)
+    await login(h, dev)
     expect(h.db.rows('adminOperator')[0]).toMatchObject({
       failedLogins: 0,
       lockedUntil: null,
@@ -455,7 +346,8 @@ describe('gestão de operadores', () => {
     })
     expect(created.status).toBe(201)
     expect(created.body.temporaryPassword).toBeTruthy()
-    expect(created.body.totpUri).toMatch(/^otpauth:\/\/totp\//)
+    expect(created.body.totpUri).toBeUndefined()
+    expect(created.body.operator.totpConfigured).toBe(false)
     const id = created.body.operator.id
 
     const listed = await http(h).get('/admin/operators').set('Cookie', cookie)

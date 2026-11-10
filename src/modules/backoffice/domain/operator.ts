@@ -26,16 +26,17 @@ export type OperatorView = {
   role: OperatorRole
   active: boolean
   mustChangePassword: boolean
+  /** `false` até o operador cadastrar o app autenticador no primeiro login. */
+  totpConfigured: boolean
   lockedUntil: string | null
   lastLoginAt: string | null
   createdAt: string
 }
 
-/** Senha provisória e TOTP novos: aparecem só na resposta da criação/redefinição. */
+/** Senha provisória: aparece só na resposta da criação/redefinição. */
 export type IssuedAccess = {
   operator: OperatorView
   temporaryPassword: string
-  totpUri: string
 }
 
 /** Nome no app autenticador: deixa homologação e produção lado a lado sem confusão. */

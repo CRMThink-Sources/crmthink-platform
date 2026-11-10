@@ -78,10 +78,13 @@ export function setAuthEvents(events: AuthEvents | null): void {
   authEvents = events
 }
 
+const LOGIN_PATHS = new Set(['/admin/auth/login', '/admin/auth/totp'])
+
 api.use({
   async onResponse({ request, response }) {
     const path = new URL(request.url, window.location.origin).pathname
-    if (response.status === 401 && path !== '/admin/auth/login') {
+    // 401 do login (1ª e 2ª etapa) é "credencial errada", não "sessão expirada".
+    if (response.status === 401 && !LOGIN_PATHS.has(path)) {
       authEvents?.onUnauthorized()
     } else if (response.status === 403) {
       const body = (await response
