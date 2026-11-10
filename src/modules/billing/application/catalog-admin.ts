@@ -471,7 +471,16 @@ export class CatalogAdmin {
     const prefix = created
       ? `Item #${id} criado no Bitrix, mas`
       : `Item #${id} gravado no Bitrix, mas`
-    const raw = await this.deps.crm.getItem(entityTypeId, id)
+    let raw: Raw | null
+    try {
+      raw = await this.deps.crm.getItem(entityTypeId, id)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      throw upstream(
+        'CATALOG_WRITE_FAILED',
+        `${prefix} a releitura falhou (${message}); confira o item no portal`,
+      )
+    }
     if (!raw)
       throw upstream(
         'CATALOG_WRITE_FAILED',

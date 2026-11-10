@@ -491,4 +491,58 @@ describe('CatalogAdmin: releitura depois de gravar', () => {
     expect(created).toBeGreaterThan(0)
     expect((error as Error).message).toContain(`#${created}`)
   })
+
+  /** Depois da primeira escrita, toda leitura de item falha (timeout, 5xx). */
+  function failReadsAfterWrite(h: Harness) {
+    const add = h.crm.addItem.bind(h.crm)
+    const update = h.crm.updateItem.bind(h.crm)
+    const get = h.crm.getItem.bind(h.crm)
+    const state = { wrote: false, created: 0 }
+    h.crm.addItem = async (entityTypeId, fields) => {
+      const item = await add(entityTypeId, fields)
+      state.wrote = true
+      state.created = Number(item.id)
+      return item
+    }
+    h.crm.updateItem = async (entityTypeId, id, fields) => {
+      const item = await update(entityTypeId, id, fields)
+      state.wrote = true
+      return item
+    }
+    h.crm.getItem = async (entityTypeId, id) => {
+      if (state.wrote) throw new Error('Bitrix indisponível')
+      return get(entityTypeId, id)
+    }
+    return state
+  }
+
+  it('releitura que falha depois de criar produto: 502 com o id criado', async () => {
+    const { h, admin } = await setup()
+    const state = failReadsAfterWrite(h)
+    const error = await admin
+      .createProduct({ name: 'X', billingModel: 'standard', active: true })
+      .catch((e: unknown) => e)
+    expect(error).toMatchObject({ status: 502, code: 'CATALOG_WRITE_FAILED' })
+    expect(state.created).toBeGreaterThan(0)
+    expect((error as Error).message).toContain(`#${state.created}`)
+  })
+
+  it('releitura que falha depois de criar plano: 502 com o id criado', async () => {
+    const { h, admin } = await setup()
+    const state = failReadsAfterWrite(h)
+    const error = await admin.createPlan(10, paid).catch((e: unknown) => e)
+    expect(error).toMatchObject({ status: 502, code: 'CATALOG_WRITE_FAILED' })
+    expect(state.created).toBeGreaterThan(0)
+    expect((error as Error).message).toContain(`#${state.created}`)
+  })
+
+  it('releitura que falha depois de editar: 502, não 500', async () => {
+    const { h, admin } = await setup()
+    failReadsAfterWrite(h)
+    const error = await admin
+      .updatePlan(502, { name: 'Pro+' })
+      .catch((e: unknown) => e)
+    expect(error).toMatchObject({ status: 502, code: 'CATALOG_WRITE_FAILED' })
+    expect((error as Error).message).toContain('#502')
+  })
 })
