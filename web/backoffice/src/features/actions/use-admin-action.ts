@@ -33,6 +33,7 @@ export const INVALIDATES = {
     ...(appCode ? ([['app', appCode]] as QueryKey[]) : []),
     AUDIT,
   ],
+  catalog: (): QueryKey[] => [['catalog'], ['apps'], AUDIT],
   sweeps: (): QueryKey[] => [
     OVERVIEW,
     ['installations'],

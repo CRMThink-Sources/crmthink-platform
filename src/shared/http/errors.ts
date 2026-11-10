@@ -32,8 +32,8 @@ export const gone = (code: string, message?: string) =>
   new HttpError(410, code, message)
 export const unprocessable = (code: string, message?: string) =>
   new HttpError(422, code, message)
-export const upstream = (code: string, message?: string) =>
-  new HttpError(502, code, message)
+export const upstream = (code: string, message?: string, details?: unknown) =>
+  new HttpError(502, code, message, details)
 
 /** 429 com `Retry-After` (segundos): limite de tentativas. */
 export class TooManyRequestsError extends HttpError {

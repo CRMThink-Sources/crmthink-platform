@@ -245,3 +245,77 @@ describe('configuração dos SPAs', () => {
     expect(loaded.subscription.statusEnum['13617']).toBe('active')
   })
 })
+
+describe('mapeadores de escrita do catálogo', () => {
+  const p = config.product
+  const pl = config.plan
+
+  it('productFields usa os códigos e ids de enum do modelo de cobrança', () => {
+    expect(
+      mappers.productFields({
+        name: 'GPTMaker',
+        billingModel: 'standard',
+        active: true,
+      }),
+    ).toEqual({
+      title: 'GPTMaker',
+      [p.billingModel]: p.billingModelIds.standard,
+      [p.active]: 'Y',
+    })
+    expect(
+      mappers.productFields({
+        name: 'Créditos',
+        billingModel: 'one_time',
+        active: false,
+      }),
+    ).toEqual({
+      title: 'Créditos',
+      [p.billingModel]: p.billingModelIds.oneTime,
+      [p.active]: 'N',
+    })
+    expect(
+      mappers.productFields({
+        name: 'X',
+        billingModel: 'per_unit',
+        active: true,
+      })[p.billingModel],
+    ).toBe(p.billingModelIds.perUnit)
+  })
+
+  it('planFields inclui produto só na criação e converte null em vazio', () => {
+    const input = {
+      name: 'Básico',
+      amount: 9900,
+      interval: 'monthly' as const,
+      priceHomolog: 'price_h',
+      priceProduction: null,
+      active: true,
+    }
+    expect(mappers.planFields(input, 10)).toEqual({
+      title: 'Básico',
+      [pl.value]: 9900,
+      [pl.interval]: '13609',
+      [pl.gatewayIdHomolog]: 'price_h',
+      [pl.gatewayIdProduction]: '',
+      [pl.active]: 'Y',
+      [pl.product]: 10,
+    })
+    expect(mappers.planFields(input)).not.toHaveProperty(pl.product)
+  })
+
+  it('planFields de compra única não envia intervalo válido', () => {
+    const fields = mappers.planFields(
+      {
+        name: 'Pacote',
+        amount: 4900,
+        interval: null,
+        priceHomolog: null,
+        priceProduction: null,
+        active: false,
+      },
+      11,
+    )
+    expect(fields[pl.interval]).toBe('')
+    expect(fields[pl.active]).toBe('N')
+  })
+})

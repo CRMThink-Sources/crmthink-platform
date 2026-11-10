@@ -3,6 +3,7 @@ import {
   Boxes,
   CreditCard,
   LayoutDashboard,
+  Package,
   ScrollText,
   Send,
   Settings,
@@ -34,6 +35,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: '/events', label: 'Eventos', icon: Send },
       { to: '/stripe-events', label: 'Eventos Stripe', icon: CreditCard },
       { to: '/apps', label: 'Apps', icon: Activity },
+      { to: '/catalog', label: 'Catálogo', icon: Package },
     ],
   },
   {

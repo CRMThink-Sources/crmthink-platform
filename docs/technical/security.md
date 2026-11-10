@@ -176,7 +176,7 @@ não gera registro.
 linha) e o registro guarda o texto em `summary.reason`, sem o mascaramento nem o corte de 200
 caracteres do resto do resumo. As ações de alto impacto (rotação de chave de API e de segredo
 de webhook, desativação de app, reenvio em lote, rotação da chave do JWT e redefinição de
-acesso de operador, e a consulta do segredo de webhook) são marcadas por `highImpact` em `backoffice/http/policy.ts` e o `adminGate`
+acesso de operador, exclusão e desativação de produto ou plano do catálogo, e a consulta do segredo de webhook) são marcadas por `highImpact` em `backoffice/http/policy.ts` e o `adminGate`
 as recusa com 400 `REASON_REQUIRED` antes do handler, depois de autenticar e de checar o papel;
 a tentativa recusada também é auditada. Motivo fora do formato: 400 `REASON_INVALID`. O motivo é
 texto livre digitado por uma pessoa: não coloque segredos nele.
@@ -188,6 +188,19 @@ apague registros; a rotina `purge-admin-audit` apaga só o que passou de
 `ADMIN_AUDIT_RETENTION_DAYS` (mínimo 365). Falha ao gravar não bloqueia a ação: vai para log
 `error` e para `admin_audit_write_failures_total`. Consulta: `GET /admin/audit` (filtros por
 ator, ação, alvo, resultado e período).
+
+### Catálogo de produtos e planos
+
+`/admin/catalog/*` (`billing/http/admin-catalog-routes.ts`) é uma **escrita no catálogo de cobrança
+do portal Bitrix** (SPAs 1134 e 1138): `viewer` lê, só `operator` escreve. Excluir e desativar
+(`active:false`) são de alto impacto e exigem `X-Admin-Reason`. Toda escrita é auditada com alvo
+`product` ou `plan` e o id. Escrita só com `PLATFORM_ENVIRONMENT=production` (409
+`CATALOG_READ_ONLY` nos demais), porque os ambientes dividem o portal mas não o banco. Após criar ou
+editar, o item é relido para confirmar os campos (a exclusão não é relida) (502 `CATALOG_WRITE_FAILED` se não bater).
+
+Fica de fora: a auditoria guarda o corpo mascarado e o motivo, **sem antes/depois** do item. O id
+de preço Stripe é só um identificador (`price_...`), não um segredo; a plataforma não cria nem
+altera preços no Stripe.
 
 ## O que nunca vai para o log
 

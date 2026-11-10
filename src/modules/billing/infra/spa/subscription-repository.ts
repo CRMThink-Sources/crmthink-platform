@@ -101,6 +101,26 @@ export class SubscriptionRepository {
     return open.sort((a, b) => b.id - a.id)[0] ?? null
   }
 
+  /** `total` = itens brutos do plano; `active` = mapeadas e ainda não encerradas. */
+  async countByPlan(
+    planId: number,
+  ): Promise<{ total: number; active: number }> {
+    const raws = await this.crm.listItems(this.subscriptionType, {
+      [this.config.subscription.plan]: planId,
+    })
+    // Homologação e produção compartilham os SPAs: o uso conta todos os ambientes.
+    let active = 0
+    for (const raw of raws) {
+      try {
+        const s = this.mappers.subscription(raw)
+        if (s.status !== 'cancelled' && s.status !== 'trial_expired') active++
+      } catch (error) {
+        if (!(error instanceof InvalidSpaItemError)) throw error
+      }
+    }
+    return { total: raws.length, active }
+  }
+
   async findByGatewayId(
     gatewaySubscriptionId: string,
   ): Promise<Subscription | null> {

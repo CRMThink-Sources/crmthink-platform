@@ -154,7 +154,8 @@ Cada procedimento pode ser feito no backoffice (tela indicada) ou pela API. **A�
 impacto exigem o motivo** (1 a 500 caracteres, uma linha) no header `X-Admin-Reason`; sem ele a
 resposta é 400 `REASON_REQUIRED` e nada é executado. São elas: rotação de chave de API,
 rotação de segredo de webhook, consulta do segredo de webhook, desativação de app (`PATCH` com
-`active:false`), reenvio em lote, rotação da chave do JWT e redefinição de acesso de operador. Nas demais mutações o motivo é
+`active:false`), reenvio em lote, rotação da chave do JWT, redefinição de acesso de operador e exclusão e desativação de produto
+ou plano do catálogo. Nas demais mutações o motivo é
 opcional, mas fica na auditoria quando enviado. Scripts que chamam essas ações precisam passar
 o header, por exemplo:
 
@@ -180,6 +181,52 @@ curl -X POST "$PLATFORM/admin/apps/<appCode>/rotate-api-key" \
 | Conta de operador bloqueada               | Espera 15 min, ou outro `operator` redefine o acesso (tela **Operadores** → "Redefinir acesso", ou `POST /admin/operators/{id}/reset-access` com `X-Admin-Reason`), o que também desbloqueia                                                                                                                                                                                                                                                                          |
 | Alerta `AdminLoginFailuresHigh`           | `GET /admin/audit?action=auth.login_failed`: IPs e e-mails tentados. Se for ataque, bloquear o IP no Caddy/firewall                                                                                                                                                                                                                                                                                                                                                   |
 | Rollback                                  | redeploy da imagem anterior (`PLATFORM_IMAGE=…:<sha>`); outbox e tokens permanecem no banco                                                                                                                                                                                                                                                                                                                                                                           |
+
+## Catálogo de produtos e planos
+
+A tela **Catálogo** (grupo Operação) gere os produtos (SPA 1134) e os planos (SPA 1138) do portal
+CRMThink, com os planos aninhados em cada produto. API: `/admin/catalog/*`. `viewer` só lê;
+`operator` cria, edita, desativa e exclui. **Excluir e desativar (`active:false`) exigem o motivo**
+(`X-Admin-Reason`, como nos demais procedimentos acima).
+
+- **Só a produção escreve.** Os dois ambientes compartilham o portal e os SPAs, mas cada instância
+  tem o próprio banco (vínculos app-produto e planos de trial dos apps ficam no banco da
+  instância). Fora de `PLATFORM_ENVIRONMENT=production` a tela só lê e a API responde 409
+  `CATALOG_READ_ONLY`. Altere o catálogo sempre pela produção.
+- **O que bloqueia** (409 `PRODUCT_IN_USE` / `PLAN_IN_USE`, com o uso em `details`): excluir
+  produto ou plano em uso; trocar ou limpar o id de preço Stripe de plano com assinaturas; ligar
+  ou desligar o trial de plano em uso; trocar o intervalo de plano com assinaturas; trocar o
+  modelo de cobrança de produto que tem planos; excluir produto com planos ou apps vinculados.
+  "Em uso" conta assinaturas de **todos** os ambientes (SPA 1142) e o plano de trial de apps; para
+  produto, apps vinculados ou qualquer plano. Livres: nome, valor de referência, ativo (desativar exige motivo) e
+  **preencher** um preço que estava vazio em plano que já é pago. A tela mostra o uso antes de excluir.
+- **Como contornar:** "crie um plano novo e desative este". O plano antigo continua servindo as
+  assinaturas existentes; o novo vale para as próximas.
+- **Preço faltante:** o id do preço é criado à mão no Stripe e colado no plano (formato
+  `price_...`, um para homologação e outro para produção). O valor é digitado em reais e gravado
+  em centavos (pela API, o valor vai em centavos). Plano pago (sem trial) exige ao menos um id de
+  preço, senão 422 `PLAN_INVALID_FOR_PRODUCT`: sem preço em nenhum ambiente a plataforma o trata
+  como trial gratuito. Para preencher o preço que falta num ambiente de um plano que já tem preço
+  no outro, edite o plano e cole o id (livre). Preencher o preço de um plano que não tem nenhum
+  o transforma de trial em pago: a edição também precisa enviar `trial:false` (na tela, é a chave
+  de trial) e segue a regra do trial, ou seja, 409 `PLAN_IN_USE` se o plano tem assinaturas ou é
+  o plano de trial de um app (nesse caso, crie um plano novo). Produto
+  de cobrança única recebe planos sem intervalo.
+- **Id de preço não se repete:** um id `price_...` não pode estar em dois planos no mesmo ambiente
+  nem ser o mesmo na homologação e na produção de um plano (422 `PRICE_ALREADY_USED`, com o plano
+  e o campo em `details`); reenviar o próprio preço sem mudança não conflita.
+- **502 `CATALOG_WRITE_FAILED`:** a escrita no portal não foi confirmada (o Bitrix descarta
+  campos desconhecidos em silêncio, então o item é relido depois de criar ou editar).
+  - **Ao criar:** a mensagem traz o id do item, que pode ter ficado **meio criado**: abra-o no SPA
+    1134 (produto) ou 1138 (plano), exclua ou complete os campos e repita a operação. Se a
+    própria criação falhou, não há id e nada foi criado.
+  - **Ao editar:** o item já existia. Confira no portal os campos citados na mensagem e reaplique
+    a edição. **Não exclua** o item.
+- **Primeira escrita real em produção:** faça com um produto e um plano de teste e exclua em
+  seguida, para confirmar a permissão do webhook e os campos obrigatórios do portal.
+- **Limites conhecidos:** a API de apps ainda não valida se os ids de produto existem; o plano de
+  trial do app continua um campo numérico (sem seletor); a auditoria guarda o corpo mascarado e o
+  motivo, sem antes/depois.
 
 ## Operadores do backoffice
 

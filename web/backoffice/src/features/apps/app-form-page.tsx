@@ -27,6 +27,7 @@ import {
   SecretRevealDialog,
   useSecretReveal,
 } from '@/features/actions/secret-reveal-dialog'
+import { ProductPicker } from '@/features/catalog/product-picker'
 import {
   appFormSchema,
   emptyForm,
@@ -291,13 +292,27 @@ function AppForm(props: { mode: AppFormMode; initial: AppFormValues }) {
           <Section title="Integração e produtos">
             <Field form={form} name="installerUrl" label="URL do instalador" />
             <Field form={form} name="webhookUrl" label="URL de webhook" />
-            <Field
-              form={form}
-              name="productSpaIds"
-              label="Produtos (SPA 1134)"
-              hint="Ids separados por vírgula."
-              className="sm:col-span-2"
-            />
+            <div
+              role="group"
+              aria-labelledby="product-picker-label"
+              className="grid gap-1.5 sm:col-span-2"
+            >
+              <Label id="product-picker-label">Produtos (SPA 1134)</Label>
+              <ProductPicker
+                value={current.productSpaIds ?? ''}
+                onChange={value =>
+                  form.setValue('productSpaIds', value, {
+                    shouldDirty: true,
+                    shouldValidate: form.formState.isSubmitted,
+                  })
+                }
+              />
+              {form.formState.errors.productSpaIds?.message && (
+                <p role="alert" className="text-xs text-destructive">
+                  {form.formState.errors.productSpaIds.message}
+                </p>
+              )}
+            </div>
           </Section>
 
           <Section title="Trial">

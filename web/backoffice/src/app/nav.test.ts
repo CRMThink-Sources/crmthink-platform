@@ -12,7 +12,7 @@ describe('menu', () => {
       { title: undefined, items: ['Painel'] },
       {
         title: 'Operação',
-        items: ['Instalações', 'Eventos', 'Eventos Stripe', 'Apps'],
+        items: ['Instalações', 'Eventos', 'Eventos Stripe', 'Apps', 'Catálogo'],
       },
       { title: 'Acesso', items: ['Auditoria'] },
     ])
@@ -23,7 +23,7 @@ describe('menu', () => {
       { title: undefined, items: ['Painel'] },
       {
         title: 'Operação',
-        items: ['Instalações', 'Eventos', 'Eventos Stripe', 'Apps'],
+        items: ['Instalações', 'Eventos', 'Eventos Stripe', 'Apps', 'Catálogo'],
       },
       { title: 'Acesso', items: ['Auditoria', 'Operadores'] },
       { title: 'Plataforma', items: ['Sistema'] },
