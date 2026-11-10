@@ -46,7 +46,6 @@ export function AppsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>App</TableHead>
-              <TableHead>appCode</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Trial</TableHead>
               <TableHead>Escopos</TableHead>
@@ -58,13 +57,15 @@ export function AppsPage() {
                 <TableCell>
                   <Link
                     to={`/apps/${encodeURIComponent(app.appCode)}`}
-                    className="font-medium hover:underline"
+                    className="font-medium break-all hover:underline"
                   >
                     {app.name}
                   </Link>
-                </TableCell>
-                <TableCell>
-                  <code className="text-xs">{app.appCode}</code>
+                  <p>
+                    <code className="text-xs text-muted-foreground">
+                      {app.appCode}
+                    </code>
+                  </p>
                 </TableCell>
                 <TableCell>
                   <Badge variant={app.active ? 'secondary' : 'outline'}>

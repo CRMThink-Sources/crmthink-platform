@@ -92,9 +92,7 @@ export function InstallationsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Id</TableHead>
-                <TableHead>Domínio</TableHead>
-                <TableHead>App</TableHead>
+                <TableHead>Instalação</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Token</TableHead>
                 <TableHead>Instalada</TableHead>
@@ -106,20 +104,14 @@ export function InstallationsPage() {
                   <TableCell>
                     <Link
                       to={`/installations/${item.id}`}
-                      className="font-medium hover:underline"
-                    >
-                      #{item.id}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Link
-                      to={`/installations/${item.id}`}
-                      className="hover:underline"
+                      className="font-medium break-all hover:underline"
                     >
                       {item.domain}
                     </Link>
+                    <p className="text-xs text-muted-foreground">
+                      #{item.id} · {item.appCode}
+                    </p>
                   </TableCell>
-                  <TableCell>{item.appCode}</TableCell>
                   <TableCell>
                     <StatusBadge kind="installation" value={item.status} />
                   </TableCell>
