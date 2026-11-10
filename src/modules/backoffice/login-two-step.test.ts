@@ -557,3 +557,64 @@ describe('limites e bloqueio nas duas etapas', () => {
     expect(h.db.rows('adminSession')).toHaveLength(1)
   })
 })
+
+describe('navegador lembrado é esquecido quando o acesso muda', () => {
+  async function trusted() {
+    const h = setup()
+    const admin = await operator(h, 'admin@connectthink.com.br', 'operator')
+    const dev = await operator(h, 'dev@connectthink.com.br', 'viewer')
+    const first = await firstStep(h, dev)
+    const second = await secondStep(h, {
+      challenge: first.body.challenge,
+      code: code(h, dev.secret!),
+      rememberDevice: true,
+    })
+    h.clock.advance(30_000)
+    const device = cookieOf(second, DEVICE_COOKIE)
+    const direct = await firstStep(h, dev, { cookie: device })
+    expect(direct.body.step).toBe('authenticated')
+    return { h, admin, dev, device }
+  }
+
+  it('troca de senha', async () => {
+    const { h, dev, device } = await trusted()
+    await h.container.operators.changePassword(dev.id, {
+      currentPassword: dev.password,
+      newPassword: 'outra-senha-segura-1',
+    })
+
+    const response = await firstStep(
+      h,
+      { email: dev.email, password: 'outra-senha-segura-1' },
+      { cookie: device },
+    )
+
+    expect(response.body.step).toBe('totp')
+  })
+
+  it('troca de papel e desativação', async () => {
+    const { h, admin, dev, device } = await trusted()
+    await h.container.operators.update(dev.id, { role: 'operator' }, admin.id)
+
+    const afterRole = await firstStep(h, dev, { cookie: device })
+    expect(afterRole.body.step).toBe('totp')
+
+    await h.container.operators.update(dev.id, { active: false }, admin.id)
+    await h.container.operators.update(dev.id, { active: true }, admin.id)
+    const afterReactivate = await firstStep(h, dev, { cookie: device })
+    expect(afterReactivate.body.step).toBe('totp')
+  })
+
+  it('redefinição do acesso', async () => {
+    const { h, dev, device } = await trusted()
+    const reset = await h.container.operators.resetAccess(dev.id)
+
+    const response = await firstStep(
+      h,
+      { email: dev.email, password: reset.temporaryPassword },
+      { cookie: device },
+    )
+
+    expect(response.body.step).toBe('totp-setup')
+  })
+})

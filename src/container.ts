@@ -292,15 +292,10 @@ export function buildContainer(deps: ContainerDeps) {
   const adminSessions = new AdminSessions(db, clock, env.backoffice)
   const trustedDevices = new TrustedDevices(db, clock, env.backoffice)
   const loginChallenges = new LoginChallenges(cache, clock, cipher)
-  const operators = new OperatorService(
-    db,
-    cipher,
-    totpIssuer(env.platformEnvironment),
-    async (id, except) => {
-      await adminSessions.revokeAll(id, except)
-      await trustedDevices.revokeAll(id)
-    },
-  )
+  const operators = new OperatorService(db, async (id, except) => {
+    await adminSessions.revokeAll(id, except)
+    await trustedDevices.revokeAll(id)
+  })
   const login = new LoginService(
     db,
     cipher,

@@ -346,7 +346,8 @@ describe('gestão de operadores', () => {
     })
     expect(created.status).toBe(201)
     expect(created.body.temporaryPassword).toBeTruthy()
-    expect(created.body.totpUri).toMatch(/^otpauth:\/\/totp\//)
+    expect(created.body.totpUri).toBeUndefined()
+    expect(created.body.operator.totpConfigured).toBe(false)
     const id = created.body.operator.id
 
     const listed = await http(h).get('/admin/operators').set('Cookie', cookie)

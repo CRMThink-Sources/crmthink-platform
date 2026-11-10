@@ -787,7 +787,7 @@ export const OPERATIONS: Operation[] = [
     tag: 'Operador',
     summary: 'Criar operador',
     description:
-      '**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** O operador troca a senha no primeiro login.',
+      '**`temporaryPassword` só aparece nesta resposta.** O operador troca a senha e cadastra o app autenticador (QR code) no primeiro login; a conta nasce sem segredo TOTP.',
     security: 'admin',
     body: { schema: req.createOperator },
     responses: { 201: json('Operador e acesso', res.issuedAccess) },
@@ -812,9 +812,9 @@ export const OPERATIONS: Operation[] = [
     path: '/admin/operators/{id}/reset-access',
     operationId: 'resetOperatorAccess',
     tag: 'Operador',
-    summary: 'Redefinir senha e TOTP de um operador',
+    summary: 'Redefinir senha e autenticador de um operador',
     description:
-      '**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** Desbloqueia a conta e derruba as sessões dela.',
+      '**`temporaryPassword` só aparece nesta resposta.** Apaga o segredo TOTP (o operador cadastra o app de novo no próximo login), desbloqueia a conta e derruba as sessões e os navegadores lembrados dela.',
     security: 'admin',
     pathParams: { id: 'Id do operador' },
     responses: { 200: json('Operador e acesso novo', res.issuedAccess) },

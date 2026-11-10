@@ -3399,7 +3399,7 @@
           "Operador"
         ],
         "summary": "Criar operador",
-        "description": "**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** O operador troca a senha no primeiro login.\n\n**Papel mínimo:** `operator`.",
+        "description": "**`temporaryPassword` só aparece nesta resposta.** O operador troca a senha e cadastra o app autenticador (QR code) no primeiro login; a conta nasce sem segredo TOTP.\n\n**Papel mínimo:** `operator`.",
         "security": [
           {
             "adminSession": []
@@ -3784,8 +3784,8 @@
         "tags": [
           "Operador"
         ],
-        "summary": "Redefinir senha e TOTP de um operador",
-        "description": "**`temporaryPassword` e `totpUri` só aparecem nesta resposta.** Desbloqueia a conta e derruba as sessões dela.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
+        "summary": "Redefinir senha e autenticador de um operador",
+        "description": "**`temporaryPassword` só aparece nesta resposta.** Apaga o segredo TOTP (o operador cadastra o app de novo no próximo login), desbloqueia a conta e derruba as sessões e os navegadores lembrados dela.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
         "security": [
           {
             "adminSession": []
@@ -11109,16 +11109,11 @@
           "temporaryPassword": {
             "type": "string",
             "description": "Senha provisória. Só aparece nesta resposta."
-          },
-          "totpUri": {
-            "type": "string",
-            "description": "URI `otpauth://` para o app autenticador. Só aparece nesta resposta."
           }
         },
         "required": [
           "operator",
-          "temporaryPassword",
-          "totpUri"
+          "temporaryPassword"
         ],
         "additionalProperties": false
       },
@@ -11195,6 +11190,10 @@
             "type": "boolean",
             "description": "Senha provisória: só `POST /admin/auth/password` é permitido"
           },
+          "totpConfigured": {
+            "type": "boolean",
+            "description": "`false` até o operador cadastrar o app autenticador no primeiro login"
+          },
           "lockedUntil": {
             "anyOf": [
               {
@@ -11229,6 +11228,7 @@
           "role",
           "active",
           "mustChangePassword",
+          "totpConfigured",
           "lockedUntil",
           "lastLoginAt",
           "createdAt"

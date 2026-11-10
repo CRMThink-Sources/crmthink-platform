@@ -391,6 +391,11 @@ export const operatorSchema = z.strictObject({
   mustChangePassword: z
     .boolean()
     .describe('Senha provisória: só `POST /admin/auth/password` é permitido'),
+  totpConfigured: z
+    .boolean()
+    .describe(
+      '`false` até o operador cadastrar o app autenticador no primeiro login',
+    ),
   lockedUntil: isoDate.nullable(),
   lastLoginAt: isoDate.nullable(),
   createdAt: isoDate,
@@ -403,11 +408,6 @@ export const issuedAccessSchema = z.strictObject({
   temporaryPassword: z
     .string()
     .describe('Senha provisória. Só aparece nesta resposta.'),
-  totpUri: z
-    .string()
-    .describe(
-      'URI `otpauth://` para o app autenticador. Só aparece nesta resposta.',
-    ),
 }) satisfies z.ZodType<IssuedAccess>
 
 const authenticatedSchema = z.strictObject({
