@@ -19,7 +19,7 @@ Rotação de chave de API, rotação de segredo de webhook, desativação de app
 - **THEN** o botão de confirmar só fica ativo depois de digitar `crmthink.gptmaker` e preencher o motivo
 
 ### Requirement: Exibição única de segredos
-Chave de API, segredo de webhook (no cadastro e na rotação), senha provisória e QR code do TOTP devolvidos pela API MUST ser mostrados uma única vez num diálogo com botão de copiar, um aviso de que não serão exibidos de novo e uma confirmação "Guardei" para fechar. Eles MUST NOT ser gravados em cache de consultas, armazenamento do navegador, URL ou logs do console. O QR code MUST ser gerado no navegador, sem enviar o URI `otpauth://` a outro serviço.
+Chave de API, segredo de webhook (no cadastro e na rotação), senha provisória devolvidos pela API MUST ser mostrados uma única vez num diálogo com botão de copiar, um aviso de que não serão exibidos de novo e uma confirmação "Guardei" para fechar. Eles MUST NOT ser gravados em cache de consultas, armazenamento do navegador, URL ou logs do console. O segredo do TOTP não passa por esse diálogo: o operador cadastra o autenticador no primeiro login (ver `backoffice-web`, "Acesso e sessão").
 
 #### Scenario: Cadastro de app
 - **WHEN** um `operator` cadastra um app
@@ -27,7 +27,7 @@ Chave de API, segredo de webhook (no cadastro e na rotação), senha provisória
 
 #### Scenario: Redefinir acesso de operador
 - **WHEN** um `operator` redefine o acesso de um `viewer`
-- **THEN** a interface mostra a senha provisória e o QR code do novo TOTP uma vez, gerado localmente
+- **THEN** a interface mostra a senha provisória uma vez, sem segredo TOTP: o `viewer` cadastra o autenticador de novo no próximo login
 
 ### Requirement: Pré-visualização do reenvio em lote
 O reenvio em lote MUST primeiro chamar o reenvio com `dryRun` e mostrar a quantidade e uma amostra dos eventos. A confirmação MUST exigir digitar `REENVIAR <quantidade>`. Se a API recusar por excesso, a interface MUST mostrar o limite e sugerir reduzir o período.

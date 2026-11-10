@@ -189,7 +189,7 @@ As listagens `/admin/events`, `/admin/stripe-events`, `/admin/installations`,
 desta mudança `/admin/events` e `/admin/stripe-events` devolviam até 100 itens de uma vez:
 scripts que liam só `items` continuam funcionando, mas veem só a primeira página.
 
-Cada pessoa entra com a própria conta (e-mail, senha e TOTP). Não há cadastro público.
+Cada pessoa entra com a própria conta (e-mail e senha, depois o código do app autenticador). Não há cadastro público.
 
 - **Primeiro operador** (ou quando ninguém consegue entrar): no droplet, dentro do container
   da API (os comandos ficam em `dist/src/cli`; em desenvolvimento, `yarn admin:create-operator`):
@@ -199,14 +199,20 @@ Cada pessoa entra com a própria conta (e-mail, senha e TOTP). Não há cadastro
   ```
 
   Alternativa sem shell no droplet: `POST /admin/operators` com um token de
-  `ADMIN_API_TOKENS` (fica na auditoria como `token:<prefixo>`). A saída mostra a senha provisória e o URI `otpauth://` **uma única vez**: cadastre o
-  URI no app autenticador (Google Authenticator, 1Password, etc.; na entrada manual, só o
-  valor de `secret=`; para QR code, `qrencode -t ansiutf8 '<uri>'`, nunca um gerador online)
-  e entregue a senha por canal privado. No primeiro login a troca de senha é obrigatória.
+  `ADMIN_API_TOKENS` (fica na auditoria como `token:<prefixo>`). A saída mostra a senha provisória **uma única vez**: entregue-a por canal privado.
+  A conta nasce sem autenticador: no primeiro login a pessoa digita e-mail e senha, a tela
+  mostra o QR code (e o segredo em texto) para ler no app (Google Authenticator, 1Password, etc.)
+  e o primeiro código de 6 dígitos conclui o cadastro. Depois disso a troca de senha é obrigatória.
 
 - **Demais contas**: um `operator` cria pela rota `POST /admin/operators` (ou pelo
   backoffice). Papéis: `viewer` (suporte, só leitura) e `operator` (dev, leitura e ações).
 - **Perdeu o celular ou a senha**: outro `operator` usa `POST /admin/operators/{id}/reset-access`.
   Sem nenhum `operator` disponível:
   `docker exec -it <COMPOSE_PROJECT>-api node dist/src/cli/create-operator.js --email <e-mail> --reset`.
-  A redefinição derruba as sessões abertas da conta e desfaz o bloqueio.
+  A redefinição gera uma senha provisória nova, **apaga o autenticador** (a pessoa cadastra o app
+  de novo no próximo login, com QR code), derruba as sessões abertas e os navegadores lembrados e
+  desfaz o bloqueio.
+- **"Lembrar este navegador"**: dispensa o código por `ADMIN_TRUSTED_DEVICE_DAYS` (padrão 30) naquele
+  navegador; a senha continua obrigatória. Para desligar o recurso, `ADMIN_TRUSTED_DEVICE_DAYS=0`.
+  Trocar a senha, desativar a conta, trocar o papel ou redefinir o acesso esquecem os navegadores
+  lembrados da conta.
