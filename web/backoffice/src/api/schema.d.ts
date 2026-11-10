@@ -270,6 +270,164 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/catalog/plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Excluir plano
+         * @description Plano com assinatura ou usado como trial de um app não se exclui (`PLAN_IN_USE`, com o uso em `details`): desative-o.
+         *
+         *     **Papel mínimo:** `operator`.
+         *
+         *     **Alto impacto:** exige o motivo em `X-Admin-Reason`.
+         */
+        delete: operations["deleteCatalogPlan"];
+        options?: never;
+        head?: never;
+        /**
+         * Alterar plano
+         * @description Só os campos enviados mudam. Desativar (`active: false`) exige `X-Admin-Reason`. Plano em uso não troca preço, trial nem intervalo (`PLAN_IN_USE`, com o uso em `details`).
+         *
+         *     **Papel mínimo:** `operator`.
+         *
+         *     **Alto impacto conforme o corpo:** exige `X-Admin-Reason` quando a chamada tem esse efeito (descrito acima).
+         */
+        patch: operations["updateCatalogPlan"];
+        trace?: never;
+    };
+    "/admin/catalog/plans/{id}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Uso de um plano
+         * @description Assinaturas (de todos os ambientes) e apps que o usam como plano de trial.
+         *
+         *     **Papel mínimo:** `viewer` (leitura).
+         */
+        get: operations["getCatalogPlanUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/catalog/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar produtos e planos do catálogo
+         * @description Leitura fresca do portal (sem cache), com itens inativos e mal cadastrados sinalizados (`valid`, `problems`). `writable` é `false` fora de produção.
+         *
+         *     **Papel mínimo:** `viewer` (leitura).
+         */
+        get: operations["listCatalog"];
+        put?: never;
+        /**
+         * Criar produto
+         * @description Só em produção (`CATALOG_READ_ONLY` nos demais ambientes).
+         *
+         *     **Papel mínimo:** `operator`.
+         */
+        post: operations["createCatalogProduct"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/catalog/products/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Excluir produto
+         * @description Produto vinculado a app ou com planos não se exclui (`PRODUCT_IN_USE`, com o uso em `details`): desative-o.
+         *
+         *     **Papel mínimo:** `operator`.
+         *
+         *     **Alto impacto:** exige o motivo em `X-Admin-Reason`.
+         */
+        delete: operations["deleteCatalogProduct"];
+        options?: never;
+        head?: never;
+        /**
+         * Alterar produto
+         * @description Só os campos enviados mudam. Desativar (`active: false`) exige `X-Admin-Reason`. Produto com planos não muda de modelo de cobrança (`PRODUCT_IN_USE`).
+         *
+         *     **Papel mínimo:** `operator`.
+         *
+         *     **Alto impacto conforme o corpo:** exige `X-Admin-Reason` quando a chamada tem esse efeito (descrito acima).
+         */
+        patch: operations["updateCatalogProduct"];
+        trace?: never;
+    };
+    "/admin/catalog/products/{id}/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Criar plano de um produto
+         * @description Plano pago precisa de ao menos um id de preço do Stripe; `trial: true` exige os dois vazios. Produto de assinatura exige `interval`; o de compra única não tem.
+         *
+         *     **Papel mínimo:** `operator`.
+         */
+        post: operations["createCatalogPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/catalog/products/{id}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Uso de um produto
+         * @description Apps vinculados e quantidade de planos do produto.
+         *
+         *     **Papel mínimo:** `viewer` (leitura).
+         */
+        get: operations["getCatalogProductUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/events": {
         parameters: {
             query?: never;
@@ -1637,6 +1795,83 @@ export interface components {
             /** @enum {string} */
             handled: "application-token-stored" | "application-token-pending" | "uninstalled" | "already-uninstalled" | "app-inactive" | "ignored";
         };
+        CatalogPlan: {
+            /** @description Id do item no SPA de planos */
+            id: number;
+            productId: number;
+            name: string;
+            /** @description Centavos */
+            amount: number;
+            interval: ("monthly" | "quarterly" | "semiannual" | "yearly") | null;
+            /** @description Plano sem id de preço em nenhum ambiente é o de trial */
+            isTrial: boolean;
+            active: boolean;
+            priceHomolog: string | null;
+            priceProduction: string | null;
+            /** @description `false` quando o cadastro no portal está incompleto ou inconsistente */
+            valid: boolean;
+            /** @description Motivos de `valid:false`, em pt-BR */
+            problems: string[];
+        };
+        CatalogPlanPatchRequest: {
+            name?: string;
+            /** @description Centavos */
+            amount?: number;
+            /** @description `null` em produto de compra única */
+            interval?: ("monthly" | "quarterly" | "semiannual" | "yearly") | null;
+            /** @description `true` exige os dois ids de preço vazios: o trial é plano sem preço */
+            trial?: boolean;
+            priceHomolog?: string | null;
+            priceProduction?: string | null;
+            active?: boolean;
+        };
+        CatalogPlanRequest: {
+            name: string;
+            /** @description Centavos */
+            amount: number;
+            /** @description `null` em produto de compra única */
+            interval: ("monthly" | "quarterly" | "semiannual" | "yearly") | null;
+            /** @description `true` exige os dois ids de preço vazios: o trial é plano sem preço */
+            trial: boolean;
+            priceHomolog: string | null;
+            priceProduction: string | null;
+            active: boolean;
+        };
+        CatalogProduct: {
+            /** @description Id do item no SPA de produtos */
+            id: number;
+            name: string;
+            /** @description Id de enum cru do portal (ex.: `13605`); vazio se o produto não tem modelo */
+            billingModel: string;
+            /** @description Valor simbólico aceito por `POST`/`PATCH` (`billingModel`); `null` quando o id cru não é um modelo conhecido */
+            billingModelKey: ("standard" | "per_unit" | "one_time") | null;
+            kind: ("subscription" | "one_time") | null;
+            active: boolean;
+            valid: boolean;
+            problems: string[];
+            /** @description Apps vinculados ao produto */
+            apps: string[];
+            plans: components["schemas"]["CatalogPlan"][];
+        };
+        CatalogProductPatchRequest: {
+            name?: string;
+            /** @enum {string} */
+            billingModel?: "standard" | "per_unit" | "one_time";
+            active?: boolean;
+        };
+        CatalogProductRequest: {
+            name: string;
+            /** @enum {string} */
+            billingModel: "standard" | "per_unit" | "one_time";
+            active: boolean;
+        };
+        CatalogView: {
+            /** @description `true` só em produção: nos demais ambientes o catálogo é leitura */
+            writable: boolean;
+            products: components["schemas"]["CatalogProduct"][];
+            /** @description Planos cujo produto não existe: sempre `valid:false` */
+            orphanPlans: components["schemas"]["CatalogPlan"][];
+        };
         ChangePasswordRequest: {
             currentPassword: string;
             newPassword: string;
@@ -2173,6 +2408,17 @@ export interface components {
                 type: "subscription" | "one_time";
                 trial: boolean;
             }[];
+        };
+        PlanUsage: {
+            subscriptions: {
+                total: number;
+                active: number;
+            };
+            trialOfApps: string[];
+        };
+        ProductUsage: {
+            apps: string[];
+            plans: number;
         };
         PurchasePaidEvent: {
             /**
@@ -3668,6 +3914,801 @@ export interface operations {
              *     - `TOO_MANY_REQUESTS`: Limite de tentativas de login por IP excedido (20 em 15 min).
              */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deleteCatalogPlan: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`. */
+                "X-Admin-Reason": string;
+            };
+            path: {
+                /** @description Id do plano no SPA */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plano excluído */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /**
+             * @description Requisição inválida
+             *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             *     - `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `PLAN_NOT_FOUND`: Plano inexistente ou de produto não vinculado ao app.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Conflito
+             *     - `CATALOG_READ_ONLY`: O catálogo só é editado no ambiente de produção; fora dela é somente leitura.
+             *     - `PLAN_IN_USE`: Plano em uso (assinaturas ou plano de trial de app): não se exclui nem troca preço, trial ou intervalo. `details` traz o uso.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Falha em serviço externo
+             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.
+             */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateCatalogPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório quando a chamada tem efeito de alto impacto. */
+                "X-Admin-Reason"?: string;
+            };
+            path: {
+                /** @description Id do plano no SPA */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogPlanPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Plano atualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogPlan"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             *     - `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `PLAN_NOT_FOUND`: Plano inexistente ou de produto não vinculado ao app.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Conflito
+             *     - `CATALOG_READ_ONLY`: O catálogo só é editado no ambiente de produção; fora dela é somente leitura.
+             *     - `PLAN_IN_USE`: Plano em uso (assinaturas ou plano de trial de app): não se exclui nem troca preço, trial ou intervalo. `details` traz o uso.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não processável
+             *     - `PLAN_INVALID_FOR_PRODUCT`: Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Falha em serviço externo
+             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.
+             */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getCatalogPlanUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Id do plano no SPA */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Uso do plano */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanUsage"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `PLAN_NOT_FOUND`: Plano inexistente ou de produto não vinculado ao app.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Catálogo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogView"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createCatalogProduct: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Opcional. */
+                "X-Admin-Reason"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogProductRequest"];
+            };
+        };
+        responses: {
+            /** @description Produto criado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogProduct"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
+             *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             *     - `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Conflito
+             *     - `CATALOG_READ_ONLY`: O catálogo só é editado no ambiente de produção; fora dela é somente leitura.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Falha em serviço externo
+             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.
+             */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deleteCatalogProduct: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`. */
+                "X-Admin-Reason": string;
+            };
+            path: {
+                /** @description Id do produto no SPA */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Produto excluído */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /**
+             * @description Requisição inválida
+             *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             *     - `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `PRODUCT_NOT_FOUND`: Produto inexistente no catálogo.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Conflito
+             *     - `CATALOG_READ_ONLY`: O catálogo só é editado no ambiente de produção; fora dela é somente leitura.
+             *     - `PRODUCT_IN_USE`: Produto em uso (vinculado a app ou com planos): não se exclui nem muda de modelo de cobrança. `details` traz o uso.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Falha em serviço externo
+             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.
+             */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateCatalogProduct: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório quando a chamada tem efeito de alto impacto. */
+                "X-Admin-Reason"?: string;
+            };
+            path: {
+                /** @description Id do produto no SPA */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogProductPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Produto atualizado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogProduct"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             *     - `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `PRODUCT_NOT_FOUND`: Produto inexistente no catálogo.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Conflito
+             *     - `CATALOG_READ_ONLY`: O catálogo só é editado no ambiente de produção; fora dela é somente leitura.
+             *     - `PRODUCT_IN_USE`: Produto em uso (vinculado a app ou com planos): não se exclui nem muda de modelo de cobrança. `details` traz o uso.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Falha em serviço externo
+             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.
+             */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createCatalogPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Opcional. */
+                "X-Admin-Reason"?: string;
+            };
+            path: {
+                /** @description Id do produto no SPA */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Plano criado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogPlan"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
+             *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             *     - `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `PRODUCT_NOT_FOUND`: Produto inexistente no catálogo.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Conflito
+             *     - `CATALOG_READ_ONLY`: O catálogo só é editado no ambiente de produção; fora dela é somente leitura.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não processável
+             *     - `PLAN_INVALID_FOR_PRODUCT`: Plano incoerente: intervalo em produto de compra única, assinatura sem intervalo, trial com preço ou plano pago sem preço.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Falha em serviço externo
+             *     - `CATALOG_WRITE_FAILED`: O Bitrix recusou a gravação ou a releitura mostrou campo não gravado. Na criação, a mensagem traz o id do item criado.
+             */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getCatalogProductUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Id do produto no SPA */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Uso do produto */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductUsage"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `PRODUCT_NOT_FOUND`: Produto inexistente no catálogo.
+             */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
