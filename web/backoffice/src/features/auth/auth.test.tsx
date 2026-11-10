@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { RoleGate } from '@/components/role-gate'
 import { safeNext } from '@/lib/safe-next'
@@ -394,5 +394,95 @@ describe('layout e papéis', () => {
     renderApp('/installations/1234')
     const trail = await screen.findByRole('navigation', { name: 'Trilha' })
     expect(trail).toHaveTextContent('Painel/Instalações/#1234')
+  })
+})
+
+describe('menu lateral', () => {
+  // As telas abertas nestes testes buscam dados; a falha delas não importa aqui.
+  const anyData = http.get('*/admin/*', () => apiError(500, 'INTERNAL_ERROR'))
+
+  it('operator vê os grupos e os oito links', async () => {
+    server.use(meHandler(operator()), anyData)
+    renderApp('/')
+    const nav = await screen.findByRole('navigation', { name: 'Principal' })
+
+    for (const title of ['Operação', 'Acesso', 'Plataforma'])
+      expect(within(nav).getByText(title)).toBeInTheDocument()
+    for (const label of [
+      'Painel',
+      'Instalações',
+      'Eventos',
+      'Eventos Stripe',
+      'Apps',
+      'Auditoria',
+      'Operadores',
+      'Sistema',
+    ])
+      expect(within(nav).getByRole('link', { name: label })).toBeInTheDocument()
+  })
+
+  it('suporte não vê Plataforma, Sistema nem Operadores, mas vê Auditoria', async () => {
+    server.use(meHandler(viewer()), anyData)
+    renderApp('/')
+    const nav = await screen.findByRole('navigation', { name: 'Principal' })
+
+    expect(within(nav).queryByText('Plataforma')).toBeNull()
+    expect(within(nav).queryByRole('link', { name: 'Sistema' })).toBeNull()
+    expect(within(nav).queryByRole('link', { name: 'Operadores' })).toBeNull()
+    expect(
+      within(nav).getByRole('link', { name: 'Auditoria' }),
+    ).toBeInTheDocument()
+  })
+
+  it('numa rota aninhada o item da seção continua marcado', async () => {
+    server.use(meHandler(operator()), anyData)
+    renderApp('/installations/1234')
+    const nav = await screen.findByRole('navigation', { name: 'Principal' })
+
+    expect(
+      within(nav).getByRole('link', { name: 'Instalações' }),
+    ).toHaveAttribute('aria-current', 'page')
+    expect(
+      within(nav).getByRole('link', { name: 'Painel' }),
+    ).not.toHaveAttribute('aria-current')
+  })
+
+  it('marca com selo e usuário no rodapé do menu', async () => {
+    server.use(meHandler(viewer()), anyData)
+    const { user } = renderApp('/')
+    const aside = await screen.findByRole('complementary')
+
+    expect(within(aside).getByText('CRMThink')).toBeInTheDocument()
+    expect(within(aside).getByText('Backoffice')).toBeInTheDocument()
+    await user.click(within(aside).getByRole('button', { name: /Suporte/ }))
+    expect(
+      await screen.findByRole('menuitem', { name: /Trocar senha/ }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /Sair/ })).toBeInTheDocument()
+  })
+
+  it('a barra de cima guarda o tema e o menu usa só tokens do tema', async () => {
+    server.use(meHandler(operator()), anyData)
+    renderApp('/')
+    const aside = await screen.findByRole('complementary')
+    const bar = screen.getByRole('banner')
+
+    expect(
+      within(bar).getByRole('button', { name: /\(trocar\)$/ }),
+    ).toBeInTheDocument()
+    expect(aside.innerHTML).not.toMatch(/zinc-|#[0-9a-f]{3,6}/i)
+  })
+
+  it('no celular o menu abre numa gaveta e fecha ao navegar', async () => {
+    server.use(meHandler(operator()), anyData)
+    const { router, user } = renderApp('/')
+    await user.click(await screen.findByRole('button', { name: 'Abrir menu' }))
+
+    const dialog = await screen.findByRole('dialog')
+    const drawerNav = within(dialog).getByRole('navigation', { name: 'Menu' })
+    await user.click(within(drawerNav).getByRole('link', { name: 'Eventos' }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/events'))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 })
