@@ -105,10 +105,14 @@ describe('mapa de alto impacto', () => {
     .map(([key]) => key)
     .sort()
 
-  it('as sete operações de alto impacto estão marcadas', () => {
+  it('as operações de alto impacto estão marcadas', () => {
     expect(marked).toEqual(
       [
+        'DELETE /admin/catalog/plans/:id',
+        'DELETE /admin/catalog/products/:id',
         'PATCH /admin/apps/:appCode',
+        'PATCH /admin/catalog/plans/:id',
+        'PATCH /admin/catalog/products/:id',
         'POST /admin/apps/:appCode/reveal-webhook-secret',
         'POST /admin/apps/:appCode/rotate-api-key',
         'POST /admin/apps/:appCode/rotate-webhook-secret',

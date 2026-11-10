@@ -10,6 +10,13 @@ import type { TokenResponse } from '@/modules/installations/application/token-va
 import type { ItemResponse } from '@/modules/billing/application/items-service'
 import type { PlanResponse } from '@/modules/billing/application/plan-catalog'
 import type {
+  CatalogPlanView,
+  CatalogProductView,
+  CatalogView,
+  PlanUsage,
+  ProductUsage,
+} from '@/modules/billing/application/catalog-admin'
+import type {
   IssuedAccess,
   OperatorView,
 } from '@/modules/backoffice/domain/operator'
@@ -630,3 +637,64 @@ export const stripeEventDetailSchema = z.strictObject({
   processedAt: isoDate.nullable(),
   payload: z.unknown().describe('Evento cru do Stripe'),
 })
+
+// Catálogo (backoffice)
+
+export const catalogPlanSchema = z.strictObject({
+  id: z.number().int().describe('Id do item no SPA de planos'),
+  productId: z.number().int(),
+  name: z.string(),
+  amount: z.number().describe('Centavos'),
+  interval: z.enum(['monthly', 'quarterly', 'semiannual', 'yearly']).nullable(),
+  isTrial: z
+    .boolean()
+    .describe('Plano sem id de preço em nenhum ambiente é o de trial'),
+  active: z.boolean(),
+  priceHomolog: z.string().nullable(),
+  priceProduction: z.string().nullable(),
+  valid: z
+    .boolean()
+    .describe(
+      '`false` quando o cadastro no portal está incompleto ou inconsistente',
+    ),
+  problems: z.array(z.string()).describe('Motivos de `valid:false`, em pt-BR'),
+}) satisfies z.ZodType<CatalogPlanView>
+
+export const catalogProductSchema = z.strictObject({
+  id: z.number().int().describe('Id do item no SPA de produtos'),
+  name: z.string(),
+  billingModel: z
+    .string()
+    .describe('`standard`, `per_unit`, `one_time` ou vazio se mal cadastrado'),
+  kind: z.enum(['subscription', 'one_time']).nullable(),
+  active: z.boolean(),
+  valid: z.boolean(),
+  problems: z.array(z.string()),
+  apps: z.array(z.string()).describe('Apps vinculados ao produto'),
+  plans: z.array(catalogPlanSchema),
+}) satisfies z.ZodType<CatalogProductView>
+
+export const catalogViewSchema = z.strictObject({
+  writable: z
+    .boolean()
+    .describe(
+      '`true` só em produção: nos demais ambientes o catálogo é leitura',
+    ),
+  products: z.array(catalogProductSchema),
+  orphanPlans: z
+    .array(catalogPlanSchema)
+    .describe('Planos cujo produto não existe: sempre `valid:false`'),
+}) satisfies z.ZodType<CatalogView>
+
+export const productUsageSchema = z.strictObject({
+  apps: z.array(z.string()),
+  plans: z.number().int(),
+}) satisfies z.ZodType<ProductUsage>
+
+export const planUsageSchema = z.strictObject({
+  subscriptions: z.strictObject({
+    total: z.number().int(),
+    active: z.number().int(),
+  }),
+  trialOfApps: z.array(z.string()),
+}) satisfies z.ZodType<PlanUsage>

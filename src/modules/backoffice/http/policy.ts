@@ -50,6 +50,15 @@ const operator = (p: Record<string, string>) => ({
   id: p.id ?? '',
 })
 
+const product = (p: Record<string, string>) => ({
+  type: 'product',
+  id: p.id ?? '',
+})
+const plan = (p: Record<string, string>) => ({ type: 'plan', id: p.id ?? '' })
+
+/** Desativar é de alto impacto; as demais edições não. */
+const deactivates = (body: unknown) => bodyField(body, 'active') === false
+
 /** Chave: `MÉTODO /caminho` no formato do Express (`:param`). */
 export const ADMIN_POLICIES: Record<string, AdminPolicy> = {
   'POST /admin/auth/login': { role: 'public', auditedByHandler: true },
@@ -95,6 +104,39 @@ export const ADMIN_POLICIES: Record<string, AdminPolicy> = {
   'POST /admin/apps/:appCode/reveal-webhook-secret': {
     role: 'operator',
     target: app,
+    highImpact: true,
+  },
+
+  'GET /admin/catalog/products': { role: 'viewer' },
+  'POST /admin/catalog/products': {
+    role: 'operator',
+    target: () => ({ type: 'product', id: '' }),
+  },
+  'GET /admin/catalog/products/:id/usage': { role: 'viewer', target: product },
+  'PATCH /admin/catalog/products/:id': {
+    role: 'operator',
+    target: product,
+    highImpact: deactivates,
+  },
+  'DELETE /admin/catalog/products/:id': {
+    role: 'operator',
+    target: product,
+    highImpact: true,
+  },
+  'POST /admin/catalog/products/:id/plans': {
+    role: 'operator',
+    // O alvo é o plano criado: a rota informa o id (`auditTargetId`).
+    target: () => ({ type: 'plan', id: '' }),
+  },
+  'GET /admin/catalog/plans/:id/usage': { role: 'viewer', target: plan },
+  'PATCH /admin/catalog/plans/:id': {
+    role: 'operator',
+    target: plan,
+    highImpact: deactivates,
+  },
+  'DELETE /admin/catalog/plans/:id': {
+    role: 'operator',
+    target: plan,
     highImpact: true,
   },
 
