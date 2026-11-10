@@ -39,7 +39,7 @@ export const BILLING_MODEL_LABELS: Record<BillingModel, string> = {
 
 // ---- Peças compartilhadas com o formulário de plano --------------------------------
 
-const plural = (n: number, one: string, many: string) =>
+export const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`
 
 /** O que usa o item, a partir dos `details` de `PLAN_IN_USE` / `PRODUCT_IN_USE`. */

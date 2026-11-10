@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table'
 import { centsToReais } from '@/lib/money'
 import { catalogQuery } from './catalog-queries'
+import { DeactivateDialog, DeleteDialog } from './delete-dialog'
 import { PlanDialog } from './plan-dialog'
 import { ProductDialog } from './product-dialog'
 
@@ -25,7 +26,10 @@ type Plan = Schemas['CatalogPlan']
 type Dialog =
   | { kind: 'product'; product?: Product }
   | { kind: 'plan'; product: Product; plan?: Plan }
+  | { kind: 'delete' | 'deactivate'; target: 'product' | 'plan'; item: Item }
   | null
+
+type Item = { id: number; name: string; active: boolean }
 
 type Open = (dialog: NonNullable<Dialog>) => void
 
@@ -76,7 +80,39 @@ function PriceStatus({ plan }: { plan: Plan }) {
   )
 }
 
-function PlanRow(props: { plan: Plan; onEdit?: () => void }) {
+function RemoveActions(props: {
+  target: 'product' | 'plan'
+  item: Item
+  onOpen: Open
+}) {
+  const { target, item, onOpen } = props
+  const noun = target === 'plan' ? 'plano' : 'produto'
+  return (
+    <>
+      {item.active && (
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={`Desativar ${noun} ${item.name}`}
+          onClick={() => onOpen({ kind: 'deactivate', target, item })}
+        >
+          Desativar
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="text-destructive"
+        aria-label={`Excluir ${noun} ${item.name}`}
+        onClick={() => onOpen({ kind: 'delete', target, item })}
+      >
+        Excluir
+      </Button>
+    </>
+  )
+}
+
+function PlanRow(props: { plan: Plan; onEdit?: () => void; onOpen?: Open }) {
   const { plan } = props
   return (
     <TableRow>
@@ -104,6 +140,9 @@ function PlanRow(props: { plan: Plan; onEdit?: () => void }) {
           >
             Editar
           </Button>
+        )}
+        {props.onOpen && (
+          <RemoveActions target="plan" item={plan} onOpen={props.onOpen} />
         )}
       </TableCell>
     </TableRow>
@@ -153,6 +192,7 @@ function ProductRows(props: { product: Product; onOpen?: Open }) {
               >
                 Novo plano neste produto
               </Button>
+              <RemoveActions target="product" item={product} onOpen={onOpen} />
             </>
           )}
         </TableCell>
@@ -162,13 +202,15 @@ function ProductRows(props: { product: Product; onOpen?: Open }) {
           key={plan.id}
           plan={plan}
           onEdit={onOpen && (() => onOpen({ kind: 'plan', product, plan }))}
+          onOpen={onOpen}
         />
       ))}
     </>
   )
 }
 
-function OrphanPlans({ plans }: { plans: Plan[] }) {
+function OrphanPlans(props: { plans: Plan[]; onOpen?: Open }) {
+  const { plans, onOpen } = props
   return (
     <section className="mt-6 space-y-2">
       <h2 className="text-base font-semibold">
@@ -180,6 +222,11 @@ function OrphanPlans({ plans }: { plans: Plan[] }) {
             <span className="font-medium break-all">{plan.name}</span>
             <p className="text-xs text-muted-foreground">{`#${plan.id}`}</p>
             <Problems problems={plan.problems} />
+            {onOpen && (
+              <div className="mt-1">
+                <RemoveActions target="plan" item={plan} onOpen={onOpen} />
+              </div>
+            )}
           </li>
         ))}
       </ul>
@@ -250,7 +297,10 @@ export function CatalogPage() {
             </Table>
           )}
           {catalog.data.orphanPlans.length > 0 && (
-            <OrphanPlans plans={catalog.data.orphanPlans} />
+            <OrphanPlans
+              plans={catalog.data.orphanPlans}
+              onOpen={canWrite ? setDialog : undefined}
+            />
           )}
         </>
       )}
@@ -265,6 +315,20 @@ export function CatalogPage() {
           onOpenChange={closeDialog}
           product={dialog.product}
           plan={dialog.plan}
+        />
+      )}
+      {dialog?.kind === 'delete' && (
+        <DeleteDialog
+          kind={dialog.target}
+          item={dialog.item}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === 'deactivate' && (
+        <DeactivateDialog
+          kind={dialog.target}
+          item={dialog.item}
+          onClose={() => setDialog(null)}
         />
       )}
     </>
