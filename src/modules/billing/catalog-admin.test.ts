@@ -117,6 +117,50 @@ describe('CatalogAdmin: leitura', () => {
     })
   })
 
+  it('expõe planos órfãos (produto inexistente) como inválidos', async () => {
+    const h = production()
+    await seedGptMaker(h)
+    const c = h.config
+    h.crm.seed(c.entityTypes.plan, {
+      id: 505,
+      title: 'Órfão',
+      [c.plan.product]: 777,
+      [c.plan.value]: 100,
+      [c.plan.interval]: '13609',
+      [c.plan.active]: 'Y',
+    })
+    const view = await h.container.catalogAdmin.list()
+    expect(view.orphanPlans).toHaveLength(1)
+    expect(view.orphanPlans[0]).toMatchObject({
+      id: 505,
+      productId: 777,
+      valid: false,
+      problems: ['Produto inexistente (#777)'],
+    })
+    expect(view.products.flatMap(p => p.plans).map(p => p.id)).not.toContain(
+      505,
+    )
+  })
+
+  it('countByPlan conta assinaturas de todos os ambientes', async () => {
+    const h = production()
+    await seedGptMaker(h)
+    const c = h.config
+    h.crm.seed(c.entityTypes.subscription, {
+      id: 20,
+      title: 's',
+      [c.subscription.plan]: 501,
+      parentId1060: 1,
+      [c.subscription.status]: '13617',
+      [c.subscription.periodStart]: '2026-08-01T00:00:00+03:00',
+      [c.subscription.periodEnd]: '2026-08-31T00:00:00+03:00',
+      [c.subscription.environment]: 'homolog',
+    })
+    expect(await h.container.catalogAdmin.planUsage(501)).toMatchObject({
+      subscriptions: { total: 1, active: 1 },
+    })
+  })
+
   it('countByPlan conta bruto e ativas', async () => {
     const h = production()
     await seedGptMaker(h)

@@ -108,9 +108,16 @@ export class SubscriptionRepository {
     const raws = await this.crm.listItems(this.subscriptionType, {
       [this.config.subscription.plan]: planId,
     })
-    const active = this.mapSubscriptions(raws).filter(
-      s => s.status !== 'cancelled' && s.status !== 'trial_expired',
-    ).length
+    // Homologação e produção compartilham os SPAs: o uso conta todos os ambientes.
+    let active = 0
+    for (const raw of raws) {
+      try {
+        const s = this.mappers.subscription(raw)
+        if (s.status !== 'cancelled' && s.status !== 'trial_expired') active++
+      } catch (error) {
+        if (!(error instanceof InvalidSpaItemError)) throw error
+      }
+    }
     return { total: raws.length, active }
   }
 

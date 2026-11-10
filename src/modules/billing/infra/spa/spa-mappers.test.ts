@@ -315,7 +315,7 @@ describe('mapeadores de escrita do catálogo', () => {
       },
       11,
     )
-    expect(fields[pl.interval] ?? '').toBe('')
+    expect(fields[pl.interval]).toBe('')
     expect(fields[pl.active]).toBe('N')
   })
 })

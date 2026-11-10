@@ -34,7 +34,12 @@ export type CatalogProductView = {
   plans: CatalogPlanView[]
 }
 
-export type CatalogView = { writable: boolean; products: CatalogProductView[] }
+export type CatalogView = {
+  writable: boolean
+  products: CatalogProductView[]
+  /** Planos cujo produto não existe no SPA 1134: sempre `valid:false`. */
+  orphanPlans: CatalogPlanView[]
+}
 export type ProductUsage = { apps: string[]; plans: number }
 export type PlanUsage = {
   subscriptions: { total: number; active: number }
@@ -83,9 +88,20 @@ export class CatalogAdmin {
         plans: own.map(p => this.planView(p, product)),
       }
     })
+    const known = new Set(products.map(raw => Number(raw.id)))
+    const orphanPlans = plans
+      .filter(p => !known.has(Number(p[config.plan.product])))
+      .map(p => {
+        const view = this.planView(p, null)
+        return {
+          ...view,
+          problems: [`Produto inexistente (#${view.productId})`],
+        }
+      })
     return {
       writable: this.deps.environment === 'production',
       products: views,
+      orphanPlans,
     }
   }
 

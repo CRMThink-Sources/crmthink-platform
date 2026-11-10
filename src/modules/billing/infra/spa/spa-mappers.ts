@@ -324,6 +324,7 @@ export class SpaMappers {
     const fields: Record<string, unknown> = {
       title: input.name,
       [f.value]: input.amount,
+      // Compra única não tem intervalo: vai vazio para limpar o campo.
       [f.interval]: input.interval ? this.intervalIds[input.interval] : '',
       [f.gatewayIdHomolog]: input.priceHomolog ?? '',
       [f.gatewayIdProduction]: input.priceProduction ?? '',
