@@ -297,7 +297,10 @@ export function OperatorsPage() {
 
   return (
     <>
-      <PageHeader title="Operadores">
+      <PageHeader
+        title="Operadores"
+        description="Contas de quem opera a plataforma."
+      >
         {allowed && (
           <Button onClick={() => setPending({ kind: 'create' })}>
             Criar operador

@@ -226,7 +226,10 @@ export function SystemPage() {
   const allowed = useHasRole('operator')
   return (
     <>
-      <PageHeader title="Sistema" />
+      <PageHeader
+        title="Sistema"
+        description="Varreduras e chave de assinatura dos tokens."
+      />
       {me.isPending ? (
         <LoadingState rows={3} />
       ) : !allowed ? (

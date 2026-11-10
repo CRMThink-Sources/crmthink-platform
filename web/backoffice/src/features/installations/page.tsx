@@ -49,7 +49,10 @@ export function InstallationsPage() {
 
   return (
     <>
-      <PageHeader title="Instalações" />
+      <PageHeader
+        title="Instalações"
+        description="Portais Bitrix24 com o app instalado: status, token e data da instalação."
+      />
       <FilterBar>
         <TextFilter
           id="filter-q"
@@ -89,9 +92,7 @@ export function InstallationsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Id</TableHead>
-                <TableHead>Domínio</TableHead>
-                <TableHead>App</TableHead>
+                <TableHead>Instalação</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Token</TableHead>
                 <TableHead>Instalada</TableHead>
@@ -100,23 +101,17 @@ export function InstallationsPage() {
             <TableBody>
               {list.data.items.map(item => (
                 <TableRow key={item.id}>
-                  <TableCell>
+                  <TableCell className="whitespace-normal">
                     <Link
                       to={`/installations/${item.id}`}
-                      className="font-medium hover:underline"
-                    >
-                      #{item.id}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Link
-                      to={`/installations/${item.id}`}
-                      className="hover:underline"
+                      className="font-medium break-all hover:underline"
                     >
                       {item.domain}
                     </Link>
+                    <p className="text-xs text-muted-foreground">
+                      #{item.id} · {item.appCode}
+                    </p>
                   </TableCell>
-                  <TableCell>{item.appCode}</TableCell>
                   <TableCell>
                     <StatusBadge kind="installation" value={item.status} />
                   </TableCell>
