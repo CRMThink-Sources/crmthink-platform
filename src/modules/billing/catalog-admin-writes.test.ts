@@ -278,6 +278,29 @@ describe('CatalogAdmin: plano em uso, edições bloqueadas', () => {
     expect(view.interval).toBe('yearly')
   })
 
+  it('preencher intervalo vazio de plano com assinatura é livre', async () => {
+    const { h, admin, c } = await setup()
+    h.crm.seed(c.entityTypes.plan, {
+      id: 503,
+      title: 'Sem intervalo',
+      [c.plan.product]: 10,
+      [c.plan.value]: 9900,
+      [c.plan.interval]: '',
+      [c.plan.gatewayIdProduction]: 'price_noint_live',
+      [c.plan.active]: 'Y',
+    })
+    subscribe(h, 503)
+    const view = await admin.updatePlan(503, { interval: 'monthly' })
+    expect(lastWrite(h).fields).toEqual({ [c.plan.interval]: '13609' })
+    expect(view).toMatchObject({ interval: 'monthly', valid: true })
+    // Já preenchido, trocar continua bloqueado.
+    await rejectsWith(
+      admin.updatePlan(503, { interval: 'yearly' }),
+      409,
+      'PLAN_IN_USE',
+    )
+  })
+
   it('intervalo em compra única é recusado na edição', async () => {
     const { admin } = await setup()
     await rejectsWith(
@@ -408,6 +431,43 @@ describe('CatalogAdmin: produto', () => {
     expect(view.billingModel).toBe('13607')
     await admin.updateProduct(10, { billingModel: 'standard' })
     expect(lastWrite(h).fields).toEqual({ [c.product.billingModel]: '13605' })
+  })
+
+  it('preencher modelo vazio de produto com planos é livre', async () => {
+    const { h, admin, c } = await setup()
+    seedProduct(h, 12, '')
+    h.crm.seed(c.entityTypes.plan, {
+      id: 520,
+      title: 'Plano do 12',
+      [c.plan.product]: 12,
+      [c.plan.value]: 100,
+      [c.plan.interval]: '13609',
+      [c.plan.gatewayIdProduction]: 'price_twelve_live',
+      [c.plan.active]: 'Y',
+    })
+    const view = await admin.updateProduct(12, { billingModel: 'standard' })
+    expect(lastWrite(h).fields).toEqual({ [c.product.billingModel]: '13605' })
+    expect(view).toMatchObject({ billingModelKey: 'standard', valid: true })
+    // Já preenchido, trocar continua bloqueado.
+    await rejectsWith(
+      admin.updateProduct(12, { billingModel: 'per_unit' }),
+      409,
+      'PRODUCT_IN_USE',
+    )
+  })
+
+  it('modelo desconhecido com planos: fixar um do mesmo tipo é livre; mudar o tipo, não', async () => {
+    const { h, admin, c } = await setup()
+    // 11 é compra única pelo id 99001, que não é nenhum dos três modelos conhecidos.
+    await rejectsWith(
+      admin.updateProduct(11, { billingModel: 'standard' }),
+      409,
+      'PRODUCT_IN_USE',
+    )
+    expect(h.crm.calls).toEqual([])
+    const view = await admin.updateProduct(11, { billingModel: 'one_time' })
+    expect(lastWrite(h).fields).toEqual({ [c.product.billingModel]: '14455' })
+    expect(view.billingModelKey).toBe('one_time')
   })
 
   it('renomear e desativar produto com planos é livre e invalida o cache', async () => {

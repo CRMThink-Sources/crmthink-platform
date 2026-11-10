@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
 import z from 'zod'
 import { api, call, type Schemas } from '@/api/client'
 import { Input } from '@/components/ui/input'
@@ -119,7 +120,8 @@ function Body({ product, plan, onOpenChange }: Omit<Props, 'open'>) {
   const initial: Values = {
     name: plan?.name ?? '',
     amount: plan ? centsToReais(plan.amount) : '',
-    interval: plan?.interval ?? (oneTime ? '' : 'monthly'),
+    // Plano sem intervalo abre vazio: a validação obriga a escolher e o envio o inclui.
+    interval: plan ? (plan.interval ?? '') : oneTime ? '' : 'monthly',
     trial: plan?.isTrial ?? false,
     priceHomolog: plan?.priceHomolog ?? '',
     priceProduction: plan?.priceProduction ?? '',
@@ -134,21 +136,27 @@ function Body({ product, plan, onOpenChange }: Omit<Props, 'open'>) {
   const active = form.watch('active')
   const reason = useReason(edit && initial.active && !active)
 
+  /** Só o que mudou em relação ao plano aberto. */
+  const diff = (values: Values) => {
+    const body = toPayload(values, oneTime)
+    const before = toPayload(initial, oneTime)
+    const patch: Record<string, unknown> = {}
+    for (const key of Object.keys(body) as (keyof Payload)[])
+      if (body[key] !== before[key]) patch[key] = body[key]
+    return patch
+  }
+
   const save = useAdminAction({
     run: (values: Values, why) => {
       const header = why ? { 'X-Admin-Reason': why } : {}
-      const body = toPayload(values, oneTime)
       if (!plan)
         return call(
           api.POST('/admin/catalog/products/{id}/plans', {
-            body,
+            body: toPayload(values, oneTime),
             params: { path: { id: product.id }, header },
           }),
         )
-      const before = toPayload(initial, oneTime)
-      const patch: Record<string, unknown> = {}
-      for (const key of Object.keys(body) as (keyof Payload)[])
-        if (body[key] !== before[key]) patch[key] = body[key]
+      const patch = diff(values)
       return call(
         api.PATCH('/admin/catalog/plans/{id}', {
           body: patch as Schemas['CatalogPlanPatchRequest'],
@@ -166,6 +174,11 @@ function Body({ product, plan, onOpenChange }: Omit<Props, 'open'>) {
 
   const submit = form.handleSubmit(async values => {
     setServerError(null)
+    if (edit && !Object.keys(diff(values)).length) {
+      toast.info('Nada a alterar')
+      onOpenChange(false)
+      return
+    }
     if (!reason.check()) return
     const done = await save.execute(values, reason.header)
     if (done) onOpenChange(false)
@@ -218,6 +231,7 @@ function Body({ product, plan, onOpenChange }: Omit<Props, 'open'>) {
               className={selectClass}
               {...form.register('interval')}
             >
+              {initial.interval === '' && <option value="">—</option>}
               {INTERVALS.map(value => (
                 <option key={value} value={value}>
                   {INTERVAL_LABELS[value]}

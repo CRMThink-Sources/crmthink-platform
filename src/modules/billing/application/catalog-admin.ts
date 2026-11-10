@@ -235,9 +235,18 @@ export class CatalogAdmin {
       billingModel: f.billingModel,
       active: f.active,
     })
+    // Preencher um modelo vazio é livre; um id desconhecido pode ser fixado num modelo
+    // do mesmo tipo (os planos seguem válidos). Trocar um modelo existente, não.
+    const currentKind = this.kindOf(current)
+    const nextKind = patch.billingModel === 'one_time' ? 'one_time' : 'subscription'
+    const filling =
+      currentKind === null ||
+      (this.productView(current).view.billingModelKey === null &&
+        currentKind === nextKind)
     if (
       f.billingModel in fields &&
-      !sameValue(fields[f.billingModel], current[f.billingModel], false)
+      !sameValue(fields[f.billingModel], current[f.billingModel], false) &&
+      !filling
     ) {
       const usage = await this.productUsage(id)
       if (usage.plans > 0)
@@ -332,7 +341,7 @@ export class CatalogAdmin {
         patch.priceProduction !== undefined,
     })
 
-    // Preencher um preço vazio é livre; trocar ou apagar um preço existente, não.
+    // Preencher um preço ou intervalo vazio é livre; trocar ou apagar um existente, não.
     const priceChanged = (['priceHomolog', 'priceProduction'] as const).some(
       key =>
         patch[key] !== undefined &&
@@ -341,7 +350,9 @@ export class CatalogAdmin {
     )
     const trialChanged = next.trial !== current.isTrial
     const intervalChanged =
-      patch.interval !== undefined && patch.interval !== current.interval
+      patch.interval !== undefined &&
+      current.interval !== null &&
+      patch.interval !== current.interval
     if (priceChanged || trialChanged || intervalChanged) {
       const usage = await this.planUsage(id)
       const subscribed = usage.subscriptions.total > 0

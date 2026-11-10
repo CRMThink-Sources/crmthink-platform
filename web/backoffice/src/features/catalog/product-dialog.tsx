@@ -7,6 +7,7 @@ import {
   type Path,
   type UseFormReturn,
 } from 'react-hook-form'
+import { toast } from 'sonner'
 import z from 'zod'
 import { ApiError, api, call, type Schemas } from '@/api/client'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -278,7 +279,8 @@ function Body({ product, onOpenChange, onSaved }: Omit<Props, 'open'>) {
   const edit = !!product
   const initial = {
     name: product?.name ?? '',
-    billingModel: product?.billingModelKey ?? 'standard',
+    // Modelo vazio ou desconhecido abre vazio: a validação obriga a escolher.
+    billingModel: product ? (product.billingModelKey ?? '') : 'standard',
     active: product?.active ?? true,
   } as Values
   const form = useForm<Values>({
@@ -288,6 +290,16 @@ function Body({ product, onOpenChange, onSaved }: Omit<Props, 'open'>) {
   const [serverError, setServerError] = useState<Error | null>(null)
   const active = form.watch('active')
   const reason = useReason(edit && initial.active && !active)
+
+  /** Só o que mudou em relação ao produto aberto. */
+  const diff = (values: Values) => {
+    const patch: Partial<Values> = {}
+    if (values.name !== initial.name) patch.name = values.name
+    if (values.billingModel !== initial.billingModel)
+      patch.billingModel = values.billingModel
+    if (values.active !== initial.active) patch.active = values.active
+    return patch
+  }
 
   const save = useAdminAction({
     run: (values: Values, why) => {
@@ -299,14 +311,9 @@ function Body({ product, onOpenChange, onSaved }: Omit<Props, 'open'>) {
             params: { header },
           }),
         )
-      const patch: Partial<Values> = {}
-      if (values.name !== initial.name) patch.name = values.name
-      if (values.billingModel !== initial.billingModel)
-        patch.billingModel = values.billingModel
-      if (values.active !== initial.active) patch.active = values.active
       return call(
         api.PATCH('/admin/catalog/products/{id}', {
-          body: patch,
+          body: diff(values),
           params: { path: { id: product.id }, header },
         }),
       )
@@ -321,6 +328,11 @@ function Body({ product, onOpenChange, onSaved }: Omit<Props, 'open'>) {
 
   const submit = form.handleSubmit(async values => {
     setServerError(null)
+    if (edit && !Object.keys(diff(values)).length) {
+      toast.info('Nada a alterar')
+      onOpenChange(false)
+      return
+    }
     if (!reason.check()) return
     const done = await save.execute(values, reason.header)
     if (!done) return

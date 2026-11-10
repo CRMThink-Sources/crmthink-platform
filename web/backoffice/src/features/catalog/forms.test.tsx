@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
+import { toast } from 'sonner'
 import type { Schemas } from '@/api/client'
 import { meHandler, operator } from '@/test/fixtures'
 import { renderApp } from '@/test/render'
@@ -143,6 +144,57 @@ describe('formulário de produto', () => {
     await user.click(save())
     await waitFor(() => expect(seen.body).toEqual({ active: false }))
     expect(seen.reason).toBe('Descontinuado')
+  })
+
+  it('produto sem modelo conhecido abre vazio, exige escolher e envia o modelo', async () => {
+    const { user } = open([
+      product({
+        billingModel: '',
+        billingModelKey: null,
+        kind: null,
+        valid: false,
+        problems: ['Produto sem modelo de cobrança'],
+      }),
+    ])
+    const seen = capture('patch', '*/admin/catalog/products/100', () =>
+      HttpResponse.json(product()),
+    )
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Editar produto GPTMaker' }),
+    )
+    const model = screen.getByLabelText('Modelo de cobrança')
+    expect(model).toHaveValue('')
+    await user.click(save())
+    expect(
+      await screen.findByText('Escolha o modelo de cobrança'),
+    ).toBeInTheDocument()
+    expect(seen.body).toBeUndefined()
+
+    await user.selectOptions(model, 'Padrão')
+    await user.click(save())
+    await waitFor(() => expect(seen.body).toEqual({ billingModel: 'standard' }))
+  })
+
+  it('salvar produto sem mudança não chama a API nem avisa sucesso', async () => {
+    const info = vi.spyOn(toast, 'info')
+    const success = vi.spyOn(toast, 'success')
+    const { user } = open()
+    const seen = capture('patch', '*/admin/catalog/products/100', () =>
+      HttpResponse.json(product()),
+    )
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Editar produto GPTMaker' }),
+    )
+    await user.click(save())
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(info).toHaveBeenCalledWith('Nada a alterar')
+    expect(success).not.toHaveBeenCalled()
+    expect(seen.body).toBeUndefined()
+    info.mockRestore()
+    success.mockRestore()
   })
 
   it('409 PRODUCT_IN_USE ao trocar o modelo vira alerta com o uso', async () => {
@@ -344,6 +396,53 @@ describe('formulário de plano', () => {
     await user.click(save())
 
     await waitFor(() => expect(seen.body).toEqual({ amount: 24990 }))
+  })
+
+  it('plano de assinatura sem intervalo abre vazio, exige escolher e envia o intervalo', async () => {
+    const { user } = open([
+      product({
+        plans: [
+          plan({
+            interval: null,
+            valid: false,
+            problems: ['Intervalo ausente'],
+          }),
+        ],
+      }),
+    ])
+    const seen = capture('patch', '*/admin/catalog/plans/501')
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Editar plano Plano Mensal' }),
+    )
+    const interval = screen.getByLabelText('Intervalo')
+    expect(interval).toHaveValue('')
+    await user.click(save())
+    expect(await screen.findByText('Escolha o intervalo')).toBeInTheDocument()
+    expect(seen.body).toBeUndefined()
+
+    await user.selectOptions(interval, 'Mensal')
+    await user.click(save())
+    await waitFor(() => expect(seen.body).toEqual({ interval: 'monthly' }))
+  })
+
+  it('salvar plano sem mudança não chama a API nem avisa sucesso', async () => {
+    const info = vi.spyOn(toast, 'info')
+    const success = vi.spyOn(toast, 'success')
+    const { user } = open()
+    const seen = capture('patch', '*/admin/catalog/plans/501')
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Editar plano Plano Mensal' }),
+    )
+    await user.click(save())
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(info).toHaveBeenCalledWith('Nada a alterar')
+    expect(success).not.toHaveBeenCalled()
+    expect(seen.body).toBeUndefined()
+    info.mockRestore()
+    success.mockRestore()
   })
 
   it('409 PLAN_IN_USE ao trocar o preço vira alerta com o uso e a orientação', async () => {
