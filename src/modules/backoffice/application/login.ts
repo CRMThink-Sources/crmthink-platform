@@ -98,6 +98,10 @@ export class LoginService {
     if (!passwordOk) {
       return this.fail(operator, normalized, 'bad_password', meta)
     }
+    // Provisório: a Task 3 troca este login de uma etapa pelo fluxo em duas etapas.
+    if (!operator.totpSecretEnc) {
+      return this.fail(operator, normalized, 'bad_totp', meta)
+    }
     const step = verifyTotp(
       this.cipher.decrypt(operator.totpSecretEnc),
       body.code.trim(),

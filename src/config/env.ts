@@ -101,6 +101,8 @@ export const envSchema = z.object({
   ADMIN_SESSION_MAX_HOURS: int(12),
   /** Cookie de sessão sem `Secure` (dev sem TLS). Só com `NODE_ENV=development`. */
   ADMIN_COOKIE_INSECURE: bool(false),
+  /** Dias que "lembrar este navegador" dispensa o código TOTP. `0` desliga o recurso. */
+  ADMIN_TRUSTED_DEVICE_DAYS: int(30).pipe(z.number().min(0)),
   ADMIN_AUDIT_RETENTION_DAYS: int(365).pipe(
     z.number().min(365, 'ADMIN_AUDIT_RETENTION_DAYS mínimo é 365'),
   ),
@@ -199,6 +201,7 @@ export function buildEnv(source: NodeJS.ProcessEnv = process.env) {
       sessionIdleMs: raw.ADMIN_SESSION_IDLE_MINUTES * 60_000,
       sessionMaxMs: raw.ADMIN_SESSION_MAX_HOURS * 3600_000,
       cookieSecure: !raw.ADMIN_COOKIE_INSECURE,
+      trustedDeviceDays: raw.ADMIN_TRUSTED_DEVICE_DAYS,
       auditRetentionDays: raw.ADMIN_AUDIT_RETENTION_DAYS,
     },
     stripe: {
