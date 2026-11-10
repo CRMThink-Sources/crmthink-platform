@@ -101,6 +101,19 @@ export class SubscriptionRepository {
     return open.sort((a, b) => b.id - a.id)[0] ?? null
   }
 
+  /** `total` = itens brutos do plano; `active` = mapeadas e ainda não encerradas. */
+  async countByPlan(
+    planId: number,
+  ): Promise<{ total: number; active: number }> {
+    const raws = await this.crm.listItems(this.subscriptionType, {
+      [this.config.subscription.plan]: planId,
+    })
+    const active = this.mapSubscriptions(raws).filter(
+      s => s.status !== 'cancelled' && s.status !== 'trial_expired',
+    ).length
+    return { total: raws.length, active }
+  }
+
   async findByGatewayId(
     gatewaySubscriptionId: string,
   ): Promise<Subscription | null> {
