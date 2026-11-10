@@ -64,6 +64,7 @@ describe('env', () => {
       sessionIdleMs: 30 * 60_000,
       sessionMaxMs: 12 * 3600_000,
       cookieSecure: true,
+      trustedDeviceDays: 30,
       auditRetentionDays: 365,
     })
     expect(
