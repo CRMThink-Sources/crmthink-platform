@@ -421,7 +421,7 @@ export const ERROR_CATALOG = {
   REASON_REQUIRED: {
     status: 400,
     meaning:
-      'Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso) sem o header `X-Admin-Reason`; nada foi executado.',
+      'Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.',
     action:
       'Repetir informando o motivo (1 a 500 caracteres) em `X-Admin-Reason`.',
     origin:
