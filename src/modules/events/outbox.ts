@@ -60,7 +60,7 @@ export async function appendEvent(
     data: input.data ?? {},
   }
 
-  await tx.outboxEvent.create({
+  const row = await tx.outboxEvent.create({
     data: {
       eventId: envelope.eventId,
       appCode: envelope.appCode,
@@ -73,5 +73,39 @@ export async function appendEvent(
     },
   })
 
+  await fanOutToEndpoints(tx, envelope, row.seq)
+
   return envelope
+}
+
+/**
+ * Uma entrega pendente por destinatário ativo cujo filtro de tipos e de apps inclui o
+ * evento, na mesma transação do evento. Cada entrega tem estado e retentativa próprios,
+ * independentes da entrega ao app. A tabela de destinatários é pequena, então o filtro
+ * roda aqui em vez de em coluna JSON. Destinatário criado depois não recebe o passado.
+ */
+async function fanOutToEndpoints(
+  tx: Tx,
+  envelope: EventEnvelope,
+  eventSeq: number,
+): Promise<void> {
+  const endpoints = await tx.webhookEndpoint.findMany({
+    where: { active: true },
+  })
+  for (const endpoint of endpoints) {
+    const types = endpoint.eventTypes as string[]
+    const apps = endpoint.appCodes as string[]
+    if (!types.includes(envelope.type)) continue
+    if (apps.length > 0 && !apps.includes(envelope.appCode)) continue
+    await tx.webhookDelivery.create({
+      data: {
+        endpointId: endpoint.id,
+        eventId: envelope.eventId,
+        eventSeq,
+        installationId: envelope.installationId,
+        appCode: envelope.appCode,
+        eventType: envelope.type,
+      },
+    })
+  }
 }

@@ -33,4 +33,4 @@
 
 - [x] 6.1 Rodar `yarn check-types`, `yarn test` e o ESLint dos arquivos alterados na raiz, mais `yarn docs:openapi` e `yarn sdk:types` sem diff, e verificar que tudo passa
 - [x] 6.2 Rodar `openspec validate payment-webhook-intake --strict` e verificar que não há erros
-- [ ] 6.3 Em produção, criar uma integração de teste, enviar um aviso para uma instalação de teste com assinatura manual e verificar o período novo no SPA, o `subscription.renewed` no app, o comentário na assinatura e a repetição com `duplicate: true`; só então entregar a chave ao remetente real
+- [x] 6.3 Em produção, criar uma integração de teste, enviar um aviso para uma instalação de teste com assinatura manual e verificar o período novo no SPA, o `subscription.renewed` no app, o comentário na assinatura e a repetição com `duplicate: true`; só então entregar a chave ao remetente real

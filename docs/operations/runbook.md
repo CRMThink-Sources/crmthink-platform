@@ -291,6 +291,50 @@ motivo** (`X-Admin-Reason`).
   comentário na assinatura; repita o mesmo aviso para ver `duplicate: true`. Só então entregue a
   chave ao remetente real.
 
+## Destinatários de eventos (webhook de saída)
+
+A tela **Destinatários de eventos** (grupo Operação) cadastra URLs que recebem os eventos da
+plataforma (renovação, atraso, cancelamento, compra, estorno, instalação...), além do app dono do
+evento. API: `/admin/webhook-endpoints`. `viewer` só lê; `operator` cria, edita, desativa,
+reativa, rotaciona o segredo e reenvia. **Criar, rotacionar, desativar e reenviar em lote exigem
+o motivo** (`X-Admin-Reason`).
+
+- **Cadastrar.** Nome, URL **HTTPS pública** (sem localhost nem IP interno), os **tipos de
+  evento** desejados e, opcionalmente, os **apps** (vazio = todos). O segredo completo (`whsec_...`)
+  aparece **uma única vez**: entregue ao responsável pelo destinatário por canal seguro, para
+  verificar `X-Platform-Signature` (`t=<unix>,v1=<hmac-sha256(segredo, t + "." + corpo)>`, o mesmo
+  contrato dos apps). Perdeu o segredo: **rotacione** (o anterior continua valendo em paralelo
+  durante a convivência) e atualize o destinatário.
+- **O que ele recebe.** O mesmo envelope JSON dos apps, com `X-Platform-Event-Id` (deduplique por
+  ele: a entrega é pelo menos uma vez) e `X-Platform-Event-Type`. Responder `2xx` = entregue;
+  qualquer outra resposta, `3xx` inclusive (redirecionamento não é seguido), erro de rede ou
+  tempo esgotado = falha, com nova tentativa (30 s dobrando até 1 h) por até
+  `EVENT_RETRY_WINDOW_HOURS` (24 h); depois a entrega vira **dead** e dispara o alerta
+  `webhook.dead_letter`.
+- **Sem histórico.** Um destinatário novo recebe só os eventos gravados **depois** do cadastro. Não
+  há backfill nesta versão.
+- **Ordem.** Para cada instalação, o destinatário recebe os eventos na ordem em que foram
+  gravados: uma entrega antiga em retentativa segura as seguintes **daquele par** (destinatário e
+  instalação), até entregar ou morrer. Outras instalações e outros destinatários não são
+  afetados, **nem a entrega ao app**.
+- **Desativar** para as tentativas: as entregas pendentes esperam e retomam na reativação, mas
+  continuam sujeitas à janela de 24 h (passada ela, viram `dead` e podem ser reenviadas).
+- **Investigar uma entrega que não chega.** No detalhe do destinatário (ou em
+  `GET /admin/webhook-endpoints/{id}/deliveries?status=dead`) veja o tipo, a instalação e as
+  tentativas (status HTTP e erro). Erro `HTTP 5xx`/timeout: problema do destinatário; `HTTP 3xx`:
+  a URL cadastrada redireciona (cadastre a URL final); `HTTP 401/403`: o destinatário recusa a
+  assinatura (confira o segredo).
+- **Reenviar.** Uma entrega: `POST /admin/webhook-deliveries/{id}/resend`. Todas as mortas do
+  destinatário: `POST /admin/webhook-endpoints/{id}/resend-dead` (use `dryRun` para ver quantas;
+  acima de 5000, `422 RESEND_TOO_LARGE`).
+- **Crescimento.** `webhook_delivery` e `webhook_delivery_attempt` crescem sem retenção, como o
+  `outbox_event`; acompanhe pelas métricas e trate quando o volume pedir um job de expurgo.
+- **Métricas:** `platform_webhook_deliveries_total{outcome}` (`delivered`, `failed`, `dead`),
+  `platform_webhook_deliveries_pending` e `platform_webhook_deliveries_dead`.
+- **Primeiro uso em produção:** cadastre um destinatário de teste (uma URL de captura sua),
+  provoque um evento numa instalação de teste e confira a entrega, a assinatura recalculada com o
+  segredo e, derrubando a URL de propósito, a retentativa. Só então cadastre o destinatário real.
+
 ## Operadores do backoffice
 
 As listagens `/admin/events`, `/admin/stripe-events`, `/admin/installations`,

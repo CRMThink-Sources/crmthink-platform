@@ -18,6 +18,11 @@ import {
 import { spaEventSchema } from '@/modules/billing/application/spa-events'
 import { createManualSubscriptionSchema } from '@/modules/billing/application/manual-subscription-service'
 import { paymentNoticeSchema } from '@/modules/billing/application/payment-notice-service'
+import {
+  createWebhookEndpointSchema,
+  updateWebhookEndpointSchema,
+} from '@/modules/events/webhook-endpoints'
+import { resendDeadSchema } from '@/modules/backoffice/http/webhook-endpoint-routes'
 import { trialRequestSchema } from '@/modules/billing/application/trial-service'
 import {
   createAppSchema,
@@ -128,6 +133,15 @@ const req = {
   spaEvent: named('SpaEvent', spaEventSchema),
   trialRequest: named('TrialRequest', trialRequestSchema),
   paymentNotice: named('PaymentNotice', paymentNoticeSchema),
+  createWebhookEndpoint: named(
+    'CreateWebhookEndpointRequest',
+    createWebhookEndpointSchema,
+  ),
+  updateWebhookEndpoint: named(
+    'UpdateWebhookEndpointRequest',
+    updateWebhookEndpointSchema,
+  ),
+  resendDead: named('ResendDeadDeliveriesRequest', resendDeadSchema),
   createPaymentIntegration: named(
     'CreatePaymentIntegrationRequest',
     createPaymentIntegrationSchema,
@@ -194,6 +208,31 @@ const res = {
     r.webhookSecretRotatedSchema,
   ),
   trialStarted: named('TrialStarted', r.trialStartedSchema),
+  webhookEndpoint: named('WebhookEndpoint', r.webhookEndpointSchema),
+  webhookEndpointList: named(
+    'WebhookEndpointList',
+    r.webhookEndpointListSchema,
+  ),
+  webhookEndpointCreated: named(
+    'WebhookEndpointCreated',
+    r.webhookEndpointCreatedSchema,
+  ),
+  webhookEndpointSecretRotated: named(
+    'WebhookEndpointSecretRotated',
+    r.webhookEndpointSecretRotatedSchema,
+  ),
+  webhookDeliveryList: named(
+    'WebhookDeliveryList',
+    r.webhookDeliveryListSchema,
+  ),
+  webhookDeliveryResend: named(
+    'WebhookDeliveryResend',
+    r.webhookDeliveryResendSchema,
+  ),
+  webhookResendDeadResult: named(
+    'WebhookResendDeadResult',
+    r.webhookResendDeadResultSchema,
+  ),
   paymentNoticeResult: named(
     'PaymentNoticeResult',
     r.paymentNoticeResultSchema,
@@ -1181,6 +1220,120 @@ export const OPERATIONS: Operation[] = [
       'SUBSCRIPTION_WRITE_FAILED',
       'BILLING_BUSY',
     ],
+  },
+  {
+    method: 'get',
+    path: '/admin/webhook-endpoints',
+    operationId: 'listWebhookEndpoints',
+    tag: 'Operador',
+    summary: 'Listar destinatários de eventos',
+    description:
+      'Destinatários (ERP, financeiro, automações) que recebem os eventos do outbox em uma URL cadastrada. A lista traz as contagens de entregas pendentes e mortas, nunca o segredo.',
+    security: 'admin',
+    responses: { 200: json('Destinatários', res.webhookEndpointList) },
+  },
+  {
+    method: 'post',
+    path: '/admin/webhook-endpoints',
+    operationId: 'createWebhookEndpoint',
+    tag: 'Operador',
+    summary: 'Cadastrar destinatário de eventos',
+    description:
+      'A URL precisa ser HTTPS e não pode apontar para localhost nem para endereço interno. `appCodes` vazio vale todos os apps. O destinatário só recebe os eventos gravados a partir da criação. **`secret` só aparece nesta resposta** (sem cache): é guardado cifrado e serve para verificar `X-Platform-Signature`.',
+    security: 'admin',
+    body: { schema: req.createWebhookEndpoint },
+    responses: {
+      201: json('Destinatário e segredo', res.webhookEndpointCreated),
+    },
+    errors: ['WEBHOOK_URL_NOT_ALLOWED', 'WEBHOOK_APP_UNKNOWN'],
+  },
+  {
+    method: 'patch',
+    path: '/admin/webhook-endpoints/{id}',
+    operationId: 'updateWebhookEndpoint',
+    tag: 'Operador',
+    summary: 'Editar, desativar ou reativar destinatário de eventos',
+    description:
+      'Só o que for enviado muda. Desativar para as tentativas de entrega (as pendentes esperam e retomam na reativação, sujeitas à janela de reenvio) e exige o motivo; as demais edições e a reativação não.',
+    security: 'admin',
+    pathParams: { id: 'Id do destinatário' },
+    body: { schema: req.updateWebhookEndpoint },
+    responses: { 200: json('Destinatário', res.webhookEndpoint) },
+    errors: [
+      'WEBHOOK_ENDPOINT_NOT_FOUND',
+      'WEBHOOK_URL_NOT_ALLOWED',
+      'WEBHOOK_APP_UNKNOWN',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/admin/webhook-endpoints/{id}/rotate-secret',
+    operationId: 'rotateWebhookEndpointSecret',
+    tag: 'Operador',
+    summary: 'Rotacionar o segredo de um destinatário',
+    description:
+      '**O segredo novo só aparece nesta resposta** (sem cache). O anterior continua assinando em paralelo até `previousValidUntil`, para o destinatário trocar sem perder eventos.',
+    security: 'admin',
+    pathParams: { id: 'Id do destinatário' },
+    responses: {
+      200: json(
+        'Destinatário e segredo novo',
+        res.webhookEndpointSecretRotated,
+      ),
+    },
+    errors: ['WEBHOOK_ENDPOINT_NOT_FOUND'],
+  },
+  {
+    method: 'get',
+    path: '/admin/webhook-endpoints/{id}/deliveries',
+    operationId: 'listWebhookDeliveries',
+    tag: 'Operador',
+    summary: 'Entregas de um destinatário, paginadas',
+    description:
+      'Da mais recente para a mais antiga, com as 3 tentativas mais recentes de cada entrega (status HTTP e erro). Nunca traz o corpo do evento.',
+    security: 'admin',
+    pathParams: { id: 'Id do destinatário' },
+    query: [
+      ...PAGE_QUERY,
+      {
+        name: 'status',
+        description: 'Filtra por estado da entrega',
+        enum: ['pending', 'delivered', 'dead'],
+      },
+    ],
+    responses: { 200: json('Entregas', res.webhookDeliveryList) },
+    errors: ['WEBHOOK_ENDPOINT_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/admin/webhook-endpoints/{id}/resend-dead',
+    operationId: 'resendDeadWebhookDeliveries',
+    tag: 'Operador',
+    summary: 'Reenviar as entregas mortas de um destinatário',
+    description:
+      'Devolve todas as entregas `dead` do destinatário a `pending`, com janela nova. Com `dryRun` só conta e não exige motivo. Acima de 5000 entregas responde `RESEND_TOO_LARGE`.',
+    security: 'admin',
+    pathParams: { id: 'Id do destinatário' },
+    body: { schema: req.resendDead, required: false },
+    responses: {
+      200: json('Resultado do reenvio', res.webhookResendDeadResult),
+    },
+    errors: ['WEBHOOK_ENDPOINT_NOT_FOUND', 'RESEND_TOO_LARGE'],
+  },
+  {
+    method: 'post',
+    path: '/admin/webhook-deliveries/{id}/resend',
+    operationId: 'resendWebhookDelivery',
+    tag: 'Operador',
+    summary: 'Reenviar uma entrega a destinatário',
+    description:
+      'Devolve a entrega, em qualquer estado, a `pending` com janela nova; ela sai no próximo ciclo se o destinatário estiver ativo.',
+    security: 'admin',
+    pathParams: { id: 'Id da entrega' },
+    responses: {
+      200: json('Entrega reenfileirada', res.webhookDeliveryResend),
+    },
+    errors: ['WEBHOOK_DELIVERY_NOT_FOUND'],
   },
   {
     method: 'get',

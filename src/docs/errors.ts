@@ -293,6 +293,35 @@ export const ERROR_CATALOG = {
     origin: 'billing/application/manual-subscription-service.ts',
   },
 
+  // Destinatários de eventos
+  WEBHOOK_ENDPOINT_NOT_FOUND: {
+    status: 404,
+    meaning: 'Não existe destinatário de eventos com esse id.',
+    action: 'Conferir o id na lista de destinatários.',
+    origin: 'events/webhook-endpoints.ts',
+  },
+  WEBHOOK_DELIVERY_NOT_FOUND: {
+    status: 404,
+    meaning: 'Não existe entrega a destinatário com esse id.',
+    action: 'Conferir o id na lista de entregas do destinatário.',
+    origin: 'events/webhook-delivery.ts',
+  },
+  WEBHOOK_URL_NOT_ALLOWED: {
+    status: 422,
+    meaning:
+      'A URL do destinatário não é aceita: precisa ser HTTPS, ter até 500 caracteres, não ter usuário e senha e não apontar para localhost nem para endereço interno (IP privado, loopback ou link-local).',
+    action: 'Cadastrar uma URL HTTPS pública.',
+    origin: 'events/webhook-endpoints.ts',
+  },
+  WEBHOOK_APP_UNKNOWN: {
+    status: 400,
+    meaning:
+      'O filtro de apps do destinatário cita um app que não está cadastrado.',
+    action:
+      'Usar `appCode`s da lista de apps, ou deixar o filtro vazio para todos.',
+    origin: 'events/webhook-endpoints.ts',
+  },
+
   // Integrações de pagamento
   NOT_MANUAL_SUBSCRIPTION: {
     status: 422,

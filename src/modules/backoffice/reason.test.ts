@@ -114,6 +114,7 @@ describe('mapa de alto impacto', () => {
         'PATCH /admin/catalog/plans/:id',
         'PATCH /admin/catalog/products/:id',
         'PATCH /admin/payment-integrations/:id',
+        'PATCH /admin/webhook-endpoints/:id',
         'POST /admin/apps/:appCode/reveal-webhook-secret',
         'POST /admin/apps/:appCode/rotate-api-key',
         'POST /admin/apps/:appCode/rotate-webhook-secret',
@@ -122,6 +123,9 @@ describe('mapa de alto impacto', () => {
         'POST /admin/operators/:id/reset-access',
         'POST /admin/payment-integrations',
         'POST /admin/payment-integrations/:id/rotate-key',
+        'POST /admin/webhook-endpoints',
+        'POST /admin/webhook-endpoints/:id/resend-dead',
+        'POST /admin/webhook-endpoints/:id/rotate-secret',
         'POST /admin/signing-keys/rotate',
       ].sort(),
     )

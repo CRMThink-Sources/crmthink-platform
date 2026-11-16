@@ -1,4 +1,5 @@
 import z from 'zod'
+import { ALL_EVENT_TYPES } from '@/modules/events/domain/event'
 import {
   installThemeSchema,
   type RegisteredApp,
@@ -303,6 +304,86 @@ export const webhookSecretRotatedSchema = z.strictObject({
 export const trialStartedSchema = z.strictObject({
   subscriptionId: z.number().int(),
   trialEndsAt: isoDate,
+})
+
+export const webhookEndpointSchema = z.strictObject({
+  id: z.number().int(),
+  name: z.string(),
+  url: z.string().describe('URL HTTPS que recebe os eventos'),
+  eventTypes: z.array(z.enum(ALL_EVENT_TYPES)),
+  appCodes: z.array(z.string()).describe('Apps de interesse; vazio = todos'),
+  active: z.boolean(),
+  createdAt: isoDate,
+  updatedAt: isoDate,
+})
+
+export const webhookEndpointListSchema = list(
+  webhookEndpointSchema.extend({
+    pendingDeliveries: z.number().int(),
+    deadDeliveries: z.number().int(),
+  }),
+)
+
+export const webhookEndpointCreatedSchema = z.strictObject({
+  endpoint: webhookEndpointSchema,
+  secret: z
+    .string()
+    .describe('Segredo de assinatura, exibido uma única vez (sem cache)'),
+  notice: z.string(),
+})
+
+export const webhookEndpointSecretRotatedSchema = z.strictObject({
+  endpoint: webhookEndpointSchema,
+  secret: z
+    .string()
+    .describe('Segredo novo, exibido uma única vez (sem cache)'),
+  previousValidUntil: isoDate.describe(
+    'Até quando o segredo anterior continua assinando em paralelo',
+  ),
+  notice: z.string(),
+})
+
+export const webhookDeliveryListSchema = page(
+  z.strictObject({
+    id: z.number().int(),
+    eventId: z.string(),
+    eventType: z.string(),
+    installationId: z.number().int(),
+    appCode: z.string(),
+    status: z.enum(['pending', 'delivered', 'dead']),
+    attempts: z.number().int(),
+    nextAttemptAt: isoDate,
+    deliveredAt: isoDate.nullable(),
+    deadAt: isoDate.nullable(),
+    createdAt: isoDate,
+    attemptLog: z
+      .array(
+        z.strictObject({
+          attempt: z.number().int(),
+          statusCode: z.number().int().nullable(),
+          error: z.string().nullable(),
+          nextAttemptAt: isoDate.nullable(),
+          deliveredAt: isoDate.nullable(),
+          createdAt: isoDate,
+        }),
+      )
+      .describe(
+        'As 3 tentativas mais recentes, da mais nova para a mais antiga',
+      ),
+  }),
+)
+
+export const webhookDeliveryResendSchema = z.strictObject({
+  id: z.number().int(),
+  status: z.literal('pending'),
+})
+
+export const webhookResendDeadResultSchema = z.strictObject({
+  matched: z.number().int().describe('Entregas mortas do destinatário'),
+  requeued: z
+    .number()
+    .int()
+    .describe('Quantas voltaram à fila (0 em `dryRun`)'),
 })
 
 export const paymentNoticeResultSchema = z.strictObject({

@@ -261,6 +261,51 @@ const MODELS: Record<string, ModelSpec> = {
       },
     },
   },
+  webhookEndpoint: {
+    pk: ['id'],
+    autoincrement: 'id',
+    defaults: () => ({
+      previousSecretEnc: null,
+      previousSecretUntil: null,
+      active: true,
+      createdAt: now(),
+      updatedAt: now(),
+    }),
+  },
+  webhookDelivery: {
+    pk: ['id'],
+    autoincrement: 'id',
+    unique: [['endpointId', 'eventId']],
+    compound: { endpointId_eventId: ['endpointId', 'eventId'] },
+    defaults: () => ({
+      status: 'pending',
+      attempts: 0,
+      nextAttemptAt: now(),
+      windowStartedAt: now(),
+      deliveredAt: null,
+      deadAt: null,
+      createdAt: now(),
+    }),
+    relations: {
+      endpoint: {
+        model: 'webhookEndpoint',
+        local: 'endpointId',
+        foreign: 'id',
+        many: false,
+      },
+    },
+  },
+  webhookDeliveryAttempt: {
+    pk: ['id'],
+    autoincrement: 'id',
+    defaults: () => ({
+      statusCode: null,
+      error: null,
+      nextAttemptAt: null,
+      deliveredAt: null,
+      createdAt: now(),
+    }),
+  },
   paymentIntegration: {
     pk: ['id'],
     autoincrement: 'id',

@@ -258,6 +258,7 @@ model OutboxEvent {
   createdAt      DateTime  @default(now()) @map("created_at")
 
   deliveries EventDelivery[]
+  webhookDeliveries WebhookDelivery[]
 
   @@index([status, nextAttemptAt])
   @@index([appCode, installationId, status, seq])
@@ -415,4 +416,74 @@ model PaymentNotice {
   @@unique([integrationId, externalId])
   @@index([subscriptionSpaId])
   @@map("payment_notice")
+}
+
+/// Destinatário de eventos (ERP, financeiro...): recebe em `url` os eventos do outbox que interessam a ele.
+model WebhookEndpoint {
+  id                  Int       @id @default(autoincrement())
+  name                String    @db.VarChar(200)
+  url                 String    @db.VarChar(500)
+  /// Segredo de assinatura (HMAC), cifrado.
+  secretEnc           String    @map("secret_enc") @db.Text
+  /// Segredo anterior, ainda assinado em paralelo até `previousSecretUntil`.
+  previousSecretEnc   String?   @map("previous_secret_enc") @db.Text
+  previousSecretUntil DateTime? @map("previous_secret_until")
+  /// Tipos de evento desejados (lista de strings).
+  eventTypes          Json      @map("event_types")
+  /// `appCode`s de interesse (lista de strings); lista vazia = todos os apps.
+  appCodes            Json      @map("app_codes")
+  active              Boolean   @default(true)
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  deliveries WebhookDelivery[]
+
+  @@map("webhook_endpoint")
+}
+
+/// Uma entrega de um evento do outbox a um destinatário, com estado e retentativa próprios (independentes da entrega ao app).
+model WebhookDelivery {
+  id              Int       @id @default(autoincrement())
+  endpointId      Int       @map("endpoint_id")
+  eventId         String    @map("event_id") @db.VarChar(36)
+  /// Cópias do evento: o relay ordena e filtra sem junção.
+  eventSeq        Int       @map("event_seq")
+  installationId  Int       @map("installation_id")
+  appCode         String    @map("app_code") @db.VarChar(100)
+  eventType       String    @map("event_type") @db.VarChar(60)
+  /// pending | delivered | dead
+  status          String    @default("pending") @db.VarChar(20)
+  attempts        Int       @default(0)
+  nextAttemptAt   DateTime  @default(now()) @map("next_attempt_at")
+  /// Início da janela de reenvio (criação, ou o reenvio manual mais recente).
+  windowStartedAt DateTime  @default(now()) @map("window_started_at")
+  deliveredAt     DateTime? @map("delivered_at")
+  deadAt          DateTime? @map("dead_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  endpoint   WebhookEndpoint          @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  event      OutboxEvent              @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
+  attemptLog WebhookDeliveryAttempt[]
+
+  @@unique([endpointId, eventId])
+  @@index([status, nextAttemptAt])
+  @@index([endpointId, status, id])
+  @@index([endpointId, installationId, status, eventSeq], map: "wd_endpoint_installation_status_seq_idx")
+  @@map("webhook_delivery")
+}
+
+model WebhookDeliveryAttempt {
+  id            Int       @id @default(autoincrement())
+  deliveryId    Int       @map("delivery_id")
+  attempt       Int
+  statusCode    Int?      @map("status_code")
+  error         String?   @db.Text
+  nextAttemptAt DateTime? @map("next_attempt_at")
+  deliveredAt   DateTime? @map("delivered_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  delivery WebhookDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId, attempt])
+  @@map("webhook_delivery_attempt")
 }

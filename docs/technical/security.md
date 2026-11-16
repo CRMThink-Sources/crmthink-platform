@@ -101,6 +101,29 @@ integração não vale em nenhuma outra). A autenticação roda antes de ler o c
 16 KB). O log mascara o header `Authorization`, e a auditoria da gestão das integrações guarda só
 o corpo da requisição, nunca a chave.
 
+### Destinatários de eventos (saída)
+
+A plataforma também **chama** URLs cadastradas por operadores (`/admin/webhook-endpoints`) para
+entregar os eventos a sistemas que não são apps. Cuidados:
+
+- **URL**: só `https`, até 500 caracteres, sem usuário e senha e sem `localhost` nem IP interno
+  informado como literal (10/8, 172.16/12, 192.168/16, 127/8, 169.254/16, 100.64/10, 0/8,
+  multicast/reservado e os equivalentes IPv6: `::1`, `fc00::/7`, `fe80::/10`, IPv4 mapeado).
+  O `new URL` já normaliza formas como `2130706433` para `127.0.0.1`. Limite conhecido: **não
+  resolve DNS**; um nome público que aponte para IP interno passa. O cadastro é só de `operator`
+  e a ação é auditada.
+- **Redirecionamento**: a entrega usa `redirect: 'manual'`; `3xx` conta como falha e o destino do
+  redirecionamento nunca é chamado.
+- **Segredo**: um por destinatário (`whsec_` + 256 bits), cifrado em repouso (`secret_enc`),
+  devolvido só na criação e na rotação, sem cache (`Cache-Control: no-store`), e **não
+  recuperável** depois (quem perdeu rotaciona). A rotação mantém o anterior válido, em paralelo,
+  pelo período de convivência de credenciais (`CREDENTIAL_ROTATION_GRACE_*`).
+- **Assinatura**: a mesma dos apps (`X-Platform-Signature: t=<unix>,v1=<hmac>`), com um `v1` por
+  segredo vigente.
+- **O que sai**: o envelope do evento (`appCode`, `installationId`, `memberId`, assinatura,
+  `data`). **Nunca** token, chave de API nem segredo. Dados de clientes saem para terceiros: só
+  `operator` cadastra e toda mutação é auditada (alvo `webhook_endpoint`, sem o segredo).
+
 ### Portal CRMThink (SPAs)
 
 `/bitrix/spa-events` exige `auth[application_token]` igual a `CRMTHINK_APPLICATION_TOKEN`

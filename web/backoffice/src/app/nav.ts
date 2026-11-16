@@ -9,6 +9,7 @@ import {
   Send,
   Settings,
   Users,
+  Webhook,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -41,6 +42,11 @@ export const NAV_GROUPS: NavGroup[] = [
         to: '/payment-integrations',
         label: 'Integrações de pagamento',
         icon: Banknote,
+      },
+      {
+        to: '/webhook-endpoints',
+        label: 'Destinatários de eventos',
+        icon: Webhook,
       },
     ],
   },
