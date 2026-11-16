@@ -882,6 +882,152 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/webhook-deliveries/{id}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reenviar uma entrega a destinatário
+         * @description Devolve a entrega, em qualquer estado, a `pending` com janela nova; ela sai no próximo ciclo se o destinatário estiver ativo.
+         *
+         *     **Papel mínimo:** `operator`.
+         */
+        post: operations["resendWebhookDelivery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/webhook-endpoints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar destinatários de eventos
+         * @description Destinatários (ERP, financeiro, automações) que recebem os eventos do outbox em uma URL cadastrada. A lista traz as contagens de entregas pendentes e mortas, nunca o segredo.
+         *
+         *     **Papel mínimo:** `viewer` (leitura).
+         */
+        get: operations["listWebhookEndpoints"];
+        put?: never;
+        /**
+         * Cadastrar destinatário de eventos
+         * @description A URL precisa ser HTTPS e não pode apontar para localhost nem para endereço interno. `appCodes` vazio vale todos os apps. O destinatário só recebe os eventos gravados a partir da criação. **`secret` só aparece nesta resposta** (sem cache): é guardado cifrado e serve para verificar `X-Platform-Signature`.
+         *
+         *     **Papel mínimo:** `operator`.
+         *
+         *     **Alto impacto:** exige o motivo em `X-Admin-Reason`.
+         */
+        post: operations["createWebhookEndpoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/webhook-endpoints/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Editar, desativar ou reativar destinatário de eventos
+         * @description Só o que for enviado muda. Desativar para as tentativas de entrega (as pendentes esperam e retomam na reativação, sujeitas à janela de reenvio) e exige o motivo; as demais edições e a reativação não.
+         *
+         *     **Papel mínimo:** `operator`.
+         *
+         *     **Alto impacto conforme o corpo:** exige `X-Admin-Reason` quando a chamada tem esse efeito (descrito acima).
+         */
+        patch: operations["updateWebhookEndpoint"];
+        trace?: never;
+    };
+    "/admin/webhook-endpoints/{id}/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Entregas de um destinatário, paginadas
+         * @description Da mais recente para a mais antiga, com as 3 tentativas mais recentes de cada entrega (status HTTP e erro). Nunca traz o corpo do evento.
+         *
+         *     **Papel mínimo:** `viewer` (leitura).
+         */
+        get: operations["listWebhookDeliveries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/webhook-endpoints/{id}/resend-dead": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reenviar as entregas mortas de um destinatário
+         * @description Devolve todas as entregas `dead` do destinatário a `pending`, com janela nova. Com `dryRun` só conta e não exige motivo. Acima de 5000 entregas responde `RESEND_TOO_LARGE`.
+         *
+         *     **Papel mínimo:** `operator`.
+         *
+         *     **Alto impacto conforme o corpo:** exige `X-Admin-Reason` quando a chamada tem esse efeito (descrito acima).
+         */
+        post: operations["resendDeadWebhookDeliveries"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/webhook-endpoints/{id}/rotate-secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotacionar o segredo de um destinatário
+         * @description **O segredo novo só aparece nesta resposta** (sem cache). O anterior continua assinando em paralelo até `previousValidUntil`, para o destinatário trocar sem perder eventos.
+         *
+         *     **Papel mínimo:** `operator`.
+         *
+         *     **Alto impacto:** exige o motivo em `X-Admin-Reason`.
+         */
+        post: operations["rotateWebhookEndpointSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bitrix/events/{appCode}": {
         parameters: {
             query?: never;
@@ -1374,7 +1520,7 @@ export interface webhooks {
         put?: never;
         /**
          * App instalado no portal pela primeira vez (`subscription: null`).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.installation.created"];
         delete?: never;
@@ -1394,7 +1540,7 @@ export interface webhooks {
         put?: never;
         /**
          * App reinstalado em portal que já tinha instalação.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.installation.reinstalled"];
         delete?: never;
@@ -1414,7 +1560,7 @@ export interface webhooks {
         put?: never;
         /**
          * App removido do portal (`ONAPPUNINSTALL` verificado). Tokens deixam de ser entregues.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.installation.removed"];
         delete?: never;
@@ -1434,7 +1580,7 @@ export interface webhooks {
         put?: never;
         /**
          * Renovação do token falhou repetidamente; a instalação vai para `AUTH_ERROR` e precisa ser reinstalada.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.installation.auth_error"];
         delete?: never;
@@ -1454,7 +1600,7 @@ export interface webhooks {
         put?: never;
         /**
          * Reinstalação recuperou uma instalação em `AUTH_ERROR`.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.installation.auth_restored"];
         delete?: never;
@@ -1474,7 +1620,7 @@ export interface webhooks {
         put?: never;
         /**
          * Trial iniciado (na instalação ou manualmente pelo operador).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.trial_started"];
         delete?: never;
@@ -1494,7 +1640,7 @@ export interface webhooks {
         put?: never;
         /**
          * Assinatura paga ativa (checkout concluído ou manual marcada ativa).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.activated"];
         delete?: never;
@@ -1514,7 +1660,7 @@ export interface webhooks {
         put?: never;
         /**
          * Novo período pago.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.renewed"];
         delete?: never;
@@ -1534,7 +1680,7 @@ export interface webhooks {
         put?: never;
         /**
          * Plano trocado (upgrade imediato ou downgrade no próximo ciclo).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.plan_changed"];
         delete?: never;
@@ -1554,7 +1700,7 @@ export interface webhooks {
         put?: never;
         /**
          * Pagamento da renovação falhou; carência e corte são decisão do app.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.past_due"];
         delete?: never;
@@ -1574,7 +1720,7 @@ export interface webhooks {
         put?: never;
         /**
          * Pagamento em atraso regularizado.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.recovered"];
         delete?: never;
@@ -1594,7 +1740,7 @@ export interface webhooks {
         put?: never;
         /**
          * Cancelamento agendado para o fim do período.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.cancel_scheduled"];
         delete?: never;
@@ -1614,7 +1760,7 @@ export interface webhooks {
         put?: never;
         /**
          * Assinatura encerrada.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.ended"];
         delete?: never;
@@ -1634,7 +1780,7 @@ export interface webhooks {
         put?: never;
         /**
          * Aviso de fim de período de assinatura `manual` (3, 2 e 1 dia antes).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.period_ending"];
         delete?: never;
@@ -1654,7 +1800,7 @@ export interface webhooks {
         put?: never;
         /**
          * Item alterado por uma pessoa no SPA 1146 (alterações via API não geram evento).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.item_changed"];
         delete?: never;
@@ -1674,7 +1820,7 @@ export interface webhooks {
         put?: never;
         /**
          * Compra avulsa paga.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.purchase.paid"];
         delete?: never;
@@ -1694,7 +1840,7 @@ export interface webhooks {
         put?: never;
         /**
          * Cobrança reembolsada (total ou parcial).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.charge.refunded"];
         delete?: never;
@@ -1714,7 +1860,7 @@ export interface webhooks {
         put?: never;
         /**
          * Cliente abriu disputa (chargeback) no cartão.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.charge.disputed"];
         delete?: never;
@@ -2180,6 +2326,15 @@ export interface components {
         };
         CreatePaymentIntegrationRequest: {
             name: string;
+        };
+        CreateWebhookEndpointRequest: {
+            name: string;
+            /** @description URL HTTPS que recebe os eventos (até 500 caracteres) */
+            url: string;
+            /** @description Tipos de evento desejados */
+            eventTypes: ("installation.created" | "installation.reinstalled" | "installation.removed" | "installation.auth_error" | "installation.auth_restored" | "subscription.trial_started" | "subscription.activated" | "subscription.renewed" | "subscription.plan_changed" | "subscription.past_due" | "subscription.recovered" | "subscription.cancel_scheduled" | "subscription.ended" | "subscription.period_ending" | "subscription.item_changed" | "purchase.paid" | "charge.refunded" | "charge.disputed")[];
+            /** @description Apps de interesse; vazio = todos os apps */
+            appCodes?: string[];
         };
         CurrentSubscription: {
             subscriptionId: number;
@@ -2675,6 +2830,10 @@ export interface components {
                     problems?: unknown[];
                 };
             };
+        };
+        ResendDeadDeliveriesRequest: {
+            /** @description `true` só conta as entregas mortas, sem reenviar */
+            dryRun?: boolean;
         };
         ResendEventsRequest: {
             /** Format: uuid */
@@ -3201,6 +3360,103 @@ export interface components {
         UpdatePaymentIntegrationRequest: {
             name?: string;
             active?: boolean;
+        };
+        UpdateWebhookEndpointRequest: {
+            name?: string;
+            url?: string;
+            eventTypes?: ("installation.created" | "installation.reinstalled" | "installation.removed" | "installation.auth_error" | "installation.auth_restored" | "subscription.trial_started" | "subscription.activated" | "subscription.renewed" | "subscription.plan_changed" | "subscription.past_due" | "subscription.recovered" | "subscription.cancel_scheduled" | "subscription.ended" | "subscription.period_ending" | "subscription.item_changed" | "purchase.paid" | "charge.refunded" | "charge.disputed")[];
+            appCodes?: string[];
+            active?: boolean;
+        };
+        WebhookDeliveryList: {
+            items: {
+                id: number;
+                eventId: string;
+                eventType: string;
+                installationId: number;
+                appCode: string;
+                /** @enum {string} */
+                status: "pending" | "delivered" | "dead";
+                attempts: number;
+                /** Format: date-time */
+                nextAttemptAt: string;
+                deliveredAt: string | null;
+                deadAt: string | null;
+                /** Format: date-time */
+                createdAt: string;
+                /** @description As 3 tentativas mais recentes, da mais nova para a mais antiga */
+                attemptLog: {
+                    attempt: number;
+                    statusCode: number | null;
+                    error: string | null;
+                    nextAttemptAt: string | null;
+                    deliveredAt: string | null;
+                    /** Format: date-time */
+                    createdAt: string;
+                }[];
+            }[];
+            /** @description Envie em `cursor` para a próxima página; `null` na última */
+            nextCursor: string | null;
+        };
+        WebhookDeliveryResend: {
+            id: number;
+            /** @constant */
+            status: "pending";
+        };
+        WebhookEndpoint: {
+            id: number;
+            name: string;
+            /** @description URL HTTPS que recebe os eventos */
+            url: string;
+            eventTypes: ("installation.created" | "installation.reinstalled" | "installation.removed" | "installation.auth_error" | "installation.auth_restored" | "subscription.trial_started" | "subscription.activated" | "subscription.renewed" | "subscription.plan_changed" | "subscription.past_due" | "subscription.recovered" | "subscription.cancel_scheduled" | "subscription.ended" | "subscription.period_ending" | "subscription.item_changed" | "purchase.paid" | "charge.refunded" | "charge.disputed")[];
+            /** @description Apps de interesse; vazio = todos */
+            appCodes: string[];
+            active: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        WebhookEndpointCreated: {
+            endpoint: components["schemas"]["WebhookEndpoint"];
+            /** @description Segredo de assinatura, exibido uma única vez (sem cache) */
+            secret: string;
+            notice: string;
+        };
+        WebhookEndpointList: {
+            items: {
+                id: number;
+                name: string;
+                /** @description URL HTTPS que recebe os eventos */
+                url: string;
+                eventTypes: ("installation.created" | "installation.reinstalled" | "installation.removed" | "installation.auth_error" | "installation.auth_restored" | "subscription.trial_started" | "subscription.activated" | "subscription.renewed" | "subscription.plan_changed" | "subscription.past_due" | "subscription.recovered" | "subscription.cancel_scheduled" | "subscription.ended" | "subscription.period_ending" | "subscription.item_changed" | "purchase.paid" | "charge.refunded" | "charge.disputed")[];
+                /** @description Apps de interesse; vazio = todos */
+                appCodes: string[];
+                active: boolean;
+                /** Format: date-time */
+                createdAt: string;
+                /** Format: date-time */
+                updatedAt: string;
+                pendingDeliveries: number;
+                deadDeliveries: number;
+            }[];
+        };
+        WebhookEndpointSecretRotated: {
+            endpoint: components["schemas"]["WebhookEndpoint"];
+            /** @description Segredo novo, exibido uma única vez (sem cache) */
+            secret: string;
+            /**
+             * Format: date-time
+             * @description Até quando o segredo anterior continua assinando em paralelo
+             */
+            previousValidUntil: string;
+            notice: string;
+        };
+        WebhookResendDeadResult: {
+            /** @description Entregas mortas do destinatário */
+            matched: number;
+            /** @description Quantas voltaram à fila (0 em `dryRun`) */
+            requeued: number;
         };
         WebhookSecretRevealed: {
             /** @description Segredo de webhook atual */
@@ -6566,6 +6822,550 @@ export interface operations {
             /**
              * @description Não encontrado
              *     - `NOT_FOUND`: Rota ou recurso inexistente.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    resendWebhookDelivery: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Opcional. */
+                "X-Admin-Reason"?: string;
+            };
+            path: {
+                /** @description Id da entrega */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entrega reenfileirada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookDeliveryResend"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             *     - `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `WEBHOOK_DELIVERY_NOT_FOUND`: Não existe entrega a destinatário com esse id.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listWebhookEndpoints: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Destinatários */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEndpointList"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createWebhookEndpoint: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`. */
+                "X-Admin-Reason": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWebhookEndpointRequest"];
+            };
+        };
+        responses: {
+            /** @description Destinatário e segredo */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEndpointCreated"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
+             *     - `WEBHOOK_APP_UNKNOWN`: O filtro de apps do destinatário cita um app que não está cadastrado.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             *     - `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não processável
+             *     - `WEBHOOK_URL_NOT_ALLOWED`: A URL do destinatário não é aceita: precisa ser HTTPS, ter até 500 caracteres, não ter usuário e senha e não apontar para localhost nem para endereço interno (IP privado, loopback ou link-local).
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateWebhookEndpoint: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório quando a chamada tem efeito de alto impacto. */
+                "X-Admin-Reason"?: string;
+            };
+            path: {
+                /** @description Id do destinatário */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWebhookEndpointRequest"];
+            };
+        };
+        responses: {
+            /** @description Destinatário */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEndpoint"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
+             *     - `WEBHOOK_APP_UNKNOWN`: O filtro de apps do destinatário cita um app que não está cadastrado.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             *     - `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `WEBHOOK_ENDPOINT_NOT_FOUND`: Não existe destinatário de eventos com esse id.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não processável
+             *     - `WEBHOOK_URL_NOT_ALLOWED`: A URL do destinatário não é aceita: precisa ser HTTPS, ter até 500 caracteres, não ter usuário e senha e não apontar para localhost nem para endereço interno (IP privado, loopback ou link-local).
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listWebhookDeliveries: {
+        parameters: {
+            query?: {
+                /** @description Itens por página (1 a 200, padrão 50) */
+                limit?: number;
+                /** @description `nextCursor` da página anterior */
+                cursor?: string;
+                /** @description Filtra por estado da entrega */
+                status?: "pending" | "delivered" | "dead";
+            };
+            header?: never;
+            path: {
+                /** @description Id do destinatário */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entregas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookDeliveryList"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `WEBHOOK_ENDPOINT_NOT_FOUND`: Não existe destinatário de eventos com esse id.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    resendDeadWebhookDeliveries: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório quando a chamada tem efeito de alto impacto. */
+                "X-Admin-Reason"?: string;
+            };
+            path: {
+                /** @description Id do destinatário */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ResendDeadDeliveriesRequest"];
+            };
+        };
+        responses: {
+            /** @description Resultado do reenvio */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookResendDeadResult"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             *     - `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `WEBHOOK_ENDPOINT_NOT_FOUND`: Não existe destinatário de eventos com esse id.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não processável
+             *     - `RESEND_TOO_LARGE`: O filtro do reenvio em lote encontrou mais de 5000 eventos (`details.matched` e `details.limit`); nada foi reenviado.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    rotateWebhookEndpointSecret: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`. */
+                "X-Admin-Reason": string;
+            };
+            path: {
+                /** @description Id do destinatário */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Destinatário e segredo novo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookEndpointSecretRotated"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             *     - `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `WEBHOOK_ENDPOINT_NOT_FOUND`: Não existe destinatário de eventos com esse id.
              */
             404: {
                 headers: {
