@@ -25,6 +25,7 @@ uma só. `WORKER_DISABLE_SCHEDULES=true` desliga todos (útil em desenvolvimento
 | Id | Frequência | O que faz |
 | --- | --- | --- |
 | `deliver-events` | 5 s | Um ciclo do relay do outbox (abaixo) |
+| `deliver-webhooks` | 5 s | Um ciclo do relay de destinatários cadastrados (abaixo) |
 | `refresh-tokens` | 60 s | Renova credenciais que vencem em menos de 10 min (até 200 por ciclo) |
 | `expire-trials` | 15 min | Trials vencidos → `trial_expired` + `subscription.ended` |
 | `period-ending` | diário 09:00 `America/Sao_Paulo` | Avisos `subscription.period_ending` das manuais (3, 2, 1 dia) |
@@ -85,3 +86,36 @@ instalação** (reenvios manuais podem chegar depois; usar `subscription.version
    `{ appCode, from, to, onlyDead?, type? }` — os eventos voltam a `pending` com janela nova.
 4. Métricas: `platform_events_pending`, `platform_events_dead`,
    `platform_event_deliveries_total{outcome}`; alertas `EventsBacklog` e `EventsDeadLetter`.
+
+## Entrega a destinatários cadastrados
+
+Além do app dono do evento, o operador cadastra **destinatários** (`webhook_endpoint`: ERP,
+financeiro, automações) no backoffice, cada um com URL HTTPS, segredo próprio e filtros de tipo
+de evento e de app (apps vazios = todos). Código: `src/modules/events/webhook-endpoints.ts`,
+`webhook-delivery.ts` e o fan-out em `outbox.ts`.
+
+1. **Fan-out**: no `appendEvent`, na **mesma transação** do evento, uma linha `webhook_delivery`
+   `pending` por destinatário **ativo** cujo filtro inclui o tipo e o app. A linha copia
+   `event_seq`, `installation_id`, `app_code` e `event_type`. Destinatário criado depois do evento
+   não recebe o passado (sem backfill); evento não gravado (app inativo, decisão repetida) não
+   gera entrega.
+2. **Relay** (`deliver-webhooks`, a cada 5 s): para cada par (destinatário, instalação) tenta só
+   a entrega pendente mais antiga, e só se não houver mais antiga pendente no par (`dead` não
+   bloqueia). Lock `webhook:<destinatário>:<instalação>`. Destinatário desativado não recebe
+   tentativas: as entregas ficam `pending` e retomam na reativação, sujeitas à mesma janela.
+3. **Entrega**: `POST <url>` com o mesmo envelope dos apps e os mesmos cabeçalhos
+   (`X-Platform-Signature`, `X-Platform-Event-Id`, `X-Platform-Event-Type`), assinado com o
+   segredo do destinatário (um `v1=` por segredo vigente durante a rotação). **Não segue
+   redirecionamento**: `3xx` conta como falha.
+4. **Falha e dead-letter**: o mesmo backoff (30 s × 2^(n−1), máx. 1 h) e a mesma janela
+   (`EVENT_RETRY_WINDOW_HOURS`) da entrega aos apps; esgotada, a entrega vira `dead`, com alerta
+   `webhook.dead_letter`. Cada tentativa fica em `webhook_delivery_attempt` (status HTTP e erro).
+5. **Independência**: o estado de cada entrega é só dela. Um destinatário lento ou fora do ar não
+   atrasa a entrega ao app (`deliver-events`) nem a outros destinatários.
+6. **Reenvio**: `POST /admin/webhook-deliveries/{id}/resend` (uma) e
+   `POST /admin/webhook-endpoints/{id}/resend-dead` (todas as mortas, com `dryRun` e limite de
+   5000) devolvem entregas a `pending` com janela nova.
+
+Métricas: `platform_webhook_deliveries_total{outcome}` (`delivered`, `failed`, `dead`) e os gauges
+`platform_webhook_deliveries_pending` e `platform_webhook_deliveries_dead`. Sem retenção: as
+tabelas crescem como o `outbox_event`.

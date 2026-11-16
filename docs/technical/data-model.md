@@ -107,6 +107,9 @@ Tabelas sem relação declarada: `SigningKey`, `StripeEvent`, `SubscriptionVersi
 | --- | --- | --- |
 | `outbox_event` | Evento gravado na transação da decisão | `seq` define a ordem por instalação; `dedupe_key` impede evento duplicado para a mesma decisão; `next_attempt_at`, `attempts`, `window_started_at` controlam o reenvio. |
 | `event_delivery` | Cada tentativa de entrega | Status HTTP, erro, próximo horário. |
+| `webhook_endpoint` | Destinatário de eventos (ERP, financeiro...) | URL HTTPS, segredo cifrado (`secret_enc`, mais o anterior até `previous_secret_until`), `event_types` e `app_codes` (vazio = todos) em JSON, `active`. |
+| `webhook_delivery` | Entrega de um evento a um destinatário | Estado próprio (`pending`/`delivered`/`dead`), `attempts`, `next_attempt_at`, `window_started_at`; copia `event_seq`, `installation_id`, `app_code` e `event_type` do evento; única por (`endpoint_id`, `event_id`). |
+| `webhook_delivery_attempt` | Cada tentativa de entrega a um destinatário | Status HTTP, erro, próximo horário. |
 
 ### Backoffice
 

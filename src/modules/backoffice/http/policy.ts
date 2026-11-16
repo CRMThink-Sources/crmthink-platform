@@ -55,6 +55,14 @@ const product = (p: Record<string, string>) => ({
   id: p.id ?? '',
 })
 const plan = (p: Record<string, string>) => ({ type: 'plan', id: p.id ?? '' })
+const webhookEndpoint = (p: Record<string, string>) => ({
+  type: 'webhook_endpoint',
+  id: p.id ?? '',
+})
+const webhookDelivery = (p: Record<string, string>) => ({
+  type: 'webhook_delivery',
+  id: p.id ?? '',
+})
 const paymentIntegration = (p: Record<string, string>) => ({
   type: 'payment_integration',
   id: p.id ?? '',
@@ -142,6 +150,39 @@ export const ADMIN_POLICIES: Record<string, AdminPolicy> = {
     role: 'operator',
     target: plan,
     highImpact: true,
+  },
+
+  'GET /admin/webhook-endpoints': { role: 'viewer' },
+  'POST /admin/webhook-endpoints': {
+    role: 'operator',
+    // O alvo é o destinatário criado: a rota informa o id (`auditTargetId`).
+    target: () => ({ type: 'webhook_endpoint', id: '' }),
+    highImpact: true,
+  },
+  'PATCH /admin/webhook-endpoints/:id': {
+    role: 'operator',
+    target: webhookEndpoint,
+    // Desativar para o envio dos eventos ao destinatário; as demais edições não.
+    highImpact: deactivates,
+  },
+  'POST /admin/webhook-endpoints/:id/rotate-secret': {
+    role: 'operator',
+    target: webhookEndpoint,
+    highImpact: true,
+  },
+  'GET /admin/webhook-endpoints/:id/deliveries': {
+    role: 'viewer',
+    target: webhookEndpoint,
+  },
+  'POST /admin/webhook-endpoints/:id/resend-dead': {
+    role: 'operator',
+    target: webhookEndpoint,
+    // A prévia (`dryRun`) não altera nada; o reenvio em lote sim.
+    highImpact: body => bodyField(body, 'dryRun') !== true,
+  },
+  'POST /admin/webhook-deliveries/:id/resend': {
+    role: 'operator',
+    target: webhookDelivery,
   },
 
   'GET /admin/payment-integrations': { role: 'viewer' },

@@ -26,6 +26,12 @@ export const BILLING_EVENT_TYPES = [
   'charge.disputed',
 ] as const
 
+/** Todos os tipos de evento que a plataforma emite. */
+export const ALL_EVENT_TYPES = [
+  ...INSTALLATION_EVENT_TYPES,
+  ...BILLING_EVENT_TYPES,
+] as const
+
 export type InstallationEventType = (typeof INSTALLATION_EVENT_TYPES)[number]
 export type BillingEventType = (typeof BILLING_EVENT_TYPES)[number]
 export type EventType = InstallationEventType | BillingEventType

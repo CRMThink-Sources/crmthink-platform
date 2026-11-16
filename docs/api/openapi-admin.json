@@ -7249,6 +7249,1208 @@
         }
       }
     },
+    "/admin/webhook-deliveries/{id}/resend": {
+      "post": {
+        "operationId": "resendWebhookDelivery",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Reenviar uma entrega a destinatário",
+        "description": "Devolve a entrega, em qualquer estado, a `pending` com janela nova; ela sai no próximo ciclo se o destinatário estiver ativo.\n\n**Papel mínimo:** `operator`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da entrega",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Opcional.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entrega reenfileirada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDeliveryResend"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.",
+            "x-error-codes": [
+              "REASON_INVALID"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `WEBHOOK_DELIVERY_NOT_FOUND`: Não existe entrega a destinatário com esse id.",
+            "x-error-codes": [
+              "WEBHOOK_DELIVERY_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "WEBHOOK_DELIVERY_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "WEBHOOK_DELIVERY_NOT_FOUND",
+                        "message": "Não existe entrega a destinatário com esse id."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/webhook-endpoints": {
+      "get": {
+        "operationId": "listWebhookEndpoints",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Listar destinatários de eventos",
+        "description": "Destinatários (ERP, financeiro, automações) que recebem os eventos do outbox em uma URL cadastrada. A lista traz as contagens de entregas pendentes e mortas, nunca o segredo.\n\n**Papel mínimo:** `viewer` (leitura).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Destinatários",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpointList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createWebhookEndpoint",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Cadastrar destinatário de eventos",
+        "description": "A URL precisa ser HTTPS e não pode apontar para localhost nem para endereço interno. `appCodes` vazio vale todos os apps. O destinatário só recebe os eventos gravados a partir da criação. **`secret` só aparece nesta resposta** (sem cache): é guardado cifrado e serve para verificar `X-Platform-Signature`.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": true,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhookEndpointRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Destinatário e segredo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpointCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.\n- `WEBHOOK_APP_UNKNOWN`: O filtro de apps do destinatário cita um app que não está cadastrado.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED",
+              "VALIDATION_ERROR",
+              "WEBHOOK_APP_UNKNOWN"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  },
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  },
+                  "WEBHOOK_APP_UNKNOWN": {
+                    "value": {
+                      "error": {
+                        "code": "WEBHOOK_APP_UNKNOWN",
+                        "message": "O filtro de apps do destinatário cita um app que não está cadastrado."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Não processável\n- `WEBHOOK_URL_NOT_ALLOWED`: A URL do destinatário não é aceita: precisa ser HTTPS, ter até 500 caracteres, não ter usuário e senha e não apontar para localhost nem para endereço interno (IP privado, loopback ou link-local).",
+            "x-error-codes": [
+              "WEBHOOK_URL_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "WEBHOOK_URL_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "WEBHOOK_URL_NOT_ALLOWED",
+                        "message": "A URL do destinatário não é aceita: precisa ser HTTPS, ter até 500 caracteres, não ter usuário e senha e não apontar para localhost nem para endereço interno (IP privado, loopback ou link-local)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/webhook-endpoints/{id}": {
+      "patch": {
+        "operationId": "updateWebhookEndpoint",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Editar, desativar ou reativar destinatário de eventos",
+        "description": "Só o que for enviado muda. Desativar para as tentativas de entrega (as pendentes esperam e retomam na reativação, sujeitas à janela de reenvio) e exige o motivo; as demais edições e a reativação não.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto conforme o corpo:** exige `X-Admin-Reason` quando a chamada tem esse efeito (descrito acima).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do destinatário",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório quando a chamada tem efeito de alto impacto.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWebhookEndpointRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Destinatário",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpoint"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.\n- `WEBHOOK_APP_UNKNOWN`: O filtro de apps do destinatário cita um app que não está cadastrado.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED",
+              "VALIDATION_ERROR",
+              "WEBHOOK_APP_UNKNOWN"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  },
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  },
+                  "WEBHOOK_APP_UNKNOWN": {
+                    "value": {
+                      "error": {
+                        "code": "WEBHOOK_APP_UNKNOWN",
+                        "message": "O filtro de apps do destinatário cita um app que não está cadastrado."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `WEBHOOK_ENDPOINT_NOT_FOUND`: Não existe destinatário de eventos com esse id.",
+            "x-error-codes": [
+              "WEBHOOK_ENDPOINT_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "WEBHOOK_ENDPOINT_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "WEBHOOK_ENDPOINT_NOT_FOUND",
+                        "message": "Não existe destinatário de eventos com esse id."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Não processável\n- `WEBHOOK_URL_NOT_ALLOWED`: A URL do destinatário não é aceita: precisa ser HTTPS, ter até 500 caracteres, não ter usuário e senha e não apontar para localhost nem para endereço interno (IP privado, loopback ou link-local).",
+            "x-error-codes": [
+              "WEBHOOK_URL_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "WEBHOOK_URL_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "WEBHOOK_URL_NOT_ALLOWED",
+                        "message": "A URL do destinatário não é aceita: precisa ser HTTPS, ter até 500 caracteres, não ter usuário e senha e não apontar para localhost nem para endereço interno (IP privado, loopback ou link-local)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/webhook-endpoints/{id}/deliveries": {
+      "get": {
+        "operationId": "listWebhookDeliveries",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Entregas de um destinatário, paginadas",
+        "description": "Da mais recente para a mais antiga, com as 3 tentativas mais recentes de cada entrega (status HTTP e erro). Nunca traz o corpo do evento.\n\n**Papel mínimo:** `viewer` (leitura).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do destinatário",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Itens por página (1 a 200, padrão 50)",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "`nextCursor` da página anterior",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por estado da entrega",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "delivered",
+                "dead"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entregas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDeliveryList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `WEBHOOK_ENDPOINT_NOT_FOUND`: Não existe destinatário de eventos com esse id.",
+            "x-error-codes": [
+              "WEBHOOK_ENDPOINT_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "WEBHOOK_ENDPOINT_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "WEBHOOK_ENDPOINT_NOT_FOUND",
+                        "message": "Não existe destinatário de eventos com esse id."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/webhook-endpoints/{id}/resend-dead": {
+      "post": {
+        "operationId": "resendDeadWebhookDeliveries",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Reenviar as entregas mortas de um destinatário",
+        "description": "Devolve todas as entregas `dead` do destinatário a `pending`, com janela nova. Com `dryRun` só conta e não exige motivo. Acima de 5000 entregas responde `RESEND_TOO_LARGE`.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto conforme o corpo:** exige `X-Admin-Reason` quando a chamada tem esse efeito (descrito acima).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do destinatário",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório quando a chamada tem efeito de alto impacto.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendDeadDeliveriesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado do reenvio",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookResendDeadResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED",
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  },
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `WEBHOOK_ENDPOINT_NOT_FOUND`: Não existe destinatário de eventos com esse id.",
+            "x-error-codes": [
+              "WEBHOOK_ENDPOINT_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "WEBHOOK_ENDPOINT_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "WEBHOOK_ENDPOINT_NOT_FOUND",
+                        "message": "Não existe destinatário de eventos com esse id."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Não processável\n- `RESEND_TOO_LARGE`: O filtro do reenvio em lote encontrou mais de 5000 eventos (`details.matched` e `details.limit`); nada foi reenviado.",
+            "x-error-codes": [
+              "RESEND_TOO_LARGE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "RESEND_TOO_LARGE": {
+                    "value": {
+                      "error": {
+                        "code": "RESEND_TOO_LARGE",
+                        "message": "O filtro do reenvio em lote encontrou mais de 5000 eventos (`details.matched` e `details.limit`); nada foi reenviado."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/webhook-endpoints/{id}/rotate-secret": {
+      "post": {
+        "operationId": "rotateWebhookEndpointSecret",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Rotacionar o segredo de um destinatário",
+        "description": "**O segredo novo só aparece nesta resposta** (sem cache). O anterior continua assinando em paralelo até `previousValidUntil`, para o destinatário trocar sem perder eventos.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id do destinatário",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": true,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Destinatário e segredo novo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpointSecretRotated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `WEBHOOK_ENDPOINT_NOT_FOUND`: Não existe destinatário de eventos com esse id.",
+            "x-error-codes": [
+              "WEBHOOK_ENDPOINT_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "WEBHOOK_ENDPOINT_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "WEBHOOK_ENDPOINT_NOT_FOUND",
+                        "message": "Não existe destinatário de eventos com esse id."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/bitrix/events/{appCode}": {
       "post": {
         "operationId": "receiveBitrixAppEvent",
@@ -10830,7 +12032,7 @@
           "Eventos"
         ],
         "summary": "App instalado no portal pela primeira vez (`subscription: null`).",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -10884,7 +12086,7 @@
           "Eventos"
         ],
         "summary": "App reinstalado em portal que já tinha instalação.",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -10938,7 +12140,7 @@
           "Eventos"
         ],
         "summary": "App removido do portal (`ONAPPUNINSTALL` verificado). Tokens deixam de ser entregues.",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -10992,7 +12194,7 @@
           "Eventos"
         ],
         "summary": "Renovação do token falhou repetidamente; a instalação vai para `AUTH_ERROR` e precisa ser reinstalada.",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11046,7 +12248,7 @@
           "Eventos"
         ],
         "summary": "Reinstalação recuperou uma instalação em `AUTH_ERROR`.",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11100,7 +12302,7 @@
           "Eventos"
         ],
         "summary": "Trial iniciado (na instalação ou manualmente pelo operador).",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11154,7 +12356,7 @@
           "Eventos"
         ],
         "summary": "Assinatura paga ativa (checkout concluído ou manual marcada ativa).",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11208,7 +12410,7 @@
           "Eventos"
         ],
         "summary": "Novo período pago.",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11262,7 +12464,7 @@
           "Eventos"
         ],
         "summary": "Plano trocado (upgrade imediato ou downgrade no próximo ciclo).",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11316,7 +12518,7 @@
           "Eventos"
         ],
         "summary": "Pagamento da renovação falhou; carência e corte são decisão do app.",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11370,7 +12572,7 @@
           "Eventos"
         ],
         "summary": "Pagamento em atraso regularizado.",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11424,7 +12626,7 @@
           "Eventos"
         ],
         "summary": "Cancelamento agendado para o fim do período.",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11478,7 +12680,7 @@
           "Eventos"
         ],
         "summary": "Assinatura encerrada.",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11532,7 +12734,7 @@
           "Eventos"
         ],
         "summary": "Aviso de fim de período de assinatura `manual` (3, 2 e 1 dia antes).",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11586,7 +12788,7 @@
           "Eventos"
         ],
         "summary": "Item alterado por uma pessoa no SPA 1146 (alterações via API não geram evento).",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11640,7 +12842,7 @@
           "Eventos"
         ],
         "summary": "Compra avulsa paga.",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11694,7 +12896,7 @@
           "Eventos"
         ],
         "summary": "Cobrança reembolsada (total ou parcial).",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -11748,7 +12950,7 @@
           "Eventos"
         ],
         "summary": "Cliente abriu disputa (chargeback) no cartão.",
-        "description": "Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
+        "description": "Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.",
         "parameters": [
           {
             "name": "X-Platform-Signature",
@@ -13647,6 +14849,65 @@
         ],
         "additionalProperties": false
       },
+      "CreateWebhookEndpointRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "description": "URL HTTPS que recebe os eventos (até 500 caracteres)"
+          },
+          "eventTypes": {
+            "description": "Tipos de evento desejados",
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "installation.created",
+                "installation.reinstalled",
+                "installation.removed",
+                "installation.auth_error",
+                "installation.auth_restored",
+                "subscription.trial_started",
+                "subscription.activated",
+                "subscription.renewed",
+                "subscription.plan_changed",
+                "subscription.past_due",
+                "subscription.recovered",
+                "subscription.cancel_scheduled",
+                "subscription.ended",
+                "subscription.period_ending",
+                "subscription.item_changed",
+                "purchase.paid",
+                "charge.refunded",
+                "charge.disputed"
+              ]
+            }
+          },
+          "appCodes": {
+            "description": "Apps de interesse; vazio = todos os apps",
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          }
+        },
+        "required": [
+          "name",
+          "url",
+          "eventTypes"
+        ],
+        "additionalProperties": false
+      },
       "CurrentSubscription": {
         "type": "object",
         "properties": {
@@ -15465,6 +16726,16 @@
           "ok",
           "checks"
         ],
+        "additionalProperties": false
+      },
+      "ResendDeadDeliveriesRequest": {
+        "type": "object",
+        "properties": {
+          "dryRun": {
+            "description": "`true` só conta as entregas mortas, sem reenviar",
+            "type": "boolean"
+          }
+        },
         "additionalProperties": false
       },
       "ResendEventsRequest": {
@@ -17424,6 +18695,458 @@
             "type": "boolean"
           }
         },
+        "additionalProperties": false
+      },
+      "UpdateWebhookEndpointRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "eventTypes": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "installation.created",
+                "installation.reinstalled",
+                "installation.removed",
+                "installation.auth_error",
+                "installation.auth_restored",
+                "subscription.trial_started",
+                "subscription.activated",
+                "subscription.renewed",
+                "subscription.plan_changed",
+                "subscription.past_due",
+                "subscription.recovered",
+                "subscription.cancel_scheduled",
+                "subscription.ended",
+                "subscription.period_ending",
+                "subscription.item_changed",
+                "purchase.paid",
+                "charge.refunded",
+                "charge.disputed"
+              ]
+            }
+          },
+          "appCodes": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WebhookDeliveryList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "eventId": {
+                  "type": "string"
+                },
+                "eventType": {
+                  "type": "string"
+                },
+                "installationId": {
+                  "type": "integer"
+                },
+                "appCode": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "delivered",
+                    "dead"
+                  ]
+                },
+                "attempts": {
+                  "type": "integer"
+                },
+                "nextAttemptAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "deliveredAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "deadAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "attemptLog": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "attempt": {
+                        "type": "integer"
+                      },
+                      "statusCode": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "error": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "nextAttemptAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "deliveredAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "attempt",
+                      "statusCode",
+                      "error",
+                      "nextAttemptAt",
+                      "deliveredAt",
+                      "createdAt"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "description": "As 3 tentativas mais recentes, da mais nova para a mais antiga"
+                }
+              },
+              "required": [
+                "id",
+                "eventId",
+                "eventType",
+                "installationId",
+                "appCode",
+                "status",
+                "attempts",
+                "nextAttemptAt",
+                "deliveredAt",
+                "deadAt",
+                "createdAt",
+                "attemptLog"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "description": "Envie em `cursor` para a próxima página; `null` na última",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false
+      },
+      "WebhookDeliveryResend": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "const": "pending"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "WebhookEndpoint": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL HTTPS que recebe os eventos"
+          },
+          "eventTypes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "installation.created",
+                "installation.reinstalled",
+                "installation.removed",
+                "installation.auth_error",
+                "installation.auth_restored",
+                "subscription.trial_started",
+                "subscription.activated",
+                "subscription.renewed",
+                "subscription.plan_changed",
+                "subscription.past_due",
+                "subscription.recovered",
+                "subscription.cancel_scheduled",
+                "subscription.ended",
+                "subscription.period_ending",
+                "subscription.item_changed",
+                "purchase.paid",
+                "charge.refunded",
+                "charge.disputed"
+              ]
+            }
+          },
+          "appCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Apps de interesse; vazio = todos"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "url",
+          "eventTypes",
+          "appCodes",
+          "active",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "WebhookEndpointCreated": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "$ref": "#/components/schemas/WebhookEndpoint"
+          },
+          "secret": {
+            "type": "string",
+            "description": "Segredo de assinatura, exibido uma única vez (sem cache)"
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "endpoint",
+          "secret",
+          "notice"
+        ],
+        "additionalProperties": false
+      },
+      "WebhookEndpointList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string",
+                  "description": "URL HTTPS que recebe os eventos"
+                },
+                "eventTypes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "installation.created",
+                      "installation.reinstalled",
+                      "installation.removed",
+                      "installation.auth_error",
+                      "installation.auth_restored",
+                      "subscription.trial_started",
+                      "subscription.activated",
+                      "subscription.renewed",
+                      "subscription.plan_changed",
+                      "subscription.past_due",
+                      "subscription.recovered",
+                      "subscription.cancel_scheduled",
+                      "subscription.ended",
+                      "subscription.period_ending",
+                      "subscription.item_changed",
+                      "purchase.paid",
+                      "charge.refunded",
+                      "charge.disputed"
+                    ]
+                  }
+                },
+                "appCodes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Apps de interesse; vazio = todos"
+                },
+                "active": {
+                  "type": "boolean"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "pendingDeliveries": {
+                  "type": "integer"
+                },
+                "deadDeliveries": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "url",
+                "eventTypes",
+                "appCodes",
+                "active",
+                "createdAt",
+                "updatedAt",
+                "pendingDeliveries",
+                "deadDeliveries"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "WebhookEndpointSecretRotated": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "$ref": "#/components/schemas/WebhookEndpoint"
+          },
+          "secret": {
+            "type": "string",
+            "description": "Segredo novo, exibido uma única vez (sem cache)"
+          },
+          "previousValidUntil": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Até quando o segredo anterior continua assinando em paralelo"
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "endpoint",
+          "secret",
+          "previousValidUntil",
+          "notice"
+        ],
+        "additionalProperties": false
+      },
+      "WebhookResendDeadResult": {
+        "type": "object",
+        "properties": {
+          "matched": {
+            "type": "integer",
+            "description": "Entregas mortas do destinatário"
+          },
+          "requeued": {
+            "type": "integer",
+            "description": "Quantas voltaram à fila (0 em `dryRun`)"
+          }
+        },
+        "required": [
+          "matched",
+          "requeued"
+        ],
         "additionalProperties": false
       },
       "WebhookSecretRevealed": {

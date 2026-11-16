@@ -62,6 +62,8 @@ import { SubscriptionWriter } from '@/modules/billing/application/subscription-w
 import { Sweeps } from '@/modules/billing/application/sweeps'
 import { ManualSubscriptionService } from '@/modules/billing/application/manual-subscription-service'
 import { PaymentIntegrations } from '@/modules/billing/application/payment-integrations'
+import { WebhookDelivery } from '@/modules/events/webhook-delivery'
+import { WebhookEndpoints } from '@/modules/events/webhook-endpoints'
 import { PaymentNoticeService } from '@/modules/billing/application/payment-notice-service'
 import { TrialService } from '@/modules/billing/application/trial-service'
 import { CatalogRepository } from '@/modules/billing/infra/spa/catalog-repository'
@@ -152,9 +154,28 @@ export function buildContainer(deps: ContainerDeps) {
     clock,
     env.credentialRotationGraceMs,
   )
+  const webhookEndpoints = new WebhookEndpoints({
+    db,
+    cipher,
+    registry,
+    clock,
+    rotationGraceMs: env.credentialRotationGraceMs,
+  })
   const delivery = new EventDelivery(
     db,
     registry,
+    locks,
+    clock,
+    {
+      timeoutMs: env.webhookTimeoutMs,
+      retryWindowMs: env.eventRetryWindowMs,
+    },
+    fetchImpl,
+  )
+
+  const webhookDelivery = new WebhookDelivery(
+    db,
+    webhookEndpoints,
     locks,
     clock,
     {
@@ -368,6 +389,7 @@ export function buildContainer(deps: ContainerDeps) {
     crm,
     registry,
     delivery,
+    webhookDelivery,
     install,
     appEvents,
     queries,
@@ -382,6 +404,7 @@ export function buildContainer(deps: ContainerDeps) {
     manualSubscriptions,
     paymentIntegrations,
     paymentNotices,
+    webhookEndpoints,
     purchases,
     refunds,
     lifecycle,

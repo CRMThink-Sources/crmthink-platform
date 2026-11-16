@@ -21,6 +21,10 @@ const DESCRIPTIONS: Array<[string, string]> = [
     '/payment-integrations',
     'Sistemas que avisam pagamentos de boleto e as chaves de cada um.',
   ],
+  [
+    '/webhook-endpoints',
+    'URLs que recebem os eventos da plataforma, como ERP e financeiro.',
+  ],
   ['/audit', 'Registro de quem fez o quê no backoffice.'],
   ['/system', 'Varreduras e chave de assinatura dos tokens.'],
   ['/operators', 'Contas de quem opera a plataforma.'],

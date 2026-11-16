@@ -14,6 +14,8 @@ import { OverviewPage } from '@/features/overview/page'
 import { PaymentIntegrationsPage } from '@/features/payment-integrations/page'
 import { StripeEventsPage } from '@/features/stripe-events/page'
 import { SystemPage } from '@/features/system/page'
+import { WebhookEndpointDetailPage } from '@/features/webhook-endpoints/endpoint-detail-page'
+import { WebhookEndpointsPage } from '@/features/webhook-endpoints/page'
 import { AuthEventsBridge } from './auth-bridge'
 import { RequireSession, type RouteHandle } from './layout'
 
@@ -78,6 +80,18 @@ export const appRoutes: RouteObject[] = [
     path: 'payment-integrations',
     element: <PaymentIntegrationsPage />,
     handle: handle('Integrações de pagamento'),
+  },
+  {
+    path: 'webhook-endpoints',
+    handle: handle('Destinatários de eventos'),
+    children: [
+      { index: true, element: <WebhookEndpointsPage /> },
+      {
+        path: ':id',
+        element: <WebhookEndpointDetailPage />,
+        handle: handle(match => `#${match.params.id}`),
+      },
+    ],
   },
   { path: 'audit', element: <AuditPage />, handle: handle('Auditoria') },
   { path: 'system', element: <SystemPage />, handle: handle('Sistema') },

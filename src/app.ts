@@ -8,6 +8,7 @@ import { logger } from '@/shared/observability/logger'
 import { registry as metricsRegistry } from '@/shared/observability/metrics'
 import { adminRoutes } from '@/modules/registry/http/admin-routes'
 import { catalogAdminRoutes } from '@/modules/billing/http/admin-catalog-routes'
+import { webhookEndpointRoutes } from '@/modules/backoffice/http/webhook-endpoint-routes'
 import { adminPaymentIntegrationRoutes } from '@/modules/billing/http/admin-payment-integration-routes'
 import { paymentWebhookRoutes } from '@/modules/billing/http/payment-webhook-routes'
 import { adminSubscriptionRoutes } from '@/modules/billing/http/admin-subscription-routes'
@@ -154,6 +155,13 @@ export function createApp(
     }),
   )
   admin.use(catalogAdminRoutes({ catalog: container.catalogAdmin }))
+  admin.use(
+    webhookEndpointRoutes({
+      db: container.db,
+      endpoints: container.webhookEndpoints,
+      delivery: container.webhookDelivery,
+    }),
+  )
   admin.use(
     adminPaymentIntegrationRoutes({
       integrations: container.paymentIntegrations,

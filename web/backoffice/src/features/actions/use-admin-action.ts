@@ -45,6 +45,13 @@ export const INVALIDATES = {
   system: (): QueryKey[] => [AUDIT],
   operators: (): QueryKey[] => [['operators'], AUDIT],
   paymentIntegrations: (): QueryKey[] => [['payment-integrations'], AUDIT],
+  webhookEndpoints: (): QueryKey[] => [['webhook-endpoints'], AUDIT],
+  /** Entregas de um destinatário e as contagens da lista. */
+  webhookDeliveries: (endpointId: number): QueryKey[] => [
+    ['webhook-deliveries', endpointId],
+    ['webhook-endpoints'],
+    AUDIT,
+  ],
 } as const
 
 type Options<TVars, TResult> = {
