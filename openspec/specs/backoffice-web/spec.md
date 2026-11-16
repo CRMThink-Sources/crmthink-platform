@@ -92,3 +92,37 @@ A interface MUST estar em pt-br, MUST mostrar datas no fuso `America/Sao_Paulo` 
 #### Scenario: Data relativa
 - **WHEN** o operador passa o mouse sobre "há 3 horas" na linha do tempo
 - **THEN** a interface mostra a data e hora completas em `America/Sao_Paulo`
+
+### Requirement: Nova assinatura na instalação
+O detalhe de uma instalação `ACTIVE` MUST oferecer ao `operator` a ação "Nova assinatura", que abre um diálogo com: plano, tipo (cobrança manual ou bonificação), início (padrão hoje), fim, responsável (só na bonificação, obrigatório) e motivo (obrigatório). A lista de planos MUST mostrar só planos ativos, de assinatura e não de trial, dos produtos vinculados ao app da instalação. A interface MUST validar antes de enviar que o fim existe, é posterior ao início e fica no máximo 24 meses depois dele, com as mesmas mensagens da API. Para `viewer` e para instalação que não esteja `ACTIVE`, a ação MUST NOT aparecer. Depois de criar, a interface MUST atualizar o detalhe e avisar o sucesso. Os erros `SUBSCRIPTION_ALREADY_EXISTS` e `SUBSCRIPTIONS_READ_ONLY` MUST aparecer no próprio diálogo com a mensagem da API, `INVALID_PERIOD` MUST aparecer junto ao campo de fim, e o diálogo MUST permanecer aberto para correção.
+
+#### Scenario: Operador cria bonificação
+- **WHEN** um `operator` abre "Nova assinatura", escolhe bonificação, preenche plano, fim, responsável e motivo e confirma
+- **THEN** a interface envia a criação com o motivo no cabeçalho, mostra o aviso de sucesso e o detalhe passa a exibir a assinatura corrente
+
+#### Scenario: Viewer não vê a ação
+- **WHEN** um `viewer` abre o detalhe de uma instalação
+- **THEN** a ação "Nova assinatura" não é exibida
+
+#### Scenario: Instalação já com assinatura
+- **WHEN** a API responde `409 SUBSCRIPTION_ALREADY_EXISTS`
+- **THEN** o diálogo continua aberto e mostra a mensagem do erro
+
+#### Scenario: Fim fora do limite
+- **WHEN** o operador informa um fim mais de 24 meses depois do início
+- **THEN** a interface mostra o erro no campo de fim e não envia a requisição
+
+### Requirement: Integrações de pagamento
+O backoffice MUST oferecer a tela "Integrações de pagamento" no grupo Operação do menu, com a lista de integrações (nome, prefixo da chave, estado, último uso, criação). `viewer` MUST ver a lista sem controles de ação; `operator` MUST poder criar, renomear, desativar, reativar e rotacionar a chave, com motivo obrigatório na criação, na rotação e na desativação. A chave completa MUST ser exibida só na resposta da criação e da rotação, num diálogo que avisa que ela não aparecerá de novo e que permite copiá-la, e MUST NOT ser gravada em cache de consultas, armazenamento do navegador, URL ou logs do console. Erros da API MUST aparecer no diálogo, que MUST permanecer aberto.
+
+#### Scenario: Criar e copiar a chave
+- **WHEN** um `operator` cria a integração "Banco X" com motivo
+- **THEN** a interface mostra a chave completa com o aviso de que ela não será exibida de novo e, ao fechar o diálogo, a lista mostra só o prefixo
+
+#### Scenario: Suporte só consulta
+- **WHEN** um `viewer` abre "Integrações de pagamento"
+- **THEN** vê a lista e não vê botões de criar, rotacionar nem desativar
+
+#### Scenario: Desativar exige motivo
+- **WHEN** um `operator` desativa uma integração sem informar o motivo
+- **THEN** a interface bloqueia o envio e pede o motivo
