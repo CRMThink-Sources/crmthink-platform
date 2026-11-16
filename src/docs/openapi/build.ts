@@ -103,6 +103,12 @@ const SECURITY_SCHEMES: Json = {
     description:
       'Assinatura do Stripe sobre o corpo cru (`STRIPE_WEBHOOK_SECRET`).',
   },
+  paymentIntegrationKey: {
+    type: 'http',
+    scheme: 'bearer',
+    description:
+      'Chave de uma integração de pagamento (`Authorization: Bearer <chave>`), criada no backoffice em `/admin/payment-integrations`. Vale só para `POST /webhooks/payments`; a chave de um app ou de operador não é aceita aqui.',
+  },
 }
 
 /** Traduz `Date` (ex.: `z.coerce.date()`) para string `date-time`. */
@@ -174,6 +180,8 @@ function errorCodesOf(
   const codes: Array<ErrorCode | [ErrorCode, number]> = []
   if (operation.security === 'appApiKey')
     codes.push('UNAUTHORIZED', 'APP_INACTIVE')
+  if (operation.security === 'paymentIntegrationKey')
+    codes.push('UNAUTHORIZED', 'INTEGRATION_INACTIVE')
   if (operation.security === 'admin') {
     const role = roleOf(operation.method, operation.path)
     codes.push('UNAUTHORIZED')

@@ -66,6 +66,21 @@ export function toSpaCalendarDateValue(date: Date): string {
   return new Date(day.getTime() + 12 * 60 * 60 * 1000).toISOString()
 }
 
+/**
+ * `date` + `months` meses pelo calendário UTC, no mesmo dia do mês (ou no último dia, se o
+ * dia não existir no mês de destino: 31/01 + 1 mês = 28/02).
+ */
+export function addCalendarMonths(date: Date, months: number): Date {
+  const target = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1),
+  )
+  const lastDay = new Date(
+    Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0),
+  ).getUTCDate()
+  target.setUTCDate(Math.min(date.getUTCDate(), lastDay))
+  return target
+}
+
 /** Dias de calendário entre dois instantes (b − a), pelo dia UTC. */
 export function calendarDaysBetween(a: Date, b: Date): number {
   const dayA = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate())

@@ -61,6 +61,8 @@ import { SubscriptionQueries } from '@/modules/billing/application/subscription-
 import { SubscriptionWriter } from '@/modules/billing/application/subscription-writer'
 import { Sweeps } from '@/modules/billing/application/sweeps'
 import { ManualSubscriptionService } from '@/modules/billing/application/manual-subscription-service'
+import { PaymentIntegrations } from '@/modules/billing/application/payment-integrations'
+import { PaymentNoticeService } from '@/modules/billing/application/payment-notice-service'
 import { TrialService } from '@/modules/billing/application/trial-service'
 import { CatalogRepository } from '@/modules/billing/infra/spa/catalog-repository'
 import { SpaMappers } from '@/modules/billing/infra/spa/spa-mappers'
@@ -240,6 +242,15 @@ export function buildContainer(deps: ContainerDeps) {
     clock,
     environment: env.platformEnvironment,
   })
+  const paymentIntegrations = new PaymentIntegrations(db, clock)
+  const paymentNotices = new PaymentNoticeService({
+    db,
+    context: billingContext,
+    writer,
+    catalog,
+    clock,
+    environment: env.platformEnvironment,
+  })
   const purchases = new PurchaseService(db, billingContext, writer, gateway)
   const refunds = new RefundService(db, billingContext, writer, gateway)
   const lifecycle = new StripeLifecycle(
@@ -369,6 +380,8 @@ export function buildContainer(deps: ContainerDeps) {
     plans,
     trials,
     manualSubscriptions,
+    paymentIntegrations,
+    paymentNotices,
     purchases,
     refunds,
     lifecycle,

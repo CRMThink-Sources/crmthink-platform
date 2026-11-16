@@ -293,6 +293,56 @@ export const ERROR_CATALOG = {
     origin: 'billing/application/manual-subscription-service.ts',
   },
 
+  // Integrações de pagamento
+  NOT_MANUAL_SUBSCRIPTION: {
+    status: 422,
+    meaning:
+      'O aviso de pagamento aponta para uma assinatura que não é manual (por exemplo, Stripe), que se renova sozinha.',
+    action: 'Não enviar avisos de pagamento para assinaturas do Stripe.',
+    origin: 'billing/application/payment-notice-service.ts',
+  },
+  SUBSCRIPTION_NOT_RENEWABLE: {
+    status: 409,
+    meaning:
+      'A assinatura não está `active` nem `past_due` (está cancelada, encerrada ou em trial), então um pagamento não a renova. `details` traz `{ subscriptionId, status }`.',
+    action:
+      'Conferir a assinatura no backoffice; se for um cliente novo, criar a assinatura manual antes do aviso.',
+    origin: 'billing/application/payment-notice-service.ts',
+  },
+  EXTERNAL_ID_REUSED: {
+    status: 409,
+    meaning:
+      'O `externalId` já foi usado por esta integração para outra assinatura ou instalação: ele identifica um pagamento só.',
+    action:
+      'Enviar o id do pagamento (por exemplo, o id do boleto), diferente a cada pagamento. Repetir o mesmo aviso para a mesma assinatura é seguro.',
+    origin: 'billing/application/payment-notice-service.ts',
+  },
+  INVALID_JSON: {
+    status: 400,
+    meaning: 'O corpo do aviso de pagamento não é um JSON válido.',
+    action: 'Enviar `Content-Type: application/json` com um JSON válido.',
+    origin: 'billing/http/payment-webhook-routes.ts',
+  },
+  PAYLOAD_TOO_LARGE: {
+    status: 413,
+    meaning: 'O corpo do aviso de pagamento passa de 16 KB.',
+    action: 'Enviar só os campos do contrato (o aviso tem poucos campos).',
+    origin: 'billing/http/payment-webhook-routes.ts',
+  },
+  PAYMENT_INTEGRATION_NOT_FOUND: {
+    status: 404,
+    meaning: 'Não existe integração de pagamento com esse id.',
+    action: 'Conferir o id na lista de integrações.',
+    origin: 'billing/application/payment-integrations.ts',
+  },
+  INTEGRATION_INACTIVE: {
+    status: 403,
+    meaning:
+      'A integração de pagamento dona da chave está desativada; nenhum aviso é aceito.',
+    action: 'Reativar a integração no backoffice ou usar outra integração.',
+    origin: 'billing/application/payment-integrations.ts',
+  },
+
   // Cobrança
   PLAN_NOT_FOUND: {
     status: 404,

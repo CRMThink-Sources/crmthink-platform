@@ -6051,6 +6051,601 @@
         }
       }
     },
+    "/admin/payment-integrations": {
+      "get": {
+        "operationId": "listPaymentIntegrations",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Listar integrações de pagamento",
+        "description": "Integrações que avisam pagamentos em `POST /webhooks/payments`. A lista mostra só o prefixo da chave, nunca a chave nem o hash.\n\n**Papel mínimo:** `viewer` (leitura).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Integrações",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentIntegrationList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPaymentIntegration",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Criar integração de pagamento",
+        "description": "**`apiKey` só aparece nesta resposta** (sem cache): a chave é guardada só como hash e não pode ser recuperada depois. Use-a como `Authorization: Bearer` em `POST /webhooks/payments`.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": true,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentIntegrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Integração e chave",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentIntegrationKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED",
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  },
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/payment-integrations/{id}": {
+      "patch": {
+        "operationId": "updatePaymentIntegration",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Renomear, desativar ou reativar integração de pagamento",
+        "description": "Desativar bloqueia os avisos da integração (`INTEGRATION_INACTIVE`) sem apagar o histórico e exige o motivo; renomear e reativar não exigem.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto conforme o corpo:** exige `X-Admin-Reason` quando a chamada tem esse efeito (descrito acima).",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da integração",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": false,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório quando a chamada tem efeito de alto impacto.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePaymentIntegrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Integração",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentIntegration"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED",
+              "VALIDATION_ERROR"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  },
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `PAYMENT_INTEGRATION_NOT_FOUND`: Não existe integração de pagamento com esse id.",
+            "x-error-codes": [
+              "PAYMENT_INTEGRATION_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PAYMENT_INTEGRATION_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "PAYMENT_INTEGRATION_NOT_FOUND",
+                        "message": "Não existe integração de pagamento com esse id."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/payment-integrations/{id}/rotate-key": {
+      "post": {
+        "operationId": "rotatePaymentIntegrationKey",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Rotacionar a chave de uma integração de pagamento",
+        "description": "**A chave nova só aparece nesta resposta** (sem cache). A chave anterior deixa de valer imediatamente.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da integração",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": true,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Integração e chave nova",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentIntegrationKey"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `PAYMENT_INTEGRATION_NOT_FOUND`: Não existe integração de pagamento com esse id.",
+            "x-error-codes": [
+              "PAYMENT_INTEGRATION_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PAYMENT_INTEGRATION_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "PAYMENT_INTEGRATION_NOT_FOUND",
+                        "message": "Não existe integração de pagamento com esse id."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/signing-keys/rotate": {
       "post": {
         "operationId": "rotateSigningKey",
@@ -9914,6 +10509,258 @@
         }
       }
     },
+    "/webhooks/payments": {
+      "post": {
+        "operationId": "receivePaymentNotice",
+        "tags": [
+          "Webhooks recebidos"
+        ],
+        "summary": "Aviso de pagamento de assinatura manual",
+        "description": "Um sistema de cobrança avisa que um pagamento (por exemplo, um boleto) foi feito e a plataforma renova a assinatura `manual`: o status passa a `active`, o período avança (início = fim anterior; fim = `periodEnd` ou fim anterior + intervalo do plano) e o app recebe `subscription.renewed`. Identifique a assinatura por `subscriptionId` ou `installationId` (um só). **`externalId` é o id do pagamento** (por exemplo, o id do boleto) e torna o aviso idempotente: repetir devolve `duplicate: true` sem renovar de novo, e reaproveitá-lo para outra assinatura é `EXTERNAL_ID_REUSED`. O novo fim fica no máximo 24 meses à frente de hoje. Só em produção. Corpo JSON de até 16 KB.",
+        "security": [
+          {
+            "paymentIntegrationKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentNotice"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Assinatura renovada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentNoticeResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.\n- `INVALID_JSON`: O corpo do aviso de pagamento não é um JSON válido.",
+            "x-error-codes": [
+              "VALIDATION_ERROR",
+              "INVALID_JSON"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  },
+                  "INVALID_JSON": {
+                    "value": {
+                      "error": {
+                        "code": "INVALID_JSON",
+                        "message": "O corpo do aviso de pagamento não é um JSON válido."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `INTEGRATION_INACTIVE`: A integração de pagamento dona da chave está desativada; nenhum aviso é aceito.",
+            "x-error-codes": [
+              "INTEGRATION_INACTIVE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INTEGRATION_INACTIVE": {
+                    "value": {
+                      "error": {
+                        "code": "INTEGRATION_INACTIVE",
+                        "message": "A integração de pagamento dona da chave está desativada; nenhum aviso é aceito."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `INSTALLATION_NOT_FOUND`: Instalação inexistente, de outro app ou desvinculada do SPA 1060.\n- `SUBSCRIPTION_NOT_FOUND`: Assinatura inexistente ou de instalação de outro app.",
+            "x-error-codes": [
+              "INSTALLATION_NOT_FOUND",
+              "SUBSCRIPTION_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INSTALLATION_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "INSTALLATION_NOT_FOUND",
+                        "message": "Instalação inexistente, de outro app ou desvinculada do SPA 1060."
+                      }
+                    }
+                  },
+                  "SUBSCRIPTION_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "SUBSCRIPTION_NOT_FOUND",
+                        "message": "Assinatura inexistente ou de instalação de outro app."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `SUBSCRIPTION_NOT_RENEWABLE`: A assinatura não está `active` nem `past_due` (está cancelada, encerrada ou em trial), então um pagamento não a renova. `details` traz `{ subscriptionId, status }`.\n- `EXTERNAL_ID_REUSED`: O `externalId` já foi usado por esta integração para outra assinatura ou instalação: ele identifica um pagamento só.\n- `SUBSCRIPTIONS_READ_ONLY`: Assinaturas manuais só são criadas no ambiente de produção; fora dela a rota é somente leitura.\n- `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.",
+            "x-error-codes": [
+              "SUBSCRIPTION_NOT_RENEWABLE",
+              "EXTERNAL_ID_REUSED",
+              "SUBSCRIPTIONS_READ_ONLY",
+              "BILLING_BUSY"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "SUBSCRIPTION_NOT_RENEWABLE": {
+                    "value": {
+                      "error": {
+                        "code": "SUBSCRIPTION_NOT_RENEWABLE",
+                        "message": "A assinatura não está `active` nem `past_due` (está cancelada, encerrada ou em trial), então um pagamento não a renova. `details` traz `{ subscriptionId, status }`."
+                      }
+                    }
+                  },
+                  "EXTERNAL_ID_REUSED": {
+                    "value": {
+                      "error": {
+                        "code": "EXTERNAL_ID_REUSED",
+                        "message": "O `externalId` já foi usado por esta integração para outra assinatura ou instalação: ele identifica um pagamento só."
+                      }
+                    }
+                  },
+                  "SUBSCRIPTIONS_READ_ONLY": {
+                    "value": {
+                      "error": {
+                        "code": "SUBSCRIPTIONS_READ_ONLY",
+                        "message": "Assinaturas manuais só são criadas no ambiente de produção; fora dela a rota é somente leitura."
+                      }
+                    }
+                  },
+                  "BILLING_BUSY": {
+                    "value": {
+                      "error": {
+                        "code": "BILLING_BUSY",
+                        "message": "Outra operação de cobrança da mesma instalação está em andamento."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Erro\n- `PAYLOAD_TOO_LARGE`: O corpo do aviso de pagamento passa de 16 KB.",
+            "x-error-codes": [
+              "PAYLOAD_TOO_LARGE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PAYLOAD_TOO_LARGE": {
+                    "value": {
+                      "error": {
+                        "code": "PAYLOAD_TOO_LARGE",
+                        "message": "O corpo do aviso de pagamento passa de 16 KB."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Não processável\n- `NOT_MANUAL_SUBSCRIPTION`: O aviso de pagamento aponta para uma assinatura que não é manual (por exemplo, Stripe), que se renova sozinha.\n- `INVALID_PERIOD`: Período da assinatura inválido: data inexistente, fim igual ou anterior ao início, ou mais de 24 meses.",
+            "x-error-codes": [
+              "NOT_MANUAL_SUBSCRIPTION",
+              "INVALID_PERIOD"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "NOT_MANUAL_SUBSCRIPTION": {
+                    "value": {
+                      "error": {
+                        "code": "NOT_MANUAL_SUBSCRIPTION",
+                        "message": "O aviso de pagamento aponta para uma assinatura que não é manual (por exemplo, Stripe), que se renova sozinha."
+                      }
+                    }
+                  },
+                  "INVALID_PERIOD": {
+                    "value": {
+                      "error": {
+                        "code": "INVALID_PERIOD",
+                        "message": "Período da assinatura inválido: data inexistente, fim igual ou anterior ao início, ou mais de 24 meses."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/webhooks/stripe": {
       "post": {
         "operationId": "receiveStripeWebhook",
@@ -11008,6 +11855,11 @@
         "in": "header",
         "name": "Stripe-Signature",
         "description": "Assinatura do Stripe sobre o corpo cru (`STRIPE_WEBHOOK_SECRET`)."
+      },
+      "paymentIntegrationKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Chave de uma integração de pagamento (`Authorization: Bearer <chave>`), criada no backoffice em `/admin/payment-integrations`. Vale só para `POST /webhooks/payments`; a chave de um app ou de operador não é aceita aqui."
       }
     },
     "schemas": {
@@ -12781,6 +13633,20 @@
           "role"
         ]
       },
+      "CreatePaymentIntegrationRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
       "CurrentSubscription": {
         "type": "object",
         "properties": {
@@ -14143,6 +15009,151 @@
         },
         "required": [
           "operator"
+        ],
+        "additionalProperties": false
+      },
+      "PaymentIntegration": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "keyPrefix": {
+            "type": "string",
+            "description": "Primeiros caracteres da chave, só para identificá-la"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "lastUsedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "keyPrefix",
+          "active",
+          "lastUsedAt",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "PaymentIntegrationKey": {
+        "type": "object",
+        "properties": {
+          "integration": {
+            "$ref": "#/components/schemas/PaymentIntegration"
+          },
+          "apiKey": {
+            "type": "string",
+            "description": "Chave completa, exibida uma única vez"
+          },
+          "notice": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "integration",
+          "apiKey",
+          "notice"
+        ],
+        "additionalProperties": false
+      },
+      "PaymentIntegrationList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentIntegration"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "PaymentNotice": {
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Id do pagamento no sistema de origem (ex.: id do boleto). Único por integração: repetir é seguro, reaproveitar para outro pagamento não."
+          },
+          "subscriptionId": {
+            "description": "Id da assinatura no SPA 1142",
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "installationId": {
+            "description": "Id da instalação: renova a assinatura vigente dela",
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "paidAt": {
+            "description": "Data do pagamento (AAAA-MM-DD)",
+            "type": "string",
+            "format": "date"
+          },
+          "periodEnd": {
+            "description": "Novo fim do período (AAAA-MM-DD); sem ele, vale o fim atual mais o intervalo do plano",
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "externalId"
+        ],
+        "additionalProperties": false
+      },
+      "PaymentNoticeResult": {
+        "type": "object",
+        "properties": {
+          "subscriptionId": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "const": "active"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "description": "`true` quando o aviso já tinha sido aplicado: nada foi renovado de novo"
+          }
+        },
+        "required": [
+          "subscriptionId",
+          "status",
+          "periodStart",
+          "periodEnd",
+          "duplicate"
         ],
         "additionalProperties": false
       },
@@ -16400,6 +17411,20 @@
             "type": "boolean"
           }
         }
+      },
+      "UpdatePaymentIntegrationRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
       },
       "WebhookSecretRevealed": {
         "type": "object",

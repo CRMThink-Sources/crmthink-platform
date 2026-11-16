@@ -8,6 +8,8 @@ import { logger } from '@/shared/observability/logger'
 import { registry as metricsRegistry } from '@/shared/observability/metrics'
 import { adminRoutes } from '@/modules/registry/http/admin-routes'
 import { catalogAdminRoutes } from '@/modules/billing/http/admin-catalog-routes'
+import { adminPaymentIntegrationRoutes } from '@/modules/billing/http/admin-payment-integration-routes'
+import { paymentWebhookRoutes } from '@/modules/billing/http/payment-webhook-routes'
 import { adminSubscriptionRoutes } from '@/modules/billing/http/admin-subscription-routes'
 import { adminGate } from '@/modules/backoffice/http/gate'
 import { backofficeRoutes } from '@/modules/backoffice/http/routes'
@@ -101,6 +103,12 @@ export function createApp(
   }
 
   app.use(billingWebhookRoutes(billingDeps))
+  app.use(
+    paymentWebhookRoutes({
+      integrations: container.paymentIntegrations,
+      notices: container.paymentNotices,
+    }),
+  )
   app.use(publicInstallRoutes(installationDeps))
   app.use(sessionRoutes(installationDeps))
   // Operador: sessão do backoffice ou token de script, papel por rota e auditoria
@@ -146,6 +154,11 @@ export function createApp(
     }),
   )
   admin.use(catalogAdminRoutes({ catalog: container.catalogAdmin }))
+  admin.use(
+    adminPaymentIntegrationRoutes({
+      integrations: container.paymentIntegrations,
+    }),
+  )
   admin.use(
     adminSubscriptionRoutes({
       manualSubscriptions: container.manualSubscriptions,

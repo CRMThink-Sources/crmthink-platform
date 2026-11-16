@@ -9,7 +9,7 @@ import { setLogContext } from '@/shared/observability/log-context'
 import type { AppRegistry } from '../app-registry'
 import type { RegisteredApp } from '../domain/app'
 
-function bearer(header: string | undefined): string | null {
+export function bearer(header: string | undefined): string | null {
   const match = /^Bearer\s+(.+)$/i.exec(header ?? '')
   return match?.[1]?.trim() || null
 }
