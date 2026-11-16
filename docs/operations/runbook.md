@@ -254,6 +254,43 @@ sempre obrigatório. O app recebe `subscription.activated`.
 - **Primeira criação real em produção:** faça com uma instalação de teste, para confirmar a
   permissão do webhook e os campos obrigatórios do SPA 1142 (`crm.item.fields`).
 
+## Avisos de pagamento (boleto pago)
+
+A tela **Integrações de pagamento** (grupo Operação) gere as chaves dos sistemas que avisam
+pagamentos em `POST /webhooks/payments` (API: `/admin/payment-integrations`). `viewer` só lê;
+`operator` cria, renomeia, desativa, reativa e rotaciona. **Criar, rotacionar e desativar exigem o
+motivo** (`X-Admin-Reason`).
+
+- **Criar a integração e entregar a chave.** Crie uma integração por sistema remetente. A chave
+  completa (`pay_...`) aparece **uma única vez**: copie e entregue por canal seguro; depois só o
+  prefixo fica visível. Perdeu a chave: **rotacione** (a antiga deixa de valer na hora, então
+  atualize o remetente em seguida) ou crie outra integração.
+- **O que o remetente envia**, com `Authorization: Bearer <chave>` e JSON de até 16 KB:
+  `externalId` (**o id do pagamento**, por exemplo o id do boleto), `subscriptionId` **ou**
+  `installationId`, e opcionalmente `paidAt` e `periodEnd` (`AAAA-MM-DD`). Sem `periodEnd`, o fim
+  avança pelo intervalo do plano.
+- **`externalId` é por pagamento.** Repetir o mesmo aviso é seguro (`duplicate: true`, nada é
+  renovado de novo). Mas enviar o mesmo `externalId` para pagamentos diferentes faz o segundo ser
+  tratado como repetido e **ignorado**: use o id do boleto, não o da assinatura.
+- **Escolha um só caminho por cliente.** Se o aviso renova e o financeiro também edita o SPA à
+  mão para o mesmo pagamento, o período avança duas vezes: a plataforma não distingue os dois.
+- **Só a produção aceita** (`SUBSCRIPTIONS_READ_ONLY` nos demais ambientes). Cada instância tem as
+  próprias integrações: uma criada na produção só vale no endereço da produção.
+- **Erros que o remetente verá:** 401 (chave ausente ou inválida), 403 `INTEGRATION_INACTIVE`,
+  404 `SUBSCRIPTION_NOT_FOUND`/`INSTALLATION_NOT_FOUND`, 422 `NOT_MANUAL_SUBSCRIPTION` (assinatura
+  Stripe), 409 `SUBSCRIPTION_NOT_RENEWABLE` (cancelada, encerrada ou em trial), 409
+  `EXTERNAL_ID_REUSED`, 422 `INVALID_PERIOD`, 400 `INVALID_JSON`, 413 `PAYLOAD_TOO_LARGE`.
+- **Aviso `pending`.** Se o processo cair no meio, o aviso fica `pending` em `payment_notice`
+  (o SPA pode já ter sido estendido) e o evento ao app ainda não saiu. O reenvio do mesmo aviso
+  conclui exatamente o período já decidido. Para achar os pendentes:
+  `SELECT * FROM payment_notice WHERE status = 'pending'`.
+- **Métrica:** `platform_payment_notices_total{outcome}` com `applied`, `duplicate`, `rejected`
+  (recusado por corpo ou regra) e `failed` (falha nossa, como o Bitrix fora do ar).
+- **Primeiro uso em produção:** crie uma integração de teste, envie um aviso para uma instalação
+  de teste com assinatura manual e confira o período no SPA, o `subscription.renewed` no app e o
+  comentário na assinatura; repita o mesmo aviso para ver `duplicate: true`. Só então entregue a
+  chave ao remetente real.
+
 ## Operadores do backoffice
 
 As listagens `/admin/events`, `/admin/stripe-events`, `/admin/installations`,

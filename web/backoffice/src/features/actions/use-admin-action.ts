@@ -44,6 +44,7 @@ export const INVALIDATES = {
   ],
   system: (): QueryKey[] => [AUDIT],
   operators: (): QueryKey[] => [['operators'], AUDIT],
+  paymentIntegrations: (): QueryKey[] => [['payment-integrations'], AUDIT],
 } as const
 
 type Options<TVars, TResult> = {

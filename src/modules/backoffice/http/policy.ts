@@ -55,6 +55,10 @@ const product = (p: Record<string, string>) => ({
   id: p.id ?? '',
 })
 const plan = (p: Record<string, string>) => ({ type: 'plan', id: p.id ?? '' })
+const paymentIntegration = (p: Record<string, string>) => ({
+  type: 'payment_integration',
+  id: p.id ?? '',
+})
 
 /** Desativar é de alto impacto; as demais edições não. */
 const deactivates = (body: unknown) => bodyField(body, 'active') === false
@@ -137,6 +141,25 @@ export const ADMIN_POLICIES: Record<string, AdminPolicy> = {
   'DELETE /admin/catalog/plans/:id': {
     role: 'operator',
     target: plan,
+    highImpact: true,
+  },
+
+  'GET /admin/payment-integrations': { role: 'viewer' },
+  'POST /admin/payment-integrations': {
+    role: 'operator',
+    // O alvo é a integração criada: a rota informa o id (`auditTargetId`).
+    target: () => ({ type: 'payment_integration', id: '' }),
+    highImpact: true,
+  },
+  'PATCH /admin/payment-integrations/:id': {
+    role: 'operator',
+    target: paymentIntegration,
+    // Desativar bloqueia o remetente de pagamentos; renomear e reativar não.
+    highImpact: deactivates,
+  },
+  'POST /admin/payment-integrations/:id/rotate-key': {
+    role: 'operator',
+    target: paymentIntegration,
     highImpact: true,
   },
 

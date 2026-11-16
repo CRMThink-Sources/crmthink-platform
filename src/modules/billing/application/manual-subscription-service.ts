@@ -14,6 +14,7 @@ import type { AppRegistry } from '@/modules/registry/app-registry'
 import type { Subscription } from '../domain/entities'
 import type { CatalogRepository } from '../infra/spa/catalog-repository'
 import {
+  addCalendarMonths,
   endOfCalendarDay,
   formatCalendarDate,
   parseSpaCalendarDate,
@@ -62,18 +63,6 @@ type Deps = {
   catalog: CatalogRepository
   clock: Clock
   environment: PlatformEnvironment
-}
-
-/** `date` + `months` meses, no mesmo dia (ou no último dia do mês, se não existir). */
-function addMonths(date: Date, months: number): Date {
-  const target = new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, 1),
-  )
-  const lastDay = new Date(
-    Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0),
-  ).getUTCDate()
-  target.setUTCDate(Math.min(date.getUTCDate(), lastDay))
-  return target
 }
 
 /**
@@ -206,7 +195,7 @@ export class ManualSubscriptionService {
     if (
       periodEnd >
       endOfCalendarDay(
-        parseSpaCalendarDate(addMonths(periodStart, MAX_MONTHS))!,
+        parseSpaCalendarDate(addCalendarMonths(periodStart, MAX_MONTHS))!,
       )
     )
       throw invalid(`O período pode ter no máximo ${MAX_MONTHS} meses`)

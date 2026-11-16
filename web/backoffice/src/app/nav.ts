@@ -1,5 +1,6 @@
 import {
   Activity,
+  Banknote,
   Boxes,
   CreditCard,
   LayoutDashboard,
@@ -36,6 +37,11 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: '/stripe-events', label: 'Eventos Stripe', icon: CreditCard },
       { to: '/apps', label: 'Apps', icon: Activity },
       { to: '/catalog', label: 'Catálogo', icon: Package },
+      {
+        to: '/payment-integrations',
+        label: 'Integrações de pagamento',
+        icon: Banknote,
+      },
     ],
   },
   {

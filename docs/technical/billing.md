@@ -121,6 +121,30 @@ O evento do SPA vai para a fila `spa-events`; `ManualLifecycle` compara com o ú
 ativação, renovação (período avançou), `past_due`, recuperação, troca de plano, cancelamento,
 exclusão (`ended {reason: deleted}`).
 
+### Aviso de pagamento (boleto pago)
+
+Um sistema de cobrança avisa o pagamento em `POST /webhooks/payments`
+(`payment-notice-service.ts`), com a chave de uma **integração de pagamento** criada no
+backoffice (`/admin/payment-integrations`). A plataforma renova a assinatura manual pelo mesmo
+caminho da renovação feita à mão e o app recebe `subscription.renewed`:
+
+- identifica a assinatura por `subscriptionId` (item do SPA 1142) ou `installationId` (a vigente);
+  só renova `manual` em `active`/`past_due` (`NOT_MANUAL_SUBSCRIPTION`,
+  `SUBSCRIPTION_NOT_RENEWABLE`);
+- período contíguo: início = dia do fim anterior; fim = `periodEnd` do aviso ou o fim anterior +
+  intervalo do plano (1, 3, 6 ou 12 meses); no máximo 24 meses à frente de hoje
+  (`INVALID_PERIOD`);
+- **idempotente** por `externalId` (o id do pagamento, por exemplo o do boleto), único por
+  integração: repetir devolve `duplicate: true` sem renovar de novo; reaproveitar para outra
+  assinatura é `EXTERNAL_ID_REUSED`;
+- o período decidido é gravado em `payment_notice` (`pending`) **antes** de escrever no SPA; se o
+  processo cair no meio, o reenvio conclui o período já gravado (nunca um a mais);
+- síncrono, sob o lock da instalação, só em produção (`SUBSCRIPTIONS_READ_ONLY` nos demais
+  ambientes); a dedupe do evento é a mesma do `ManualLifecycle`
+  (`renewed:<assinatura>:<início>:<fim>`), então o eco do SPA não duplica;
+- rastro: o próprio `payment_notice`, um comentário na linha do tempo da assinatura e a métrica
+  `platform_payment_notices_total{outcome}` (`applied`, `duplicate`, `rejected`, `failed`).
+
 Job `period-ending` (diário, 9h de São Paulo): assinaturas manuais a 3, 2 e 1 dia do fim
 recebem `subscription.period_ending` (uma vez por dia restante — `period_notice`).
 

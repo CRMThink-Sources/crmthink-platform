@@ -25,5 +25,5 @@ Passo a passo detalhado, com assinaturas e nomes de teste: `docs/superpowers/pla
 ## 4. Integração
 
 - [x] 4.1 Rodar `yarn lint`, `yarn check-types` e `yarn test` na raiz e verificar que passam e que `yarn docs:openapi` não deixa diff
-- [ ] 4.2 Com o dono do portal, chamar `crm.item.fields` no SPA 1142 e verificar que não há outro campo obrigatório além dos gravados pelo mapeador e que o webhook de entrada pode criar itens; se houver, parar e registrar o achado antes de produção
+- [x] 4.2 Com o dono do portal, chamar `crm.item.fields` no SPA 1142 e verificar que não há outro campo obrigatório além dos gravados pelo mapeador e que o webhook de entrada pode criar itens; se houver, parar e registrar o achado antes de produção
 - [x] 4.3 Rodar `openspec validate backoffice-manual-subscriptions --strict` e verificar que não há erros

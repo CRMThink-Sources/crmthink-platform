@@ -261,6 +261,24 @@ const MODELS: Record<string, ModelSpec> = {
       },
     },
   },
+  paymentIntegration: {
+    pk: ['id'],
+    autoincrement: 'id',
+    unique: [['keyHash']],
+    defaults: () => ({
+      active: true,
+      lastUsedAt: null,
+      createdAt: now(),
+      updatedAt: now(),
+    }),
+  },
+  paymentNotice: {
+    pk: ['id'],
+    autoincrement: 'id',
+    unique: [['integrationId', 'externalId']],
+    compound: { integrationId_externalId: ['integrationId', 'externalId'] },
+    defaults: () => ({ paidAt: null, appliedAt: null, createdAt: now() }),
+  },
   adminAuditLog: {
     pk: ['id'],
     autoincrement: 'id',

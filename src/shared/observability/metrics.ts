@@ -59,6 +59,12 @@ export const metrics = {
     labelNames: ['kind'],
     registers: [registry],
   }),
+  paymentNotices: new client.Counter({
+    name: 'platform_payment_notices_total',
+    help: 'Avisos de pagamento recebidos em /webhooks/payments, por resultado (applied, duplicate, rejected, failed)',
+    labelNames: ['outcome'],
+    registers: [registry],
+  }),
   sweepFailures: new client.Counter({
     name: 'platform_sweep_failures_total',
     help: 'Varreduras que falharam',

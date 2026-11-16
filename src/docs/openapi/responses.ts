@@ -305,6 +305,37 @@ export const trialStartedSchema = z.strictObject({
   trialEndsAt: isoDate,
 })
 
+export const paymentNoticeResultSchema = z.strictObject({
+  subscriptionId: z.number().int(),
+  status: z.literal('active'),
+  periodStart: isoDate,
+  periodEnd: isoDate,
+  duplicate: z
+    .boolean()
+    .describe(
+      '`true` quando o aviso já tinha sido aplicado: nada foi renovado de novo',
+    ),
+})
+
+export const paymentIntegrationSchema = z.strictObject({
+  id: z.number().int(),
+  name: z.string(),
+  keyPrefix: z
+    .string()
+    .describe('Primeiros caracteres da chave, só para identificá-la'),
+  active: z.boolean(),
+  lastUsedAt: isoDate.nullable(),
+  createdAt: isoDate,
+})
+
+export const paymentIntegrationListSchema = list(paymentIntegrationSchema)
+
+export const paymentIntegrationKeySchema = z.strictObject({
+  integration: paymentIntegrationSchema,
+  apiKey: z.string().describe('Chave completa, exibida uma única vez'),
+  notice: z.string(),
+})
+
 export const manualSubscriptionCreatedSchema = z.strictObject({
   subscriptionId: z.number().int(),
   status: z.literal('active'),
