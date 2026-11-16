@@ -26,6 +26,7 @@ Código: `src/shared/observability/logger.ts`, `log-context.ts`, `metrics.ts`, `
 | `install.token_mismatch` | Instalação recusada na verificação do token |
 | `token.auth_error` | Instalação entrou em `AUTH_ERROR` |
 | `event.dead_letter` | Evento esgotou a janela de reenvio |
+| `webhook.dead_letter` | Entrega a um destinatário cadastrado esgotou a janela de reenvio |
 | `stripe.dead_letter` | Evento Stripe esgotou as tentativas |
 | `stripe.event_unrouted` | Evento Stripe sem app/instalação identificável |
 | `charge.disputed` | Disputa aberta |
@@ -50,6 +51,9 @@ Código: `src/shared/observability/logger.ts`, `log-context.ts`, `metrics.ts`, `
 | `platform_events_pending` | gauge | — | Eventos no outbox não entregues |
 | `platform_events_dead` | gauge | — | Eventos em dead-letter |
 | `platform_event_deliveries_total` | counter | `appCode`, `outcome` | Tentativas de entrega |
+| `platform_webhook_deliveries_total` | counter | `outcome` (`delivered`, `failed`, `dead`) | Tentativas de entrega a destinatários cadastrados |
+| `platform_webhook_deliveries_pending` | gauge | — | Entregas a destinatários não concluídas |
+| `platform_webhook_deliveries_dead` | gauge | — | Entregas a destinatários em dead-letter |
 | `platform_sweep_divergences_total` | counter | `kind` | Divergências corrigidas |
 | `platform_sweep_failures_total` | counter | `kind` | Varreduras que falharam |
 | `platform_stripe_webhook_failures_total` | counter | `reason` (`signature`, `dead_letter`) | Webhooks Stripe recusados ou mortos |

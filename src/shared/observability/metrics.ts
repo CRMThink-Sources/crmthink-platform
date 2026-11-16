@@ -59,6 +59,22 @@ export const metrics = {
     labelNames: ['kind'],
     registers: [registry],
   }),
+  webhookDeliveries: new client.Counter({
+    name: 'platform_webhook_deliveries_total',
+    help: 'Tentativas de entrega de eventos a destinatários cadastrados, por resultado (delivered, failed, dead)',
+    labelNames: ['outcome'],
+    registers: [registry],
+  }),
+  webhookDeliveriesPending: new client.Gauge({
+    name: 'platform_webhook_deliveries_pending',
+    help: 'Entregas a destinatários ainda não concluídas',
+    registers: [registry],
+  }),
+  webhookDeliveriesDead: new client.Gauge({
+    name: 'platform_webhook_deliveries_dead',
+    help: 'Entregas a destinatários em dead-letter',
+    registers: [registry],
+  }),
   paymentNotices: new client.Counter({
     name: 'platform_payment_notices_total',
     help: 'Avisos de pagamento recebidos em /webhooks/payments, por resultado (applied, duplicate, rejected, failed)',

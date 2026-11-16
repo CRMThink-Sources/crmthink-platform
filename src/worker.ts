@@ -23,6 +23,7 @@ const SCHEDULES: Array<{
   tz?: string
 }> = [
   { id: 'deliver-events', every: 5_000 },
+  { id: 'deliver-webhooks', every: 5_000 },
   { id: 'refresh-tokens', every: 60_000 },
   { id: 'expire-trials', every: 15 * 60_000 },
   { id: 'period-ending', pattern: '0 9 * * *', tz: 'America/Sao_Paulo' },
@@ -76,6 +77,7 @@ async function main(): Promise<void> {
 
   const handlers: Record<string, () => Promise<unknown>> = {
     'deliver-events': () => container.delivery.dispatchDue(),
+    'deliver-webhooks': () => container.webhookDelivery.dispatchDue(),
     'refresh-tokens': () => container.vault.refreshDue(),
     'expire-trials': () => container.trials.expireDue(),
     'period-ending': () => container.periodEnding.run(),

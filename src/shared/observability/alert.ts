@@ -9,6 +9,7 @@ export type AlertKind =
   | 'install.scopes_missing'
   | 'install.token_mismatch'
   | 'event.dead_letter'
+  | 'webhook.dead_letter'
   | 'stripe.dead_letter'
   | 'stripe.event_unrouted'
   | 'charge.disputed'
