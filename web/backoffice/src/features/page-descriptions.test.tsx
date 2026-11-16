@@ -17,6 +17,10 @@ const DESCRIPTIONS: Array<[string, string]> = [
   ],
   ['/apps', 'Apps cadastrados na plataforma: estado, trial e escopos.'],
   ['/catalog', 'Produtos e planos cobrados no portal CRMThink.'],
+  [
+    '/payment-integrations',
+    'Sistemas que avisam pagamentos de boleto e as chaves de cada um.',
+  ],
   ['/audit', 'Registro de quem fez o quê no backoffice.'],
   ['/system', 'Varreduras e chave de assinatura dos tokens.'],
   ['/operators', 'Contas de quem opera a plataforma.'],

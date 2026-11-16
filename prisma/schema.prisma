@@ -376,3 +376,43 @@ model AdminAuditLog {
   @@index([createdAt])
   @@map("admin_audit_log")
 }
+
+/// Integração que avisa pagamentos em `POST /webhooks/payments`. A chave só existe como hash.
+model PaymentIntegration {
+  id         Int       @id @default(autoincrement())
+  name       String    @db.VarChar(200)
+  keyHash    String    @unique @map("key_hash") @db.VarChar(128)
+  /// Primeiros caracteres da chave, só para identificá-la na lista.
+  keyPrefix  String    @map("key_prefix") @db.VarChar(16)
+  active     Boolean   @default(true)
+  lastUsedAt DateTime? @map("last_used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  notices PaymentNotice[]
+
+  @@map("payment_integration")
+}
+
+/// Aviso de pagamento: registra o período decidido antes de escrever no SPA, o que torna o reenvio idempotente.
+model PaymentNotice {
+  id                Int       @id @default(autoincrement())
+  integrationId     Int       @map("integration_id")
+  /// Id do pagamento no sistema de origem (ex.: id do boleto). Único por integração.
+  externalId        String    @map("external_id") @db.VarChar(200)
+  subscriptionSpaId Int       @map("subscription_spa_id")
+  installationId    Int       @map("installation_id")
+  periodStart       DateTime  @map("period_start")
+  periodEnd         DateTime  @map("period_end")
+  paidAt            DateTime? @map("paid_at")
+  /// pending (decidido, escrita não confirmada) | applied
+  status            String    @db.VarChar(20)
+  createdAt         DateTime  @default(now()) @map("created_at")
+  appliedAt         DateTime? @map("applied_at")
+
+  integration PaymentIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, externalId])
+  @@index([subscriptionSpaId])
+  @@map("payment_notice")
+}

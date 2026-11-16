@@ -89,6 +89,18 @@ Bitrix (`bitrix-auth-verifier.ts`).
 A conta usada é deduzida do prefixo da chave (`sk_live_`/`rk_live_` → produção), e o _price id_
 lido do SPA é o do mesmo ambiente — nunca o do outro como fallback (seria cobrar na conta errada).
 
+### Avisos de pagamento
+
+`POST /webhooks/payments` exige `Authorization: Bearer <chave de integração>` (`pay_` + 256 bits
+aleatórios). Só o hash SHA-256 é guardado (`payment_integration.key_hash`), com os 8 primeiros
+caracteres (`key_prefix`) para identificar a chave na lista; a chave completa aparece uma única
+vez, na criação e na rotação, sem cache (`Cache-Control: no-store`). A rotação invalida a chave
+anterior na hora; desativar a integração bloqueia (`403 INTEGRATION_INACTIVE`) sem apagar o
+histórico. A chave só autentica esta rota (a chave de app e a de operador não valem aqui, e a de
+integração não vale em nenhuma outra). A autenticação roda antes de ler o corpo (JSON de até
+16 KB). O log mascara o header `Authorization`, e a auditoria da gestão das integrações guarda só
+o corpo da requisição, nunca a chave.
+
 ### Portal CRMThink (SPAs)
 
 `/bitrix/spa-events` exige `auth[application_token]` igual a `CRMTHINK_APPLICATION_TOKEN`

@@ -3330,6 +3330,258 @@
         }
       }
     },
+    "/webhooks/payments": {
+      "post": {
+        "operationId": "receivePaymentNotice",
+        "tags": [
+          "Webhooks recebidos"
+        ],
+        "summary": "Aviso de pagamento de assinatura manual",
+        "description": "Um sistema de cobrança avisa que um pagamento (por exemplo, um boleto) foi feito e a plataforma renova a assinatura `manual`: o status passa a `active`, o período avança (início = fim anterior; fim = `periodEnd` ou fim anterior + intervalo do plano) e o app recebe `subscription.renewed`. Identifique a assinatura por `subscriptionId` ou `installationId` (um só). **`externalId` é o id do pagamento** (por exemplo, o id do boleto) e torna o aviso idempotente: repetir devolve `duplicate: true` sem renovar de novo, e reaproveitá-lo para outra assinatura é `EXTERNAL_ID_REUSED`. O novo fim fica no máximo 24 meses à frente de hoje. Só em produção. Corpo JSON de até 16 KB.",
+        "security": [
+          {
+            "paymentIntegrationKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentNotice"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Assinatura renovada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentNoticeResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.\n- `INVALID_JSON`: O corpo do aviso de pagamento não é um JSON válido.",
+            "x-error-codes": [
+              "VALIDATION_ERROR",
+              "INVALID_JSON"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  },
+                  "INVALID_JSON": {
+                    "value": {
+                      "error": {
+                        "code": "INVALID_JSON",
+                        "message": "O corpo do aviso de pagamento não é um JSON válido."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `INTEGRATION_INACTIVE`: A integração de pagamento dona da chave está desativada; nenhum aviso é aceito.",
+            "x-error-codes": [
+              "INTEGRATION_INACTIVE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INTEGRATION_INACTIVE": {
+                    "value": {
+                      "error": {
+                        "code": "INTEGRATION_INACTIVE",
+                        "message": "A integração de pagamento dona da chave está desativada; nenhum aviso é aceito."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `INSTALLATION_NOT_FOUND`: Instalação inexistente, de outro app ou desvinculada do SPA 1060.\n- `SUBSCRIPTION_NOT_FOUND`: Assinatura inexistente ou de instalação de outro app.",
+            "x-error-codes": [
+              "INSTALLATION_NOT_FOUND",
+              "SUBSCRIPTION_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INSTALLATION_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "INSTALLATION_NOT_FOUND",
+                        "message": "Instalação inexistente, de outro app ou desvinculada do SPA 1060."
+                      }
+                    }
+                  },
+                  "SUBSCRIPTION_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "SUBSCRIPTION_NOT_FOUND",
+                        "message": "Assinatura inexistente ou de instalação de outro app."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `SUBSCRIPTION_NOT_RENEWABLE`: A assinatura não está `active` nem `past_due` (está cancelada, encerrada ou em trial), então um pagamento não a renova. `details` traz `{ subscriptionId, status }`.\n- `EXTERNAL_ID_REUSED`: O `externalId` já foi usado por esta integração para outra assinatura ou instalação: ele identifica um pagamento só.\n- `SUBSCRIPTIONS_READ_ONLY`: Assinaturas manuais só são criadas no ambiente de produção; fora dela a rota é somente leitura.\n- `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.",
+            "x-error-codes": [
+              "SUBSCRIPTION_NOT_RENEWABLE",
+              "EXTERNAL_ID_REUSED",
+              "SUBSCRIPTIONS_READ_ONLY",
+              "BILLING_BUSY"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "SUBSCRIPTION_NOT_RENEWABLE": {
+                    "value": {
+                      "error": {
+                        "code": "SUBSCRIPTION_NOT_RENEWABLE",
+                        "message": "A assinatura não está `active` nem `past_due` (está cancelada, encerrada ou em trial), então um pagamento não a renova. `details` traz `{ subscriptionId, status }`."
+                      }
+                    }
+                  },
+                  "EXTERNAL_ID_REUSED": {
+                    "value": {
+                      "error": {
+                        "code": "EXTERNAL_ID_REUSED",
+                        "message": "O `externalId` já foi usado por esta integração para outra assinatura ou instalação: ele identifica um pagamento só."
+                      }
+                    }
+                  },
+                  "SUBSCRIPTIONS_READ_ONLY": {
+                    "value": {
+                      "error": {
+                        "code": "SUBSCRIPTIONS_READ_ONLY",
+                        "message": "Assinaturas manuais só são criadas no ambiente de produção; fora dela a rota é somente leitura."
+                      }
+                    }
+                  },
+                  "BILLING_BUSY": {
+                    "value": {
+                      "error": {
+                        "code": "BILLING_BUSY",
+                        "message": "Outra operação de cobrança da mesma instalação está em andamento."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Erro\n- `PAYLOAD_TOO_LARGE`: O corpo do aviso de pagamento passa de 16 KB.",
+            "x-error-codes": [
+              "PAYLOAD_TOO_LARGE"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PAYLOAD_TOO_LARGE": {
+                    "value": {
+                      "error": {
+                        "code": "PAYLOAD_TOO_LARGE",
+                        "message": "O corpo do aviso de pagamento passa de 16 KB."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Não processável\n- `NOT_MANUAL_SUBSCRIPTION`: O aviso de pagamento aponta para uma assinatura que não é manual (por exemplo, Stripe), que se renova sozinha.\n- `INVALID_PERIOD`: Período da assinatura inválido: data inexistente, fim igual ou anterior ao início, ou mais de 24 meses.",
+            "x-error-codes": [
+              "NOT_MANUAL_SUBSCRIPTION",
+              "INVALID_PERIOD"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "NOT_MANUAL_SUBSCRIPTION": {
+                    "value": {
+                      "error": {
+                        "code": "NOT_MANUAL_SUBSCRIPTION",
+                        "message": "O aviso de pagamento aponta para uma assinatura que não é manual (por exemplo, Stripe), que se renova sozinha."
+                      }
+                    }
+                  },
+                  "INVALID_PERIOD": {
+                    "value": {
+                      "error": {
+                        "code": "INVALID_PERIOD",
+                        "message": "Período da assinatura inválido: data inexistente, fim igual ou anterior ao início, ou mais de 24 meses."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/webhooks/stripe": {
       "post": {
         "operationId": "receiveStripeWebhook",
@@ -4413,6 +4665,11 @@
         "in": "header",
         "name": "Stripe-Signature",
         "description": "Assinatura do Stripe sobre o corpo cru (`STRIPE_WEBHOOK_SECRET`)."
+      },
+      "paymentIntegrationKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Chave de uma integração de pagamento (`Authorization: Bearer <chave>`), criada no backoffice em `/admin/payment-integrations`. Vale só para `POST /webhooks/payments`; a chave de um app ou de operador não é aceita aqui."
       }
     },
     "schemas": {
@@ -5572,6 +5829,73 @@
         },
         "required": [
           "keys"
+        ],
+        "additionalProperties": false
+      },
+      "PaymentNotice": {
+        "type": "object",
+        "properties": {
+          "externalId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Id do pagamento no sistema de origem (ex.: id do boleto). Único por integração: repetir é seguro, reaproveitar para outro pagamento não."
+          },
+          "subscriptionId": {
+            "description": "Id da assinatura no SPA 1142",
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "installationId": {
+            "description": "Id da instalação: renova a assinatura vigente dela",
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "paidAt": {
+            "description": "Data do pagamento (AAAA-MM-DD)",
+            "type": "string",
+            "format": "date"
+          },
+          "periodEnd": {
+            "description": "Novo fim do período (AAAA-MM-DD); sem ele, vale o fim atual mais o intervalo do plano",
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "externalId"
+        ],
+        "additionalProperties": false
+      },
+      "PaymentNoticeResult": {
+        "type": "object",
+        "properties": {
+          "subscriptionId": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "const": "active"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "description": "`true` quando o aviso já tinha sido aplicado: nada foi renovado de novo"
+          }
+        },
+        "required": [
+          "subscriptionId",
+          "status",
+          "periodStart",
+          "periodEnd",
+          "duplicate"
         ],
         "additionalProperties": false
       },

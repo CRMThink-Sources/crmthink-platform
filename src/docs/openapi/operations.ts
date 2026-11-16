@@ -17,6 +17,7 @@ import {
 } from '@/modules/billing/application/items-service'
 import { spaEventSchema } from '@/modules/billing/application/spa-events'
 import { createManualSubscriptionSchema } from '@/modules/billing/application/manual-subscription-service'
+import { paymentNoticeSchema } from '@/modules/billing/application/payment-notice-service'
 import { trialRequestSchema } from '@/modules/billing/application/trial-service'
 import {
   createAppSchema,
@@ -32,6 +33,10 @@ import {
   productPatchSchema,
   productSchema,
 } from '@/modules/billing/http/admin-catalog-routes'
+import {
+  createPaymentIntegrationSchema,
+  updatePaymentIntegrationSchema,
+} from '@/modules/billing/http/admin-payment-integration-routes'
 import { loginSchema, totpSchema } from '@/modules/backoffice/application/login'
 import {
   changePasswordSchema,
@@ -58,7 +63,8 @@ export type Tag =
   | 'Operador'
 
 /** `admin`: sessão do backoffice (`adminSession`) ou token de script (`adminToken`). */
-export type Security = 'appApiKey' | 'admin' | 'stripeSignature' | 'none'
+export type Security =
+  'appApiKey' | 'admin' | 'stripeSignature' | 'paymentIntegrationKey' | 'none'
 
 /** Schema com nome de componente (`#/components/schemas/<id>`). */
 export type Named = { id: string; schema: z.ZodType }
@@ -121,6 +127,15 @@ const req = {
   updateItem: named('UpdateItemRequest', updateItemSchema),
   spaEvent: named('SpaEvent', spaEventSchema),
   trialRequest: named('TrialRequest', trialRequestSchema),
+  paymentNotice: named('PaymentNotice', paymentNoticeSchema),
+  createPaymentIntegration: named(
+    'CreatePaymentIntegrationRequest',
+    createPaymentIntegrationSchema,
+  ),
+  updatePaymentIntegration: named(
+    'UpdatePaymentIntegrationRequest',
+    updatePaymentIntegrationSchema,
+  ),
   createManualSubscription: named(
     'CreateManualSubscription',
     createManualSubscriptionSchema,
@@ -179,6 +194,19 @@ const res = {
     r.webhookSecretRotatedSchema,
   ),
   trialStarted: named('TrialStarted', r.trialStartedSchema),
+  paymentNoticeResult: named(
+    'PaymentNoticeResult',
+    r.paymentNoticeResultSchema,
+  ),
+  paymentIntegration: named('PaymentIntegration', r.paymentIntegrationSchema),
+  paymentIntegrationList: named(
+    'PaymentIntegrationList',
+    r.paymentIntegrationListSchema,
+  ),
+  paymentIntegrationKey: named(
+    'PaymentIntegrationKey',
+    r.paymentIntegrationKeySchema,
+  ),
   manualSubscriptionCreated: named(
     'ManualSubscriptionCreated',
     r.manualSubscriptionCreatedSchema,
@@ -695,6 +723,30 @@ export const OPERATIONS: Operation[] = [
   // Webhooks recebidos
   {
     method: 'post',
+    path: '/webhooks/payments',
+    operationId: 'receivePaymentNotice',
+    tag: 'Webhooks recebidos',
+    summary: 'Aviso de pagamento de assinatura manual',
+    description:
+      'Um sistema de cobrança avisa que um pagamento (por exemplo, um boleto) foi feito e a plataforma renova a assinatura `manual`: o status passa a `active`, o período avança (início = fim anterior; fim = `periodEnd` ou fim anterior + intervalo do plano) e o app recebe `subscription.renewed`. Identifique a assinatura por `subscriptionId` ou `installationId` (um só). **`externalId` é o id do pagamento** (por exemplo, o id do boleto) e torna o aviso idempotente: repetir devolve `duplicate: true` sem renovar de novo, e reaproveitá-lo para outra assinatura é `EXTERNAL_ID_REUSED`. O novo fim fica no máximo 24 meses à frente de hoje. Só em produção. Corpo JSON de até 16 KB.',
+    security: 'paymentIntegrationKey',
+    body: { schema: req.paymentNotice },
+    responses: { 200: json('Assinatura renovada', res.paymentNoticeResult) },
+    errors: [
+      'INSTALLATION_NOT_FOUND',
+      'SUBSCRIPTION_NOT_FOUND',
+      'NOT_MANUAL_SUBSCRIPTION',
+      'SUBSCRIPTION_NOT_RENEWABLE',
+      'EXTERNAL_ID_REUSED',
+      'INVALID_PERIOD',
+      'SUBSCRIPTIONS_READ_ONLY',
+      'INVALID_JSON',
+      'PAYLOAD_TOO_LARGE',
+      'BILLING_BUSY',
+    ],
+  },
+  {
+    method: 'post',
     path: '/webhooks/stripe',
     operationId: 'receiveStripeWebhook',
     tag: 'Webhooks recebidos',
@@ -1129,6 +1181,60 @@ export const OPERATIONS: Operation[] = [
       'SUBSCRIPTION_WRITE_FAILED',
       'BILLING_BUSY',
     ],
+  },
+  {
+    method: 'get',
+    path: '/admin/payment-integrations',
+    operationId: 'listPaymentIntegrations',
+    tag: 'Operador',
+    summary: 'Listar integrações de pagamento',
+    description:
+      'Integrações que avisam pagamentos em `POST /webhooks/payments`. A lista mostra só o prefixo da chave, nunca a chave nem o hash.',
+    security: 'admin',
+    responses: {
+      200: json('Integrações', res.paymentIntegrationList),
+    },
+  },
+  {
+    method: 'post',
+    path: '/admin/payment-integrations',
+    operationId: 'createPaymentIntegration',
+    tag: 'Operador',
+    summary: 'Criar integração de pagamento',
+    description:
+      '**`apiKey` só aparece nesta resposta** (sem cache): a chave é guardada só como hash e não pode ser recuperada depois. Use-a como `Authorization: Bearer` em `POST /webhooks/payments`.',
+    security: 'admin',
+    body: { schema: req.createPaymentIntegration },
+    responses: { 201: json('Integração e chave', res.paymentIntegrationKey) },
+  },
+  {
+    method: 'patch',
+    path: '/admin/payment-integrations/{id}',
+    operationId: 'updatePaymentIntegration',
+    tag: 'Operador',
+    summary: 'Renomear, desativar ou reativar integração de pagamento',
+    description:
+      'Desativar bloqueia os avisos da integração (`INTEGRATION_INACTIVE`) sem apagar o histórico e exige o motivo; renomear e reativar não exigem.',
+    security: 'admin',
+    pathParams: { id: 'Id da integração' },
+    body: { schema: req.updatePaymentIntegration },
+    responses: { 200: json('Integração', res.paymentIntegration) },
+    errors: ['PAYMENT_INTEGRATION_NOT_FOUND'],
+  },
+  {
+    method: 'post',
+    path: '/admin/payment-integrations/{id}/rotate-key',
+    operationId: 'rotatePaymentIntegrationKey',
+    tag: 'Operador',
+    summary: 'Rotacionar a chave de uma integração de pagamento',
+    description:
+      '**A chave nova só aparece nesta resposta** (sem cache). A chave anterior deixa de valer imediatamente.',
+    security: 'admin',
+    pathParams: { id: 'Id da integração' },
+    responses: {
+      200: json('Integração e chave nova', res.paymentIntegrationKey),
+    },
+    errors: ['PAYMENT_INTEGRATION_NOT_FOUND'],
   },
   {
     method: 'post',

@@ -461,6 +461,26 @@ export interface paths {
         patch: operations["updateItem"];
         trace?: never;
     };
+    "/webhooks/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aviso de pagamento de assinatura manual
+         * @description Um sistema de cobrança avisa que um pagamento (por exemplo, um boleto) foi feito e a plataforma renova a assinatura `manual`: o status passa a `active`, o período avança (início = fim anterior; fim = `periodEnd` ou fim anterior + intervalo do plano) e o app recebe `subscription.renewed`. Identifique a assinatura por `subscriptionId` ou `installationId` (um só). **`externalId` é o id do pagamento** (por exemplo, o id do boleto) e torna o aviso idempotente: repetir devolve `duplicate: true` sem renovar de novo, e reaproveitá-lo para outra assinatura é `EXTERNAL_ID_REUSED`. O novo fim fica no máximo 24 meses à frente de hoje. Só em produção. Corpo JSON de até 16 KB.
+         */
+        post: operations["receivePaymentNotice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/webhooks/stripe": {
         parameters: {
             query?: never;
@@ -1196,6 +1216,35 @@ export interface components {
                 n: string;
                 e: string;
             }[];
+        };
+        PaymentNotice: {
+            /** @description Id do pagamento no sistema de origem (ex.: id do boleto). Único por integração: repetir é seguro, reaproveitar para outro pagamento não. */
+            externalId: string;
+            /** @description Id da assinatura no SPA 1142 */
+            subscriptionId?: number;
+            /** @description Id da instalação: renova a assinatura vigente dela */
+            installationId?: number;
+            /**
+             * Format: date
+             * @description Data do pagamento (AAAA-MM-DD)
+             */
+            paidAt?: string;
+            /**
+             * Format: date
+             * @description Novo fim do período (AAAA-MM-DD); sem ele, vale o fim atual mais o intervalo do plano
+             */
+            periodEnd?: string;
+        };
+        PaymentNoticeResult: {
+            subscriptionId: number;
+            /** @constant */
+            status: "active";
+            /** Format: date-time */
+            periodStart: string;
+            /** Format: date-time */
+            periodEnd: string;
+            /** @description `true` quando o aviso já tinha sido aplicado: nada foi renovado de novo */
+            duplicate: boolean;
         };
         PlanList: {
             items: {
@@ -3449,6 +3498,120 @@ export interface operations {
              *     - `GATEWAY_ERROR`: O Stripe recusou ou falhou na operação.
              */
             502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    receivePaymentNotice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentNotice"];
+            };
+        };
+        responses: {
+            /** @description Assinatura renovada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentNoticeResult"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
+             *     - `INVALID_JSON`: O corpo do aviso de pagamento não é um JSON válido.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `INTEGRATION_INACTIVE`: A integração de pagamento dona da chave está desativada; nenhum aviso é aceito.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `INSTALLATION_NOT_FOUND`: Instalação inexistente, de outro app ou desvinculada do SPA 1060.
+             *     - `SUBSCRIPTION_NOT_FOUND`: Assinatura inexistente ou de instalação de outro app.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Conflito
+             *     - `SUBSCRIPTION_NOT_RENEWABLE`: A assinatura não está `active` nem `past_due` (está cancelada, encerrada ou em trial), então um pagamento não a renova. `details` traz `{ subscriptionId, status }`.
+             *     - `EXTERNAL_ID_REUSED`: O `externalId` já foi usado por esta integração para outra assinatura ou instalação: ele identifica um pagamento só.
+             *     - `SUBSCRIPTIONS_READ_ONLY`: Assinaturas manuais só são criadas no ambiente de produção; fora dela a rota é somente leitura.
+             *     - `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Erro
+             *     - `PAYLOAD_TOO_LARGE`: O corpo do aviso de pagamento passa de 16 KB.
+             */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não processável
+             *     - `NOT_MANUAL_SUBSCRIPTION`: O aviso de pagamento aponta para uma assinatura que não é manual (por exemplo, Stripe), que se renova sozinha.
+             *     - `INVALID_PERIOD`: Período da assinatura inválido: data inexistente, fim igual ou anterior ao início, ou mais de 24 meses.
+             */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

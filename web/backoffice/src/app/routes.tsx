@@ -11,6 +11,7 @@ import { InstallationDetailPage } from '@/features/installation-detail/page'
 import { InstallationsPage } from '@/features/installations/page'
 import { OperatorsPage } from '@/features/operators/page'
 import { OverviewPage } from '@/features/overview/page'
+import { PaymentIntegrationsPage } from '@/features/payment-integrations/page'
 import { StripeEventsPage } from '@/features/stripe-events/page'
 import { SystemPage } from '@/features/system/page'
 import { AuthEventsBridge } from './auth-bridge'
@@ -73,6 +74,11 @@ export const appRoutes: RouteObject[] = [
     ],
   },
   { path: 'catalog', element: <CatalogPage />, handle: handle('Catálogo') },
+  {
+    path: 'payment-integrations',
+    element: <PaymentIntegrationsPage />,
+    handle: handle('Integrações de pagamento'),
+  },
   { path: 'audit', element: <AuditPage />, handle: handle('Auditoria') },
   { path: 'system', element: <SystemPage />, handle: handle('Sistema') },
   {
