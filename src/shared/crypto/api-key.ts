@@ -9,6 +9,11 @@ export function generateApiKey(): string {
   return `cp_${randomBytes(32).toString('base64url')}`
 }
 
+/** Chave de uma integração de pagamento (`POST /webhooks/payments`); mesmo hash da chave de app. */
+export function generatePaymentKey(): string {
+  return `pay_${randomBytes(32).toString('base64url')}`
+}
+
 export function generateWebhookSecret(): string {
   return `whsec_${randomBytes(32).toString('base64url')}`
 }
