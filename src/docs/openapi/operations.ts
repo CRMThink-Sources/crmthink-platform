@@ -16,6 +16,7 @@ import {
   updateItemSchema,
 } from '@/modules/billing/application/items-service'
 import { spaEventSchema } from '@/modules/billing/application/spa-events'
+import { createManualSubscriptionSchema } from '@/modules/billing/application/manual-subscription-service'
 import { trialRequestSchema } from '@/modules/billing/application/trial-service'
 import {
   createAppSchema,
@@ -120,6 +121,10 @@ const req = {
   updateItem: named('UpdateItemRequest', updateItemSchema),
   spaEvent: named('SpaEvent', spaEventSchema),
   trialRequest: named('TrialRequest', trialRequestSchema),
+  createManualSubscription: named(
+    'CreateManualSubscription',
+    createManualSubscriptionSchema,
+  ),
   stripeEvent: named(
     'StripeEvent',
     z
@@ -174,6 +179,10 @@ const res = {
     r.webhookSecretRotatedSchema,
   ),
   trialStarted: named('TrialStarted', r.trialStartedSchema),
+  manualSubscriptionCreated: named(
+    'ManualSubscriptionCreated',
+    r.manualSubscriptionCreatedSchema,
+  ),
   attempts: named('InstallAttemptList', r.installAttemptListSchema),
   outboxEvents: named('OutboxEventList', r.outboxEventListSchema),
   stripeEvents: named('StripeEventList', r.stripeEventListSchema),
@@ -1091,6 +1100,33 @@ export const OPERATIONS: Operation[] = [
       'TRIAL_NOT_CONFIGURED',
       'TRIAL_ALREADY_USED',
       'SUBSCRIPTION_ALREADY_EXISTS',
+      'BILLING_BUSY',
+    ],
+  },
+  {
+    method: 'post',
+    path: '/admin/installations/{id}/subscriptions',
+    operationId: 'createManualSubscription',
+    tag: 'Operador',
+    summary: 'Criar assinatura manual ou bonificação',
+    description:
+      'Cria uma assinatura `manual` (boleto, contrato) ou uma bonificação, já `active`, no SPA 1142 e avisa o app com `subscription.activated`. Uma assinatura vigente por instalação: `active` ou `past_due` recusa com `SUBSCRIPTION_ALREADY_EXISTS` (os `details` trazem a existente); um trial em andamento é cancelado e o evento traz `previousSubscriptionId`. O fim do período é obrigatório e fica no máximo 24 meses depois do início (padrão: hoje). Na bonificação, `approvedBy` é obrigatório. Só em produção (`SUBSCRIPTIONS_READ_ONLY` nos demais ambientes). A gravação é conferida por releitura; se divergir, `SUBSCRIPTION_WRITE_FAILED` traz o id do item criado e nenhum evento sai.',
+    security: 'admin',
+    pathParams: installationId,
+    body: { schema: req.createManualSubscription },
+    responses: {
+      201: json('Assinatura criada', res.manualSubscriptionCreated),
+    },
+    errors: [
+      'INSTALLATION_NOT_FOUND',
+      ['INSTALLATION_NOT_ACTIVE', 409],
+      'PLAN_NOT_FOUND',
+      'PLAN_INACTIVE',
+      'PLAN_TYPE_MISMATCH',
+      'INVALID_PERIOD',
+      'SUBSCRIPTION_ALREADY_EXISTS',
+      'SUBSCRIPTIONS_READ_ONLY',
+      'SUBSCRIPTION_WRITE_FAILED',
       'BILLING_BUSY',
     ],
   },

@@ -13,8 +13,9 @@ import {
   useAdminAction,
 } from '@/features/actions/use-admin-action'
 import { formatDateTime } from '@/lib/format'
+import { ManualSubscriptionDialog } from './manual-subscription-dialog'
 
-type Open = 'trial' | 'token' | 'resend' | null
+type Open = 'trial' | 'subscription' | 'token' | 'resend' | null
 
 /**
  * Ações do operador no detalhe da instalação. Só `operator` as vê (`RoleGate`); a API
@@ -65,6 +66,11 @@ export function InstallationActions({ data }: { data: InstallationDetail }) {
           Conceder trial
         </Button>
         {data.status === 'ACTIVE' && (
+          <Button variant="outline" onClick={() => setOpen('subscription')}>
+            Nova assinatura
+          </Button>
+        )}
+        {data.status === 'ACTIVE' && (
           <Button variant="outline" onClick={() => setOpen('token')}>
             Renovar token
           </Button>
@@ -100,6 +106,12 @@ export function InstallationActions({ data }: { data: InstallationDetail }) {
         onConfirm={async reason => {
           if (await trial.execute(undefined, reason)) setOpen(null)
         }}
+      />
+
+      <ManualSubscriptionDialog
+        open={open === 'subscription'}
+        onOpenChange={close}
+        installation={data}
       />
 
       <ActionDialog

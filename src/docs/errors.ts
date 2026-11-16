@@ -269,6 +269,30 @@ export const ERROR_CATALOG = {
     origin: 'billing/application/catalog-admin.ts',
   },
 
+  // Assinaturas manuais (backoffice)
+  SUBSCRIPTIONS_READ_ONLY: {
+    status: 409,
+    meaning:
+      'Assinaturas manuais só são criadas no ambiente de produção; fora dela a rota é somente leitura.',
+    action: 'Criar a assinatura pelo backoffice da produção.',
+    origin: 'billing/application/manual-subscription-service.ts',
+  },
+  INVALID_PERIOD: {
+    status: 422,
+    meaning:
+      'Período da assinatura inválido: data inexistente, fim igual ou anterior ao início, ou mais de 24 meses.',
+    action: 'Corrigir as datas e repetir.',
+    origin: 'billing/application/manual-subscription-service.ts',
+  },
+  SUBSCRIPTION_WRITE_FAILED: {
+    status: 502,
+    meaning:
+      'O Bitrix aceitou a criação da assinatura, mas a releitura não confere com o pedido. `details` traz `{ id, created, lost }` com o item criado e os campos que divergem; nenhum evento foi enviado ao app.',
+    action:
+      'Conferir o item pelo id no SPA de assinaturas, corrigir ou excluir, e repetir a criação.',
+    origin: 'billing/application/manual-subscription-service.ts',
+  },
+
   // Cobrança
   PLAN_NOT_FOUND: {
     status: 404,
@@ -310,10 +334,12 @@ export const ERROR_CATALOG = {
   },
   SUBSCRIPTION_ALREADY_EXISTS: {
     status: 409,
-    meaning: 'A instalação já tem assinatura paga vigente.',
-    action: 'Usar troca de plano ou o Customer Portal.',
+    meaning:
+      'A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente.',
+    action:
+      'Usar troca de plano ou o Customer Portal; para trocar de modalidade, cancelar a atual antes.',
     origin:
-      'billing/application/checkout-service.ts, billing/application/trial-service.ts',
+      'billing/application/checkout-service.ts, billing/application/trial-service.ts, billing/application/manual-subscription-service.ts',
   },
   NO_ACTIVE_SUBSCRIPTION: {
     status: 422,

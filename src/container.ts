@@ -60,6 +60,7 @@ import {
 import { SubscriptionQueries } from '@/modules/billing/application/subscription-queries'
 import { SubscriptionWriter } from '@/modules/billing/application/subscription-writer'
 import { Sweeps } from '@/modules/billing/application/sweeps'
+import { ManualSubscriptionService } from '@/modules/billing/application/manual-subscription-service'
 import { TrialService } from '@/modules/billing/application/trial-service'
 import { CatalogRepository } from '@/modules/billing/infra/spa/catalog-repository'
 import { SpaMappers } from '@/modules/billing/infra/spa/spa-mappers'
@@ -231,6 +232,14 @@ export function buildContainer(deps: ContainerDeps) {
     installationSpa,
     clock,
   )
+  const manualSubscriptions = new ManualSubscriptionService({
+    context: billingContext,
+    writer,
+    registry,
+    catalog,
+    clock,
+    environment: env.platformEnvironment,
+  })
   const purchases = new PurchaseService(db, billingContext, writer, gateway)
   const refunds = new RefundService(db, billingContext, writer, gateway)
   const lifecycle = new StripeLifecycle(
@@ -359,6 +368,7 @@ export function buildContainer(deps: ContainerDeps) {
     catalogAdmin,
     plans,
     trials,
+    manualSubscriptions,
     purchases,
     refunds,
     lifecycle,
