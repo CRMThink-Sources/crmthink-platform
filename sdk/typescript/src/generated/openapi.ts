@@ -2119,7 +2119,7 @@ export interface operations {
             /**
              * @description Conflito
              *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).
-             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.
+             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente.
              */
             409: {
                 headers: {
@@ -2840,7 +2840,7 @@ export interface operations {
             /**
              * @description Conflito
              *     - `TRIAL_ALREADY_USED`: A instalação já usou o trial (na rota de operador, também quando o trial está vigente).
-             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.
+             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente.
              *     - `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.
              */
             409: {

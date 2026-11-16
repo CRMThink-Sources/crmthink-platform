@@ -103,8 +103,21 @@ cancelamento). Mudanças feitas lá chegam por webhook como qualquer outra.
 
 ## Assinatura manual
 
-O comercial cria/edita a assinatura no SPA 1142 (`modality = manual`). O evento do SPA vai para
-a fila `spa-events`; `ManualLifecycle` compara com o último estado visto e decide:
+O operador **cria** a assinatura manual (ou a **bonificação**) no backoffice, em
+`POST /admin/installations/{id}/subscriptions` (`manual-subscription-service.ts`); depois o
+comercial edita no SPA 1142 (`modality = manual`). A criação:
+
+- vale uma assinatura vigente por instalação: `active`/`past_due` (Stripe ou manual) recusa com
+  `SUBSCRIPTION_ALREADY_EXISTS`; um trial em andamento é cancelado e entra em
+  `previousSubscriptionId` do evento;
+- só roda em produção (`SUBSCRIPTIONS_READ_ONLY` nos demais ambientes) e sob o lock da instalação;
+- grava o item sem evento, **relê** para conferir plano, status, modalidade e período, e só então
+  emite `subscription.activated` (divergência: `502 SUBSCRIPTION_WRITE_FAILED`, sem evento);
+- exige fim do período, no máximo 24 meses depois do início; na bonificação, o responsável. O
+  rastro é o título, um comentário na linha do tempo da assinatura e a auditoria (alvo: a
+  instalação); não há campo próprio no SPA.
+
+O evento do SPA vai para a fila `spa-events`; `ManualLifecycle` compara com o último estado visto e decide:
 ativação, renovação (período avançou), `past_due`, recuperação, troca de plano, cancelamento,
 exclusão (`ended {reason: deleted}`).
 

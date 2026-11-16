@@ -305,6 +305,15 @@ export const trialStartedSchema = z.strictObject({
   trialEndsAt: isoDate,
 })
 
+export const manualSubscriptionCreatedSchema = z.strictObject({
+  subscriptionId: z.number().int(),
+  status: z.literal('active'),
+  modality: z.literal('manual'),
+  planId: z.number().int(),
+  periodStart: isoDate,
+  periodEnd: isoDate,
+})
+
 export const installAttemptListSchema = list(
   z.looseObject({
     id: z.number().int(),

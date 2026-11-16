@@ -4336,6 +4336,320 @@
         }
       }
     },
+    "/admin/installations/{id}/subscriptions": {
+      "post": {
+        "operationId": "createManualSubscription",
+        "tags": [
+          "Operador"
+        ],
+        "summary": "Criar assinatura manual ou bonificação",
+        "description": "Cria uma assinatura `manual` (boleto, contrato) ou uma bonificação, já `active`, no SPA 1142 e avisa o app com `subscription.activated`. Uma assinatura vigente por instalação: `active` ou `past_due` recusa com `SUBSCRIPTION_ALREADY_EXISTS` (os `details` trazem a existente); um trial em andamento é cancelado e o evento traz `previousSubscriptionId`. O fim do período é obrigatório e fica no máximo 24 meses depois do início (padrão: hoje). Na bonificação, `approvedBy` é obrigatório. Só em produção (`SUBSCRIPTIONS_READ_ONLY` nos demais ambientes). A gravação é conferida por releitura; se divergir, `SUBSCRIPTION_WRITE_FAILED` traz o id do item criado e nenhum evento sai.\n\n**Papel mínimo:** `operator`.\n\n**Alto impacto:** exige o motivo em `X-Admin-Reason`.",
+        "security": [
+          {
+            "adminSession": []
+          },
+          {
+            "adminToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Id da instalação (`installationId`)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "X-Admin-Reason",
+            "in": "header",
+            "required": true,
+            "description": "Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateManualSubscription"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Assinatura criada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualSubscriptionCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida\n- `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.\n- `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.\n- `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.\n- `PLAN_TYPE_MISMATCH`: Plano de assinatura com `intent=purchase` ou avulso com `intent=subscribe`.",
+            "x-error-codes": [
+              "REASON_INVALID",
+              "REASON_REQUIRED",
+              "VALIDATION_ERROR",
+              "PLAN_TYPE_MISMATCH"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "REASON_INVALID": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_INVALID",
+                        "message": "`X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha."
+                      }
+                    }
+                  },
+                  "REASON_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "REASON_REQUIRED",
+                        "message": "Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado."
+                      }
+                    }
+                  },
+                  "VALIDATION_ERROR": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Corpo ou parâmetros fora do schema; `details` lista `{path, message}`."
+                      }
+                    }
+                  },
+                  "PLAN_TYPE_MISMATCH": {
+                    "value": {
+                      "error": {
+                        "code": "PLAN_TYPE_MISMATCH",
+                        "message": "Plano de assinatura com `intent=purchase` ou avulso com `intent=subscribe`."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Não autenticado\n- `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).",
+            "x-error-codes": [
+              "UNAUTHORIZED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "UNAUTHORIZED": {
+                    "value": {
+                      "error": {
+                        "code": "UNAUTHORIZED",
+                        "message": "Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Proibido\n- `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.\n- `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).\n- `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).",
+            "x-error-codes": [
+              "PASSWORD_CHANGE_REQUIRED",
+              "FORBIDDEN_ROLE",
+              "ORIGIN_NOT_ALLOWED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PASSWORD_CHANGE_REQUIRED": {
+                    "value": {
+                      "error": {
+                        "code": "PASSWORD_CHANGE_REQUIRED",
+                        "message": "A conta está com senha provisória: só a troca de senha é permitida."
+                      }
+                    }
+                  },
+                  "FORBIDDEN_ROLE": {
+                    "value": {
+                      "error": {
+                        "code": "FORBIDDEN_ROLE",
+                        "message": "O papel do operador não permite esta rota (`viewer` só lê)."
+                      }
+                    }
+                  },
+                  "ORIGIN_NOT_ALLOWED": {
+                    "value": {
+                      "error": {
+                        "code": "ORIGIN_NOT_ALLOWED",
+                        "message": "Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada)."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Não encontrado\n- `INSTALLATION_NOT_FOUND`: Instalação inexistente, de outro app ou desvinculada do SPA 1060.\n- `PLAN_NOT_FOUND`: Plano inexistente ou de produto não vinculado ao app.",
+            "x-error-codes": [
+              "INSTALLATION_NOT_FOUND",
+              "PLAN_NOT_FOUND"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INSTALLATION_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "INSTALLATION_NOT_FOUND",
+                        "message": "Instalação inexistente, de outro app ou desvinculada do SPA 1060."
+                      }
+                    }
+                  },
+                  "PLAN_NOT_FOUND": {
+                    "value": {
+                      "error": {
+                        "code": "PLAN_NOT_FOUND",
+                        "message": "Plano inexistente ou de produto não vinculado ao app."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente.\n- `SUBSCRIPTIONS_READ_ONLY`: Assinaturas manuais só são criadas no ambiente de produção; fora dela a rota é somente leitura.\n- `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.",
+            "x-error-codes": [
+              "INSTALLATION_NOT_ACTIVE",
+              "SUBSCRIPTION_ALREADY_EXISTS",
+              "SUBSCRIPTIONS_READ_ONLY",
+              "BILLING_BUSY"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "INSTALLATION_NOT_ACTIVE": {
+                    "value": {
+                      "error": {
+                        "code": "INSTALLATION_NOT_ACTIVE",
+                        "message": "Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409)."
+                      }
+                    }
+                  },
+                  "SUBSCRIPTION_ALREADY_EXISTS": {
+                    "value": {
+                      "error": {
+                        "code": "SUBSCRIPTION_ALREADY_EXISTS",
+                        "message": "A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente."
+                      }
+                    }
+                  },
+                  "SUBSCRIPTIONS_READ_ONLY": {
+                    "value": {
+                      "error": {
+                        "code": "SUBSCRIPTIONS_READ_ONLY",
+                        "message": "Assinaturas manuais só são criadas no ambiente de produção; fora dela a rota é somente leitura."
+                      }
+                    }
+                  },
+                  "BILLING_BUSY": {
+                    "value": {
+                      "error": {
+                        "code": "BILLING_BUSY",
+                        "message": "Outra operação de cobrança da mesma instalação está em andamento."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Não processável\n- `PLAN_INACTIVE`: Plano ou produto inativo.\n- `INVALID_PERIOD`: Período da assinatura inválido: data inexistente, fim igual ou anterior ao início, ou mais de 24 meses.",
+            "x-error-codes": [
+              "PLAN_INACTIVE",
+              "INVALID_PERIOD"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "PLAN_INACTIVE": {
+                    "value": {
+                      "error": {
+                        "code": "PLAN_INACTIVE",
+                        "message": "Plano ou produto inativo."
+                      }
+                    }
+                  },
+                  "INVALID_PERIOD": {
+                    "value": {
+                      "error": {
+                        "code": "INVALID_PERIOD",
+                        "message": "Período da assinatura inválido: data inexistente, fim igual ou anterior ao início, ou mais de 24 meses."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Falha em serviço externo\n- `SUBSCRIPTION_WRITE_FAILED`: O Bitrix aceitou a criação da assinatura, mas a releitura não confere com o pedido. `details` traz `{ id, created, lost }` com o item criado e os campos que divergem; nenhum evento foi enviado ao app.",
+            "x-error-codes": [
+              "SUBSCRIPTION_WRITE_FAILED"
+            ],
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "SUBSCRIPTION_WRITE_FAILED": {
+                    "value": {
+                      "error": {
+                        "code": "SUBSCRIPTION_WRITE_FAILED",
+                        "message": "O Bitrix aceitou a criação da assinatura, mas a releitura não confere com o pedido. `details` traz `{ id, created, lost }` com o item criado e os campos que divergem; nenhum evento foi enviado ao app."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/installations/{id}/timeline": {
       "get": {
         "operationId": "getInstallationTimeline",
@@ -4954,7 +5268,7 @@
             }
           },
           "409": {
-            "description": "Conflito\n- `TRIAL_ALREADY_USED`: A instalação já usou o trial (na rota de operador, também quando o trial está vigente).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.\n- `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.",
+            "description": "Conflito\n- `TRIAL_ALREADY_USED`: A instalação já usou o trial (na rota de operador, também quando o trial está vigente).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente.\n- `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.",
             "x-error-codes": [
               "TRIAL_ALREADY_USED",
               "SUBSCRIPTION_ALREADY_EXISTS",
@@ -4978,7 +5292,7 @@
                     "value": {
                       "error": {
                         "code": "SUBSCRIPTION_ALREADY_EXISTS",
-                        "message": "A instalação já tem assinatura paga vigente."
+                        "message": "A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente."
                       }
                     }
                   },
@@ -6932,7 +7246,7 @@
             }
           },
           "409": {
-            "description": "Conflito\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.",
+            "description": "Conflito\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente.",
             "x-error-codes": [
               "INSTALLATION_NOT_ACTIVE",
               "SUBSCRIPTION_ALREADY_EXISTS"
@@ -6955,7 +7269,7 @@
                     "value": {
                       "error": {
                         "code": "SUBSCRIPTION_ALREADY_EXISTS",
-                        "message": "A instalação já tem assinatura paga vigente."
+                        "message": "A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente."
                       }
                     }
                   }
@@ -8350,7 +8664,7 @@
             }
           },
           "409": {
-            "description": "Conflito\n- `TRIAL_ALREADY_USED`: A instalação já usou o trial (na rota de operador, também quando o trial está vigente).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.\n- `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.",
+            "description": "Conflito\n- `TRIAL_ALREADY_USED`: A instalação já usou o trial (na rota de operador, também quando o trial está vigente).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente.\n- `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.",
             "x-error-codes": [
               "TRIAL_ALREADY_USED",
               "SUBSCRIPTION_ALREADY_EXISTS",
@@ -8374,7 +8688,7 @@
                     "value": {
                       "error": {
                         "code": "SUBSCRIPTION_ALREADY_EXISTS",
-                        "message": "A instalação já tem assinatura paga vigente."
+                        "message": "A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente."
                       }
                     }
                   },
@@ -12402,6 +12716,46 @@
           "title"
         ]
       },
+      "CreateManualSubscription": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Id do plano no SPA"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "bonus"
+            ],
+            "description": "`manual` (boleto, contrato) ou `bonus` (bonificação)"
+          },
+          "periodStart": {
+            "description": "Início (AAAA-MM-DD); padrão: hoje",
+            "type": "string",
+            "format": "date"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date",
+            "description": "Fim do período (AAAA-MM-DD)"
+          },
+          "approvedBy": {
+            "description": "Quem autorizou; obrigatório na bonificação",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "planId",
+          "kind",
+          "periodEnd"
+        ],
+        "additionalProperties": false
+      },
       "CreateOperatorRequest": {
         "type": "object",
         "properties": {
@@ -13245,6 +13599,42 @@
         },
         "required": [
           "keys"
+        ],
+        "additionalProperties": false
+      },
+      "ManualSubscriptionCreated": {
+        "type": "object",
+        "properties": {
+          "subscriptionId": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "const": "active"
+          },
+          "modality": {
+            "type": "string",
+            "const": "manual"
+          },
+          "planId": {
+            "type": "integer"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "periodEnd": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "subscriptionId",
+          "status",
+          "modality",
+          "planId",
+          "periodStart",
+          "periodEnd"
         ],
         "additionalProperties": false
       },

@@ -662,7 +662,7 @@
             }
           },
           "409": {
-            "description": "Conflito\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.",
+            "description": "Conflito\n- `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente.",
             "x-error-codes": [
               "INSTALLATION_NOT_ACTIVE",
               "SUBSCRIPTION_ALREADY_EXISTS"
@@ -685,7 +685,7 @@
                     "value": {
                       "error": {
                         "code": "SUBSCRIPTION_ALREADY_EXISTS",
-                        "message": "A instalação já tem assinatura paga vigente."
+                        "message": "A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente."
                       }
                     }
                   }
@@ -2080,7 +2080,7 @@
             }
           },
           "409": {
-            "description": "Conflito\n- `TRIAL_ALREADY_USED`: A instalação já usou o trial (na rota de operador, também quando o trial está vigente).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.\n- `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.",
+            "description": "Conflito\n- `TRIAL_ALREADY_USED`: A instalação já usou o trial (na rota de operador, também quando o trial está vigente).\n- `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente.\n- `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.",
             "x-error-codes": [
               "TRIAL_ALREADY_USED",
               "SUBSCRIPTION_ALREADY_EXISTS",
@@ -2104,7 +2104,7 @@
                     "value": {
                       "error": {
                         "code": "SUBSCRIPTION_ALREADY_EXISTS",
-                        "message": "A instalação já tem assinatura paga vigente."
+                        "message": "A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente."
                       }
                     }
                   },

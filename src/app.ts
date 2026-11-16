@@ -8,6 +8,7 @@ import { logger } from '@/shared/observability/logger'
 import { registry as metricsRegistry } from '@/shared/observability/metrics'
 import { adminRoutes } from '@/modules/registry/http/admin-routes'
 import { catalogAdminRoutes } from '@/modules/billing/http/admin-catalog-routes'
+import { adminSubscriptionRoutes } from '@/modules/billing/http/admin-subscription-routes'
 import { adminGate } from '@/modules/backoffice/http/gate'
 import { backofficeRoutes } from '@/modules/backoffice/http/routes'
 import { backofficeReadRoutes } from '@/modules/backoffice/http/read-routes'
@@ -145,6 +146,11 @@ export function createApp(
     }),
   )
   admin.use(catalogAdminRoutes({ catalog: container.catalogAdmin }))
+  admin.use(
+    adminSubscriptionRoutes({
+      manualSubscriptions: container.manualSubscriptions,
+    }),
+  )
   app.use(admin)
   // Tudo daqui em diante é servidor-a-servidor: uma autenticação por chave de API.
   const appApi = Router()
