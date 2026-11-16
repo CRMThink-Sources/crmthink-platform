@@ -418,7 +418,7 @@ function webhooks(): Json {
         tags: ['Eventos'],
         summary: EVENT_DATA[type].summary,
         description:
-          'Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.',
+          'Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.',
         parameters: [
           ...SIGNATURE_HEADERS,
           {

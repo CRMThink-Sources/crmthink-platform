@@ -514,7 +514,7 @@ export interface webhooks {
         put?: never;
         /**
          * App instalado no portal pela primeira vez (`subscription: null`).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.installation.created"];
         delete?: never;
@@ -534,7 +534,7 @@ export interface webhooks {
         put?: never;
         /**
          * App reinstalado em portal que já tinha instalação.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.installation.reinstalled"];
         delete?: never;
@@ -554,7 +554,7 @@ export interface webhooks {
         put?: never;
         /**
          * App removido do portal (`ONAPPUNINSTALL` verificado). Tokens deixam de ser entregues.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.installation.removed"];
         delete?: never;
@@ -574,7 +574,7 @@ export interface webhooks {
         put?: never;
         /**
          * Renovação do token falhou repetidamente; a instalação vai para `AUTH_ERROR` e precisa ser reinstalada.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.installation.auth_error"];
         delete?: never;
@@ -594,7 +594,7 @@ export interface webhooks {
         put?: never;
         /**
          * Reinstalação recuperou uma instalação em `AUTH_ERROR`.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.installation.auth_restored"];
         delete?: never;
@@ -614,7 +614,7 @@ export interface webhooks {
         put?: never;
         /**
          * Trial iniciado (na instalação ou manualmente pelo operador).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.trial_started"];
         delete?: never;
@@ -634,7 +634,7 @@ export interface webhooks {
         put?: never;
         /**
          * Assinatura paga ativa (checkout concluído ou manual marcada ativa).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.activated"];
         delete?: never;
@@ -654,7 +654,7 @@ export interface webhooks {
         put?: never;
         /**
          * Novo período pago.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.renewed"];
         delete?: never;
@@ -674,7 +674,7 @@ export interface webhooks {
         put?: never;
         /**
          * Plano trocado (upgrade imediato ou downgrade no próximo ciclo).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.plan_changed"];
         delete?: never;
@@ -694,7 +694,7 @@ export interface webhooks {
         put?: never;
         /**
          * Pagamento da renovação falhou; carência e corte são decisão do app.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.past_due"];
         delete?: never;
@@ -714,7 +714,7 @@ export interface webhooks {
         put?: never;
         /**
          * Pagamento em atraso regularizado.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.recovered"];
         delete?: never;
@@ -734,7 +734,7 @@ export interface webhooks {
         put?: never;
         /**
          * Cancelamento agendado para o fim do período.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.cancel_scheduled"];
         delete?: never;
@@ -754,7 +754,7 @@ export interface webhooks {
         put?: never;
         /**
          * Assinatura encerrada.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.ended"];
         delete?: never;
@@ -774,7 +774,7 @@ export interface webhooks {
         put?: never;
         /**
          * Aviso de fim de período de assinatura `manual` (3, 2 e 1 dia antes).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.period_ending"];
         delete?: never;
@@ -794,7 +794,7 @@ export interface webhooks {
         put?: never;
         /**
          * Item alterado por uma pessoa no SPA 1146 (alterações via API não geram evento).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.subscription.item_changed"];
         delete?: never;
@@ -814,7 +814,7 @@ export interface webhooks {
         put?: never;
         /**
          * Compra avulsa paga.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.purchase.paid"];
         delete?: never;
@@ -834,7 +834,7 @@ export interface webhooks {
         put?: never;
         /**
          * Cobrança reembolsada (total ou parcial).
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.charge.refunded"];
         delete?: never;
@@ -854,7 +854,7 @@ export interface webhooks {
         put?: never;
         /**
          * Cliente abriu disputa (chargeback) no cartão.
-         * @description Entregue em `POST <webhookUrl>`. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
+         * @description Entregue em `POST <webhookUrl>` do app e também, quando o tipo e o app estão no filtro do destinatário, na URL de cada destinatário cadastrado em `/admin/webhook-endpoints` (ERP, financeiro, automações), com o mesmo envelope, os mesmos cabeçalhos e a mesma verificação; a assinatura de um destinatário usa o segredo dele. Pelo menos uma vez, em ordem por instalação; reenvio com backoff por até 24 h, depois dead-letter, e cada destinatário tem retentativa e dead-letter independentes. Redirecionamentos (3xx) não são seguidos e contam como falha. Persista, responda 2xx e processe assíncrono; deduplique por `eventId`.
          */
         post: operations["event.charge.disputed"];
         delete?: never;
