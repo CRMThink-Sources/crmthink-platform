@@ -536,6 +536,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/installations/{id}/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Criar assinatura manual ou bonificação
+         * @description Cria uma assinatura `manual` (boleto, contrato) ou uma bonificação, já `active`, no SPA 1142 e avisa o app com `subscription.activated`. Uma assinatura vigente por instalação: `active` ou `past_due` recusa com `SUBSCRIPTION_ALREADY_EXISTS` (os `details` trazem a existente); um trial em andamento é cancelado e o evento traz `previousSubscriptionId`. O fim do período é obrigatório e fica no máximo 24 meses depois do início (padrão: hoje). Na bonificação, `approvedBy` é obrigatório. Só em produção (`SUBSCRIPTIONS_READ_ONLY` nos demais ambientes). A gravação é conferida por releitura; se divergir, `SUBSCRIPTION_WRITE_FAILED` traz o id do item criado e nenhum evento sai.
+         *
+         *     **Papel mínimo:** `operator`.
+         *
+         *     **Alto impacto:** exige o motivo em `X-Admin-Reason`.
+         */
+        post: operations["createManualSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/installations/{id}/timeline": {
         parameters: {
             query?: never;
@@ -2029,6 +2053,27 @@ export interface components {
             /** @default false */
             billable?: boolean;
         };
+        CreateManualSubscription: {
+            /** @description Id do plano no SPA */
+            planId: number;
+            /**
+             * @description `manual` (boleto, contrato) ou `bonus` (bonificação)
+             * @enum {string}
+             */
+            kind: "manual" | "bonus";
+            /**
+             * Format: date
+             * @description Início (AAAA-MM-DD); padrão: hoje
+             */
+            periodStart?: string;
+            /**
+             * Format: date
+             * @description Fim do período (AAAA-MM-DD)
+             */
+            periodEnd: string;
+            /** @description Quem autorizou; obrigatório na bonificação */
+            approvedBy?: string;
+        };
         CreateOperatorRequest: {
             email: string;
             name: string;
@@ -2267,6 +2312,18 @@ export interface components {
                 n: string;
                 e: string;
             }[];
+        };
+        ManualSubscriptionCreated: {
+            subscriptionId: number;
+            /** @constant */
+            status: "active";
+            /** @constant */
+            modality: "manual";
+            planId: number;
+            /** Format: date-time */
+            periodStart: string;
+            /** Format: date-time */
+            periodEnd: string;
         };
         Operator: {
             id: number;
@@ -5057,6 +5114,130 @@ export interface operations {
             };
         };
     };
+    createManualSubscription: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Motivo da ação, de 1 a 500 caracteres, em uma linha; fica na auditoria. Obrigatório: sem ele a resposta é 400 `REASON_REQUIRED`. */
+                "X-Admin-Reason": string;
+            };
+            path: {
+                /** @description Id da instalação (`installationId`) */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateManualSubscription"];
+            };
+        };
+        responses: {
+            /** @description Assinatura criada */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualSubscriptionCreated"];
+                };
+            };
+            /**
+             * @description Requisição inválida
+             *     - `REASON_INVALID`: `X-Admin-Reason` com mais de 500 caracteres ou com quebra de linha.
+             *     - `REASON_REQUIRED`: Ação de alto impacto (rotação de chave ou segredo, desativação de app, reenvio em lote, chave do JWT, redefinição de acesso, exclusão e desativação de produto ou plano do catálogo) sem o header `X-Admin-Reason`; nada foi executado.
+             *     - `VALIDATION_ERROR`: Corpo ou parâmetros fora do schema; `details` lista `{path, message}`.
+             *     - `PLAN_TYPE_MISMATCH`: Plano de assinatura com `intent=purchase` ou avulso com `intent=subscribe`.
+             */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não autenticado
+             *     - `UNAUTHORIZED`: Credencial ausente ou inválida (chave de API, token de operador, sessão do backoffice ausente ou expirada, ou auth do evento).
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Proibido
+             *     - `PASSWORD_CHANGE_REQUIRED`: A conta está com senha provisória: só a troca de senha é permitida.
+             *     - `FORBIDDEN_ROLE`: O papel do operador não permite esta rota (`viewer` só lê).
+             *     - `ORIGIN_NOT_ALLOWED`: Origem do navegador não autorizada: para o appCode (`SESSION_CORS_ORIGINS`) na sessão do iframe, ou fora de `BACKOFFICE_ORIGINS` numa mutação com sessão de operador (proteção contra requisição forjada).
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não encontrado
+             *     - `INSTALLATION_NOT_FOUND`: Instalação inexistente, de outro app ou desvinculada do SPA 1060.
+             *     - `PLAN_NOT_FOUND`: Plano inexistente ou de produto não vinculado ao app.
+             */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Conflito
+             *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).
+             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente.
+             *     - `SUBSCRIPTIONS_READ_ONLY`: Assinaturas manuais só são criadas no ambiente de produção; fora dela a rota é somente leitura.
+             *     - `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Não processável
+             *     - `PLAN_INACTIVE`: Plano ou produto inativo.
+             *     - `INVALID_PERIOD`: Período da assinatura inválido: data inexistente, fim igual ou anterior ao início, ou mais de 24 meses.
+             */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /**
+             * @description Falha em serviço externo
+             *     - `SUBSCRIPTION_WRITE_FAILED`: O Bitrix aceitou a criação da assinatura, mas a releitura não confere com o pedido. `details` traz `{ id, created, lost }` com o item criado e os campos que divergem; nenhum evento foi enviado ao app.
+             */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     getInstallationTimeline: {
         parameters: {
             query?: {
@@ -5336,7 +5517,7 @@ export interface operations {
             /**
              * @description Conflito
              *     - `TRIAL_ALREADY_USED`: A instalação já usou o trial (na rota de operador, também quando o trial está vigente).
-             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.
+             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente.
              *     - `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.
              */
             409: {
@@ -6384,7 +6565,7 @@ export interface operations {
             /**
              * @description Conflito
              *     - `INSTALLATION_NOT_ACTIVE`: Sem instalação `ACTIVE` do app no portal (sessão: 403; checkout e renovação forçada de token pelo operador: 409).
-             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.
+             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente.
              */
             409: {
                 headers: {
@@ -7105,7 +7286,7 @@ export interface operations {
             /**
              * @description Conflito
              *     - `TRIAL_ALREADY_USED`: A instalação já usou o trial (na rota de operador, também quando o trial está vigente).
-             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura paga vigente.
+             *     - `SUBSCRIPTION_ALREADY_EXISTS`: A instalação já tem assinatura vigente (Stripe ou manual, ativa ou em atraso). Na criação pelo operador, `details` traz `{ subscriptionId, modality, status }` da existente.
              *     - `BILLING_BUSY`: Outra operação de cobrança da mesma instalação está em andamento.
              */
             409: {
