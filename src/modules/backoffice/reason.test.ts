@@ -117,6 +117,7 @@ describe('mapa de alto impacto', () => {
         'POST /admin/apps/:appCode/rotate-api-key',
         'POST /admin/apps/:appCode/rotate-webhook-secret',
         'POST /admin/events/resend',
+        'POST /admin/installations/:id/subscriptions',
         'POST /admin/operators/:id/reset-access',
         'POST /admin/signing-keys/rotate',
       ].sort(),

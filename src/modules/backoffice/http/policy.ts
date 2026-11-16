@@ -154,6 +154,12 @@ export const ADMIN_POLICIES: Record<string, AdminPolicy> = {
     role: 'operator',
     target: installation,
   },
+  'POST /admin/installations/:id/subscriptions': {
+    role: 'operator',
+    // O alvo é a instalação: a linha do tempo dela lê a auditoria por esse alvo.
+    target: installation,
+    highImpact: true,
+  },
   'POST /admin/installations/:id/token/refresh': {
     role: 'operator',
     target: installation,

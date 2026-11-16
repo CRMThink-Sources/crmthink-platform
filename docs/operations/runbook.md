@@ -228,6 +228,32 @@ CRMThink, com os planos aninhados em cada produto. API: `/admin/catalog/*`. `vie
   trial do app continua um campo numérico (sem seletor); a auditoria guarda o corpo mascarado e o
   motivo, sem antes/depois.
 
+## Assinatura manual e bonificação
+
+No detalhe da instalação, **Nova assinatura** cria uma assinatura `manual` (boleto, contrato) ou uma
+**bonificação** no SPA 1142, em vez de digitá-la no Bitrix. API:
+`POST /admin/installations/{id}/subscriptions`. Só `operator`; o **motivo** (`X-Admin-Reason`) é
+sempre obrigatório. O app recebe `subscription.activated`.
+
+- **Preencha:** plano (ativo, pago, de assinatura, de um produto do app), tipo, fim do período
+  (obrigatório, até 24 meses depois do início; o início é hoje se não informado) e, na bonificação,
+  o **responsável** (quem autorizou). O motivo e o responsável ficam no comentário da linha do
+  tempo da assinatura e na auditoria; a bonificação também aparece no título
+  (`Bonificação — <plano> — <domínio>`). Não há campo próprio no SPA para ela.
+- **Uma assinatura por instalação.** 409 `SUBSCRIPTION_ALREADY_EXISTS` se já houver assinatura
+  `active` ou `past_due`, de qualquer modalidade (`details` traz a existente). Para trocar de
+  modalidade, cancele a atual antes. Um **trial em andamento** é cancelado e o evento traz o id dele
+  em `previousSubscriptionId`.
+- **Só a produção escreve:** nos demais ambientes, 409 `SUBSCRIPTIONS_READ_ONLY`.
+- **Renovar, editar e cancelar** a assinatura manual continuam sendo feitos no SPA 1142 (a
+  plataforma reage ao evento do SPA).
+- **502 `SUBSCRIPTION_WRITE_FAILED`:** o Bitrix aceitou a criação, mas a releitura não bate com o
+  pedido (`details.id` é o item criado, `details.lost` o que divergiu). **Nenhum evento foi
+  enviado.** Abra o item `details.id` no SPA 1142: corrija os campos ou exclua o item, e repita a
+  criação.
+- **Primeira criação real em produção:** faça com uma instalação de teste, para confirmar a
+  permissão do webhook e os campos obrigatórios do SPA 1142 (`crm.item.fields`).
+
 ## Operadores do backoffice
 
 As listagens `/admin/events`, `/admin/stripe-events`, `/admin/installations`,
