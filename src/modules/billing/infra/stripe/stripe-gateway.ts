@@ -308,6 +308,7 @@ export class StripePaymentGateway implements PaymentGateway {
       redirect_on_completion: 'never',
       payment_method_types: ['card'],
       currency: 'brl',
+      allow_promotion_codes: true,
       line_items: [{ price: input.priceId, quantity: input.quantity }],
       metadata,
       ...(input.customerEmail ? { customer_email: input.customerEmail } : {}),

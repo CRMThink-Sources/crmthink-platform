@@ -36,4 +36,4 @@
 
 - [x] 6.1 Rodar `yarn check-types`, `yarn test` e o ESLint dos arquivos alterados na raiz e no web, mais `yarn docs:openapi` e `yarn sdk:types` sem diff, e verificar que tudo passa
 - [x] 6.2 Rodar `openspec validate outbound-webhooks --strict` e verificar que não há erros
-- [ ] 6.3 Em produção, cadastrar um destinatário de teste (uma URL de captura), provocar um evento numa instalação de teste, e verificar a entrega, a assinatura recalculada com o segredo, a ordem, e que uma falha provocada gera retentativa sem afetar a entrega ao app; só então cadastrar o destinatário real
+- [x] 6.3 Em produção, cadastrar um destinatário de teste (uma URL de captura), provocar um evento numa instalação de teste, e verificar a entrega, a assinatura recalculada com o segredo, a ordem, e que uma falha provocada gera retentativa sem afetar a entrega ao app; só então cadastrar o destinatário real
