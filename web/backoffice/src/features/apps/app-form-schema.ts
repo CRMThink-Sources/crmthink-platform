@@ -23,14 +23,22 @@ const optionalPositiveInt = z
 
 export const APP_CODE_PATTERN = /^[a-z0-9][a-z0-9._-]{2,99}$/
 
+const themeTextFields = {
+  title: z.string().trim().max(200, 'Até 200 caracteres'),
+  welcomeText: z.string().trim().max(2000, 'Até 2000 caracteres'),
+  termsText: z.string().trim().max(500, 'Até 500 caracteres'),
+}
+
 const themeSchema = z.object({
   primaryColor: z.string().trim().max(32, 'Até 32 caracteres'),
   backgroundColor: z.string().trim().max(32, 'Até 32 caracteres'),
   textColor: z.string().trim().max(32, 'Até 32 caracteres'),
-  title: z.string().trim().max(200, 'Até 200 caracteres'),
-  welcomeText: z.string().trim().max(2000, 'Até 2000 caracteres'),
+  ...themeTextFields,
   termsUrl: optionalUrl,
-  termsText: z.string().trim().max(500, 'Até 500 caracteres'),
+  translations: z.object({
+    en: z.object(themeTextFields),
+    es: z.object(themeTextFields),
+  }),
 })
 
 export type AppFormMode = 'create' | 'edit'
@@ -113,6 +121,14 @@ function splitList(value: string): string[] {
     .filter(Boolean)
 }
 
+/** Idiomas além do português (que são os textos do próprio tema). */
+export const TRANSLATION_LANGUAGES = [
+  { code: 'en', label: 'inglês' },
+  { code: 'es', label: 'espanhol' },
+] as const
+
+const EMPTY_TEXTS = { title: '', welcomeText: '', termsText: '' }
+
 export const EMPTY_THEME: AppFormValues['theme'] = {
   primaryColor: '',
   backgroundColor: '',
@@ -121,6 +137,7 @@ export const EMPTY_THEME: AppFormValues['theme'] = {
   welcomeText: '',
   termsUrl: '',
   termsText: '',
+  translations: { en: EMPTY_TEXTS, es: EMPTY_TEXTS },
 }
 
 export const emptyForm = (): AppFormValues => ({
@@ -138,7 +155,7 @@ export const emptyForm = (): AppFormValues => ({
   trialOnInstall: false,
   trialPlanId: '',
   active: true,
-  theme: { ...EMPTY_THEME },
+  theme: structuredClone(EMPTY_THEME),
 })
 
 /** App existente → valores do formulário (o `client_secret` nunca vem da API). */
@@ -158,18 +175,44 @@ export function fromApp(app: App): AppFormValues {
     trialOnInstall: app.trialOnInstall,
     trialPlanId: app.trialPlanId?.toString() ?? '',
     active: app.active,
-    theme: { ...EMPTY_THEME, ...(app.installTheme ?? {}) },
+    theme: themeValues(app.installTheme),
   }
 }
 
 type Theme = NonNullable<App['installTheme']>
 
-/** Só os campos preenchidos entram no tema; tudo vazio vira `null` (tema padrão). */
-export function themeOf(theme: AppFormValues['theme']): Theme | null {
-  const entries = Object.entries(theme)
+function themeValues(theme: App['installTheme']): AppFormValues['theme'] {
+  const { translations, ...fields } = theme ?? {}
+  return {
+    ...EMPTY_THEME,
+    ...fields,
+    translations: {
+      en: { ...EMPTY_TEXTS, ...translations?.en },
+      es: { ...EMPTY_TEXTS, ...translations?.es },
+    },
+  }
+}
+
+/** Os campos preenchidos (sem espaços nas pontas), ou `null` se não houver nenhum. */
+function filled(values: Record<string, string>): Record<string, string> | null {
+  const entries = Object.entries(values)
     .map(([key, value]) => [key, value.trim()] as const)
     .filter(([, value]) => value)
-  return entries.length ? (Object.fromEntries(entries) as Theme) : null
+  return entries.length ? Object.fromEntries(entries) : null
+}
+
+/** Só os campos preenchidos entram no tema; tudo vazio vira `null` (tema padrão). */
+export function themeOf(theme: AppFormValues['theme']): Theme | null {
+  const { translations, ...fields } = theme
+  const texts = Object.entries(translations).flatMap(([code, values]) => {
+    const used = filled(values)
+    return used ? [[code, used] as const] : []
+  })
+  const result = {
+    ...filled(fields),
+    ...(texts.length && { translations: Object.fromEntries(texts) }),
+  }
+  return Object.keys(result).length ? (result as Theme) : null
 }
 
 const orNull = (value: string) => value.trim() || null

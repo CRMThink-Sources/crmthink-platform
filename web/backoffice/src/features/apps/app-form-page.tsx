@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle } from 'lucide-react'
-import { useId, useMemo, useState, type ReactNode } from 'react'
+import { Fragment, useId, useMemo, useState, type ReactNode } from 'react'
 import {
   useForm,
   useWatch,
@@ -36,6 +36,7 @@ import {
   fromApp,
   toCreatePayload,
   toPatchPayload,
+  TRANSLATION_LANGUAGES,
   type AppFormMode,
   type AppFormValues,
 } from './app-form-schema'
@@ -372,6 +373,34 @@ function AppForm(props: { mode: AppFormMode; initial: AppFormValues }) {
               label="URL dos termos"
               className="sm:col-span-2"
             />
+            <p className="text-xs text-muted-foreground sm:col-span-2">
+              Os textos acima são os em português. Preencha abaixo as traduções;
+              campo vazio usa o texto padrão da plataforma naquele idioma. Cores
+              e URL dos termos valem para todos os idiomas.
+            </p>
+            {TRANSLATION_LANGUAGES.map(({ code, label }) => (
+              <Fragment key={code}>
+                <Field
+                  form={form}
+                  name={`theme.translations.${code}.title`}
+                  label={`Título em ${label}`}
+                  className="sm:col-span-2"
+                />
+                <Field
+                  form={form}
+                  name={`theme.translations.${code}.welcomeText`}
+                  label={`Texto de boas-vindas em ${label}`}
+                  multiline
+                  className="sm:col-span-2"
+                />
+                <Field
+                  form={form}
+                  name={`theme.translations.${code}.termsText`}
+                  label={`Texto dos termos em ${label}`}
+                  className="sm:col-span-2"
+                />
+              </Fragment>
+            ))}
           </Section>
 
           {mode === 'edit' && (
@@ -448,7 +477,9 @@ function AppForm(props: { mode: AppFormMode; initial: AppFormValues }) {
         </div>
 
         <aside className="grid content-start gap-2 lg:sticky lg:top-4">
-          <h2 className="text-sm font-medium">Pré-visualização do tema</h2>
+          <h2 className="text-sm font-medium">
+            Pré-visualização do tema (português)
+          </h2>
           <InstallPreview
             name={current.name || 'Seu app'}
             logoUrl={current.logoUrl ?? ''}

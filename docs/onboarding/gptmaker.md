@@ -70,7 +70,19 @@ curl -X POST https://<host>/admin/apps \
       "title": "Instalar GPTMaker",
       "welcomeText": "Agentes de IA no seu Bitrix24.",
       "termsUrl": "https://…/termos",
-      "termsText": "termos de uso do GPTMaker"
+      "termsText": "termos de uso do GPTMaker",
+      "translations": {
+        "en": {
+          "title": "Install GPTMaker",
+          "welcomeText": "AI agents on your Bitrix24.",
+          "termsText": "GPTMaker terms of use"
+        },
+        "es": {
+          "title": "Instalar GPTMaker",
+          "welcomeText": "Agentes de IA en tu Bitrix24.",
+          "termsText": "términos de uso de GPTMaker"
+        }
+      }
     },
     "bitrixClientId": "<client_id do app Bitrix>",
     "bitrixClientSecret": "<client_secret>",

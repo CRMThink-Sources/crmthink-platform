@@ -1,18 +1,32 @@
 import z from 'zod'
 
+const installTextFields = {
+  title: z.string().max(200).optional(),
+  welcomeText: z.string().max(2000).optional(),
+  termsText: z.string().max(500).optional(),
+}
+
+const installTextsSchema = z.object(installTextFields).strict()
+
 /**
  * Tema da página de instalação. Tudo opcional: o que faltar cai no tema padrão da
- * plataforma (`installations/http/install-page.ts`).
+ * plataforma (`installations/http/install-page.ts`). Os textos do próprio tema são os
+ * em português; `translations` traz os dos outros idiomas da página.
  */
 export const installThemeSchema = z
   .object({
     primaryColor: z.string().max(32).optional(),
     backgroundColor: z.string().max(32).optional(),
     textColor: z.string().max(32).optional(),
-    title: z.string().max(200).optional(),
-    welcomeText: z.string().max(2000).optional(),
+    ...installTextFields,
     termsUrl: z.string().url().optional(),
-    termsText: z.string().max(500).optional(),
+    translations: z
+      .object({
+        en: installTextsSchema.optional(),
+        es: installTextsSchema.optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
 

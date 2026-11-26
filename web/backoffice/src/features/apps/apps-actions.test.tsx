@@ -331,6 +331,70 @@ describe('edição de app', () => {
     )
   })
 
+  it('traduções do tema vêm preenchidas e o envio leva só os textos informados', async () => {
+    let body: Record<string, unknown> | null = null
+    server.use(
+      meHandler(operator()),
+      catalogHandler(),
+      getApp({
+        ...APP,
+        installTheme: {
+          title: 'Instalar',
+          translations: { en: { title: 'Install it' } },
+        },
+      }),
+      http.patch('*/admin/apps/crmthink.gptmaker', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json(APP)
+      }),
+    )
+    const { user } = renderApp('/apps/crmthink.gptmaker/edit')
+    expect(await screen.findByLabelText('Título em inglês')).toHaveValue(
+      'Install it',
+    )
+    expect(screen.getByText('Nenhuma alteração ainda.')).toBeInTheDocument()
+
+    await user.type(
+      screen.getByLabelText('Texto de boas-vindas em espanhol'),
+      'Bienvenido',
+    )
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+
+    await waitFor(() =>
+      expect(body).toEqual({
+        installTheme: {
+          title: 'Instalar',
+          translations: {
+            en: { title: 'Install it' },
+            es: { welcomeText: 'Bienvenido' },
+          },
+        },
+      }),
+    )
+  })
+
+  it('apagar a única tradução e o tema volta a ser o padrão', async () => {
+    let body: Record<string, unknown> | null = null
+    server.use(
+      meHandler(operator()),
+      catalogHandler(),
+      getApp({
+        ...APP,
+        installTheme: { translations: { es: { termsText: 'condiciones' } } },
+      }),
+      http.patch('*/admin/apps/crmthink.gptmaker', async ({ request }) => {
+        body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json(APP)
+      }),
+    )
+    const { user } = renderApp('/apps/crmthink.gptmaker/edit')
+    await user.clear(
+      await screen.findByLabelText('Texto dos termos em espanhol'),
+    )
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+    await waitFor(() => expect(body).toEqual({ installTheme: null }))
+  })
+
   it('a pré-visualização do tema acompanha o formulário', async () => {
     server.use(meHandler(operator()), catalogHandler(), getApp())
     const { user } = renderApp('/apps/crmthink.gptmaker/edit')
