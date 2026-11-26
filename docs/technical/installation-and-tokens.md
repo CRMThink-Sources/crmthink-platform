@@ -65,6 +65,20 @@ Propriedades:
   `POST /admin/installations/{id}/trial`.
 - Escopos do app Bitrix diferentes do cadastro geram alerta `install.scopes_missing`.
 
+### Idiomas da página
+
+- Português quando `BX24.getLang()` devolve `br` (código do Bitrix) ou `pt`; **inglês** em
+  qualquer outro caso, inclusive portais em espanhol (`la`). O seletor PT/EN/ES troca sem
+  recarregar e a escolha não é guardada. O HTML sai em inglês até o `BX24.init`.
+- Textos fixos: `http/install-texts.ts`. Textos do app: os do `installTheme` são os em
+  português; `installTheme.translations.en` e `.es` aceitam `title`, `welcomeText` e
+  `termsText`. Sem tradução, vale o padrão da plataforma naquele idioma. Cores e `termsUrl`
+  são os mesmos para todos.
+- Erros: em português aparece a mensagem da API; nos outros idiomas a página traduz pelo
+  `code` (lista em `install-texts.ts`) e usa uma mensagem genérica para os demais. Código
+  novo em `/v1/install[/retry]` pede tradução nessa lista.
+- A página de app inexistente ou inativo não carrega o BX24: usa o `LANG` da URL.
+
 ## Desinstalação
 
 `ONAPPUNINSTALL` chega em `/bitrix/events/{appCode}`. O `application_token` do evento é

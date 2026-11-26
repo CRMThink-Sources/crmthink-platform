@@ -8651,7 +8651,7 @@
           "Instalação"
         ],
         "summary": "Página de instalação do app no Bitrix24",
-        "description": "URL de instalação cadastrada no app Bitrix. A página lê a autenticação via `BX24.getAuth()` e chama `POST /v1/install`.",
+        "description": "URL de instalação cadastrada no app Bitrix. A página lê a autenticação via `BX24.getAuth()` e chama `POST /v1/install`. Abre em português quando `BX24.getLang()` é `br` ou `pt` e em inglês nos demais, com seletor PT/EN/ES. No 404, o idioma vem do parâmetro `LANG` da URL.",
         "security": [],
         "parameters": [
           {
@@ -13487,13 +13487,55 @@
                     "type": "string",
                     "maxLength": 2000
                   },
+                  "termsText": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
                   "termsUrl": {
                     "type": "string",
                     "format": "uri"
                   },
-                  "termsText": {
-                    "type": "string",
-                    "maxLength": 500
+                  "translations": {
+                    "type": "object",
+                    "properties": {
+                      "en": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "welcomeText": {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          "termsText": {
+                            "type": "string",
+                            "maxLength": 500
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "es": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "welcomeText": {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          "termsText": {
+                            "type": "string",
+                            "maxLength": 500
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
                   }
                 },
                 "additionalProperties": false
@@ -14633,13 +14675,55 @@
                     "type": "string",
                     "maxLength": 2000
                   },
+                  "termsText": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
                   "termsUrl": {
                     "type": "string",
                     "format": "uri"
                   },
-                  "termsText": {
-                    "type": "string",
-                    "maxLength": 500
+                  "translations": {
+                    "type": "object",
+                    "properties": {
+                      "en": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "welcomeText": {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          "termsText": {
+                            "type": "string",
+                            "maxLength": 500
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "es": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "welcomeText": {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          "termsText": {
+                            "type": "string",
+                            "maxLength": 500
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
                   }
                 },
                 "additionalProperties": false
@@ -18548,13 +18632,55 @@
                     "type": "string",
                     "maxLength": 2000
                   },
+                  "termsText": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
                   "termsUrl": {
                     "type": "string",
                     "format": "uri"
                   },
-                  "termsText": {
-                    "type": "string",
-                    "maxLength": 500
+                  "translations": {
+                    "type": "object",
+                    "properties": {
+                      "en": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "welcomeText": {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          "termsText": {
+                            "type": "string",
+                            "maxLength": 500
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "es": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "welcomeText": {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          "termsText": {
+                            "type": "string",
+                            "maxLength": 500
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "additionalProperties": false
                   }
                 },
                 "additionalProperties": false

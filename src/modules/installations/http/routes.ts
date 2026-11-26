@@ -40,10 +40,8 @@ export function publicInstallRoutes(deps: InstallationRoutesDeps): Router {
     const app = await deps.registry.get(req.params.appCode ?? '')
     res.setHeader('Cache-Control', 'no-store')
     if (!app?.active) {
-      res
-        .status(404)
-        .type('html')
-        .send(renderErrorPage('Aplicativo não encontrado ou inativo.'))
+      const lang = typeof req.query.LANG === 'string' ? req.query.LANG : ''
+      res.status(404).type('html').send(renderErrorPage(lang))
       return
     }
     res.type('html').send(renderInstallPage(app))

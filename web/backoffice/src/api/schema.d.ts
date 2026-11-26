@@ -1131,7 +1131,7 @@ export interface paths {
         };
         /**
          * Página de instalação do app no Bitrix24
-         * @description URL de instalação cadastrada no app Bitrix. A página lê a autenticação via `BX24.getAuth()` e chama `POST /v1/install`.
+         * @description URL de instalação cadastrada no app Bitrix. A página lê a autenticação via `BX24.getAuth()` e chama `POST /v1/install`. Abre em português quando `BX24.getLang()` é `br` ou `pt` e em inglês nos demais, com seletor PT/EN/ES. No 404, o idioma vem do parâmetro `LANG` da URL.
          */
         get: operations["getInstallPage"];
         put?: never;
@@ -1990,9 +1990,21 @@ export interface components {
                 textColor?: string;
                 title?: string;
                 welcomeText?: string;
+                termsText?: string;
                 /** Format: uri */
                 termsUrl?: string;
-                termsText?: string;
+                translations?: {
+                    en?: {
+                        title?: string;
+                        welcomeText?: string;
+                        termsText?: string;
+                    };
+                    es?: {
+                        title?: string;
+                        welcomeText?: string;
+                        termsText?: string;
+                    };
+                };
             } | null;
             bitrixClientId: string;
             bitrixAppCode: string | null;
@@ -2267,9 +2279,21 @@ export interface components {
                 textColor?: string;
                 title?: string;
                 welcomeText?: string;
+                termsText?: string;
                 /** Format: uri */
                 termsUrl?: string;
-                termsText?: string;
+                translations?: {
+                    en?: {
+                        title?: string;
+                        welcomeText?: string;
+                        termsText?: string;
+                    };
+                    es?: {
+                        title?: string;
+                        welcomeText?: string;
+                        termsText?: string;
+                    };
+                };
             } | null;
             bitrixClientId: string;
             bitrixClientSecret: string;
@@ -3328,9 +3352,21 @@ export interface components {
                 textColor?: string;
                 title?: string;
                 welcomeText?: string;
+                termsText?: string;
                 /** Format: uri */
                 termsUrl?: string;
-                termsText?: string;
+                translations?: {
+                    en?: {
+                        title?: string;
+                        welcomeText?: string;
+                        termsText?: string;
+                    };
+                    es?: {
+                        title?: string;
+                        welcomeText?: string;
+                        termsText?: string;
+                    };
+                };
             } | null;
             bitrixClientId?: string;
             bitrixAppCode?: string | null;

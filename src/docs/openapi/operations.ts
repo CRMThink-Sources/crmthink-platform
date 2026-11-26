@@ -383,7 +383,7 @@ export const OPERATIONS: Operation[] = [
     tag: 'Instalação',
     summary: 'Página de instalação do app no Bitrix24',
     description:
-      'URL de instalação cadastrada no app Bitrix. A página lê a autenticação via `BX24.getAuth()` e chama `POST /v1/install`.',
+      'URL de instalação cadastrada no app Bitrix. A página lê a autenticação via `BX24.getAuth()` e chama `POST /v1/install`. Abre em português quando `BX24.getLang()` é `br` ou `pt` e em inglês nos demais, com seletor PT/EN/ES. No 404, o idioma vem do parâmetro `LANG` da URL.',
     security: 'none',
     pathParams: { appCode: 'Código do app (ex.: `crmthink.gptmaker`)' },
     responses: {
