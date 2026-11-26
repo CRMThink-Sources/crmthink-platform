@@ -71,3 +71,24 @@
   font-size: 0.9rem;
   min-height: 1.2em;
 }
+.install-preview .langs {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin: -8px -8px 8px 0;
+}
+.install-preview .langs button {
+  width: auto;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+.install-preview .langs button[aria-pressed='true'] {
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
